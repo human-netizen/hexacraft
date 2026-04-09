@@ -10,7 +10,7 @@ Based on reference visuals: the world should feel like a real single-player Mine
 - [x] Custom myRotate() (Rodrigues' formula)
 - [x] Procedural terrain (FBM noise, biomes: grass, sand, stone, water)
 - [x] Trees (trunk + randomized leaf canopy, colorful, clustered in forest zone)
-- [x] Camera: Pitch(X)/Yaw(Y)/Roll(Z), Bird's Eye(B), Rotate around look-at(F), 4-viewport(V)
+- [x] Camera: Mouse look, Pitch(X)/Yaw(Y)/Roll(Z), Bird's Eye(B), Rotate around look-at(F), 4-viewport(V)
 - [x] Lighting: Directional(1), Point(2), Spot(3), Emissive ores, Ambient(5)/Diffuse(6)/Specular(7), Master(L)
 - [x] Day-night cycle (T)
 - [x] Player character (hierarchical joints: head, body, arms, legs, faces movement dir)
@@ -20,117 +20,66 @@ Based on reference visuals: the world should feel like a real single-player Mine
 - [x] Curvy objects: Sphere, Cone, Bezier curve, Spline curve, Ruled surface
 - [x] Stone ruins structure, 6 biome zones (A–F)
 - [x] 3D voxel grid (80x80x16) — terrain stored as block types, rendered from grid
-- [x] Block breaking (left-click) and placement (middle-click / Shift+right-click)
+- [x] Block breaking (left-click) and placement (right-click)
 - [x] Ray casting (30 unit range) with wireframe block highlight
 - [x] Hotbar with 9 block types (scroll to cycle, numpad 1-9 quick select)
 - [x] HUD: crosshair, hotbar display, health bar, stamina bar (screen-space)
 - [x] Player movement: WASD walks on terrain, Space jumps, gravity, ground collision
 - [x] Camera modes (C key): Third-Person / First-Person / Free-Fly
+- [x] Direct mouse look (cursor captured, like Minecraft)
 
 ---
 
-## Phase 7: Block Placement & Breaking (Minecraft Core Mechanic)
+## CURRENT CONTROLS
 
-This is the KEY feature that makes it feel like a real game. The player can look at a hex block, highlight it, and place/break blocks.
-
-### 7A: Crosshair & Block Raycasting
-- **Crosshair overlay**: Draw a simple `+` at screen center using 2 thin quads (rendered in screen space, no depth test)
-- **Ray casting**: From camera position along camera front direction, step through the hex grid to find which block the player is looking at
-  - Use DDA-style ray march: step in small increments (0.1 units) along ray, convert world pos → hex grid col/row/height, check if a solid block exists there
-  - Max ray distance: 8 hex units (like Minecraft's reach)
-- **Block highlight**: When a block is found, draw a wireframe hex outline around it (slightly larger, bright white/yellow, `GL_LINE` mode)
-  - This tells the player which block they're targeting
-
-### 7B: Block Breaking
-- **Left mouse click**: Remove the targeted block
-  - Store the world as a 3D grid: `blockGrid[col][row][height]` — each cell is a block type (AIR, GRASS, DIRT, SAND, STONE, WATER, WOOD, LEAF, etc.)
-  - On click, set `blockGrid[target] = AIR`
-  - The terrain generation at startup fills this grid; after that, only the grid is used for rendering
-- **Breaking animation (optional)**: Block flashes 3 times over 0.3s before disappearing
-
-### 7C: Block Placement
-- **Right mouse click** (when NOT in camera-look mode): Place a block on the face adjacent to the targeted block
-  - Determine which face of the hex the ray hit (top, bottom, or one of 6 sides)
-  - Place new block in the neighboring cell on that face
-- **Block type selection**: Number keys or scroll wheel to cycle through a hotbar of block types
-  - Available blocks: Grass, Dirt, Sand, Stone, Wood (log), Leaf, Ore (diamond), Ore (gold), Water, Glass
-  - Currently selected block shown in HUD hotbar
-
-### 7D: World Storage as 3D Voxel Grid
-- **Data structure**: `int blockGrid[GRID_W][GRID_D][GRID_H]` where:
-  - `GRID_W` = 80 columns (col -40 to 39)
-  - `GRID_D` = 80 rows (row -40 to 39)
-  - `GRID_H` = 16 height layers (y = 0 to 15)
-  - Each cell = block type enum (AIR=0, GRASS=1, DIRT=2, SAND=3, STONE=4, WATER=5, WOOD=6, LEAF=7, ORE_DIAMOND=8, ORE_GOLD=9, GLASS=10)
-- **Terrain init**: At startup, iterate over the grid and fill based on current biome/noise logic, storing into blockGrid instead of computing on-the-fly
-- **Rendering change**: `renderTerrain()` reads from blockGrid instead of recomputing noise each frame
-  - Only render non-AIR blocks
-  - (Optional optimization: skip faces between two adjacent solid blocks — but not required for now)
-
-### Key Bindings
+### Player Movement
 | Key | Action |
 |-----|--------|
-| Left Click | Break targeted block |
-| Right Click | Place selected block (when not in camera-look mode) |
-| Scroll Wheel | Cycle hotbar selection |
-| 1-9 (numpad row) | Quick-select hotbar slot |
+| W / S | Walk Forward / Backward |
+| A / D | Strafe Left / Right |
+| Space | Jump |
+| E / R | Fly Up / Down |
+| Mouse Move | Look around |
 
----
+### Camera
+| Key | Action |
+|-----|--------|
+| C | Cycle: Third-Person > First-Person > Free-Fly |
+| X | Pitch up (Shift+X = down) |
+| Y | Yaw right (Shift+Y = left) |
+| Z | Roll CW (Shift+Z = CCW) |
+| B | Toggle Bird's Eye View |
+| F | Rotate around look-at (Free-Fly only) |
+| V | Toggle 4-Viewport split |
 
-## Phase 8: HUD & Game Interface
+### Block Building
+| Key | Action |
+|-----|--------|
+| Left Click | Break block |
+| Right Click | Place block |
+| Scroll | Cycle hotbar slot |
+| Ctrl + Scroll | Zoom in/out |
+| Numpad 1-9 | Quick-select hotbar slot |
 
-Make it look like a real game with on-screen UI elements.
+### Lighting
+| Key | Action |
+|-----|--------|
+| 1 | Directional light on/off |
+| 2 | Point lights on/off |
+| 3 | Spot light on/off |
+| 5 | Ambient on/off |
+| 6 | Diffuse on/off |
+| 7 | Specular on/off |
+| L | Master light on/off |
 
-### 8A: Hotbar (Bottom Center)
-- 9 slots rendered as semi-transparent rectangles at bottom of screen
-- Each slot shows a small colored hex representing the block type
-- Currently selected slot has bright border/highlight
-- Rendered in screen space (orthographic projection, no depth test)
-
-### 8B: Health & Stamina Bars (Top Left)
-- **Health bar**: Red bar, 10 units (purely decorative for now, or decreases when falling from height)
-- **Stamina/mana bar**: Green bar below health
-- Rendered as colored quads in screen space
-
-### 8C: Minimap (Bottom Right Corner)
-- Top-down view of terrain in a small square (200x200 px)
-- Each hex rendered as a tiny colored dot based on biome
-- Player position shown as white dot
-- Car position shown as red dot
-- Rendered using a separate small viewport + orthographic projection looking straight down
-
-### 8D: Crosshair
-- White `+` at screen center, always visible
-- 2 thin quads, ~20px each direction
-- Rendered last, with depth test disabled
-
----
-
-## Phase 9: Player as First/Third Person Character
-
-### 9A: Third-Person Camera Mode (default)
-- Camera follows behind and above the player character
-- Player visible on screen (like reference top-right image)
-- Camera offset: ~5 units behind, ~3 units above player
-- Player always faces direction of movement
-- Toggle: `P` key switches between first-person and third-person
-
-### 9B: First-Person Camera Mode
-- Camera is at player's head position
-- Player model hidden (or only arms visible)
-- Crosshair visible, block placement/breaking works from eye level
-
-### 9C: Player Movement (on ground)
-- WASD moves the player character on the terrain (not flying)
-- Player snaps to terrain height (walks on top of blocks)
-- Walking animation: arms and legs swing (already have hierarchical joints)
-- Jump: Spacebar — simple parabolic arc, land on blocks
-- Gravity: Player falls if no block below
-
-### 9D: Camera Modes Preserved
-- `C` key: Cycle between Free-Fly camera (current WASD), Third-Person follow, First-Person
-- Free-Fly mode: WASD moves camera freely (current behavior, for inspection/building)
-- In player modes: WASD moves the player, mouse controls camera angle around player
+### Other
+| Key | Action |
+|-----|--------|
+| T | Cycle day/night: Night > Dawn > Noon > Dusk |
+| G | Toggle rotating fan |
+| O | Toggle door open/close |
+| Arrow Keys | Drive MineCar (Up/Down = accel, Left/Right = steer) |
+| ESC | Quit |
 
 ---
 
@@ -256,11 +205,8 @@ Make it look like a real game with on-screen UI elements.
 
 ---
 
-## IMPLEMENTATION ORDER (recommended)
+## IMPLEMENTATION ORDER (remaining)
 
-1. **Phase 7** (Block system) — This is the biggest change. Convert terrain to voxel grid, add raycasting, placement/breaking.
-2. **Phase 8** (HUD) — Crosshair, hotbar, health bars. Makes it look like a game immediately.
-3. **Phase 10** (World visuals) — Better trees, terrain, water, sky. Visual impact.
-4. **Phase 9** (Player modes) — Third/first person, ground movement, jump.
-5. **Phase 11** (Course requirements) — Fractal trees, birds, collision, wine glass, Gouraud/Phong, textures.
-6. **Phase 12** (Polish) — Performance, save/load, sound.
+1. **Phase 10** (World visuals) — Better trees, terrain, water, sky. Visual impact.
+2. **Phase 11** (Course requirements) — Fractal trees, birds, collision, wine glass, Gouraud/Phong, textures.
+3. **Phase 12** (Polish) — Performance, save/load, sound.

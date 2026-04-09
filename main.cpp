@@ -1079,7 +1079,7 @@ void renderTerrain() {
 // Body parts have individual transforms relative to parent
 // =====================================================
 void drawPlayer(glm::vec3 pos, float time, float yaw = 0.0f, bool walking = false, float walkT = 0.0f) {
-    float walkCycle = walking ? sinf(walkT * 3.0f) : sinf(time * 1.5f) * 0.15f;
+    float walkCycle = walking ? sinf(walkT * 3.0f) : 0.0f; // no movement when idle
 
     // Base transform: translate to pos, then rotate to face yaw
     auto makePartModel = [&](glm::vec3 offset, glm::vec3 scale) -> glm::mat4 {
@@ -1872,25 +1872,15 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     lastMouseX = xpos;
     lastMouseY = ypos;
 
-    // Right mouse button held = look around
-    if (mouseCaptured) {
-        camYaw += dx;
-        camPitch += dy;
-        if (camPitch > 89.0f) camPitch = 89.0f;
-        if (camPitch < -89.0f) camPitch = -89.0f;
-        updateCameraVectors();
-    }
+    // Always look around with mouse movement (like Minecraft)
+    camYaw += dx;
+    camPitch += dy;
+    if (camPitch > 89.0f) camPitch = 89.0f;
+    if (camPitch < -89.0f) camPitch = -89.0f;
+    updateCameraVectors();
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-    // Handle right-click release (stop looking around)
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
-        if (mouseCaptured) {
-            mouseCaptured = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-        return;
-    }
     if (action != GLFW_PRESS) return;
 
     // Left-click = break block
@@ -1904,19 +1894,13 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         return;
     }
 
-    // Right-click = look around (hold) OR place block if shift held
+    // Right-click = place block
     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-        if (mods & GLFW_MOD_SHIFT) {
-            placeBlock();
-        } else {
-            mouseCaptured = true;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            firstMouse = true;
-        }
+        placeBlock();
         return;
     }
 
-    // Middle click = place block
+    // Middle click = place block (alternative)
     if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
         placeBlock();
         return;
@@ -2048,8 +2032,7 @@ void printControls() {
     printf("\n");
     printf("  Camera:\n");
     printf("    C           - Cycle: Third-Person > First-Person > Free-Fly\n");
-    printf("    Hold Right-click + Move  - Look around\n");
-    printf("    Scroll                   - Zoom in/out\n");
+    printf("    Mouse Move               - Look around\n");
     printf("    X           - Pitch up   (Shift+X = down)\n");
     printf("    Y           - Yaw right  (Shift+Y = left)\n");
     printf("    Z           - Roll CW    (Shift+Z = CCW)\n");
@@ -2078,14 +2061,10 @@ void printControls() {
     printf("\n");
     printf("  Block Building:\n");
     printf("    Left Click               - Break block\n");
-    printf("    Middle Click             - Place block\n");
-    printf("    Shift + Right Click      - Place block\n");
+    printf("    Right Click              - Place block\n");
     printf("    Scroll                   - Cycle hotbar slot\n");
-    printf("    Numpad 1-9               - Quick-select hotbar\n");
-    printf("\n");
-    printf("  Mouse:\n");
-    printf("    Hold Right-click + Move  - Look around\n");
     printf("    Ctrl + Scroll            - Zoom in/out\n");
+    printf("    Numpad 1-9               - Quick-select hotbar\n");
     printf("\n");
     printf("  ESC           - Quit\n");
     printf("========================================\n");
@@ -2108,6 +2087,7 @@ int main() {
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetScrollCallback(window, scrollCallback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // capture mouse like Minecraft
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         printf("GLAD init failed\n"); return -1;

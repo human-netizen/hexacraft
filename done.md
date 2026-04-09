@@ -45,7 +45,7 @@
 - [x] Ray casting from camera to find targeted block (30 unit range)
 - [x] Wireframe highlight on targeted block (white outline)
 - [x] Left-click breaks blocks (sets to AIR)
-- [x] Middle-click / Shift+Right-click places blocks
+- [x] Right-click places blocks on adjacent face
 - [x] Hotbar with 9 block types (Scroll to cycle, Numpad 1-9 quick select)
 - [x] getGroundY reads from grid for dynamic terrain
 
@@ -62,9 +62,10 @@
 - [x] Player snaps to terrain height with gravity
 - [x] Space to jump (parabolic arc)
 - [x] Player faces movement direction (yaw rotation)
-- [x] Walk animation (arms/legs swing) tied to actual movement
+- [x] Walk animation (arms/legs swing) tied to actual movement, idle = still
 - [x] Third-person camera follows behind player (default mode)
 - [x] First-person camera at player head
 - [x] Free-fly camera (original behavior)
 - [x] C key cycles between Third-Person / First-Person / Free-Fly
 - [x] E/R for vertical fly in player modes
+- [x] Direct mouse look (cursor captured, no button hold needed)
