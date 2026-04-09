@@ -20,11 +20,11 @@ const float HEX_HEIGHT = 1.0f;
 const float PI = 3.14159265358979f;
 
 // Block grid dimensions
-const int GRID_W = 80;   // col range: -40 to 39
-const int GRID_D = 80;   // row range: -40 to 39
-const int GRID_H = 16;   // height layers 0..15
-const int GRID_OFF_X = 40; // offset so col=-40 maps to index 0
-const int GRID_OFF_Z = 40;
+const int GRID_W = 200;   // col range: -100 to 99
+const int GRID_D = 200;   // row range: -100 to 99
+const int GRID_H = 32;    // height layers 0..31
+const int GRID_OFF_X = 100; // offset so col=-100 maps to index 0
+const int GRID_OFF_Z = 100;
 
 // Block types
 enum BlockType {
@@ -938,7 +938,7 @@ bool isWaterPond(int col, int row) {
 // =====================================================
 // Initialize block grid from procedural generation
 // =====================================================
-const int TERRAIN_MIN = -30, TERRAIN_MAX = 35;
+const int TERRAIN_MIN = -90, TERRAIN_MAX = 90;
 
 // Store tree/torch locations for rendering non-grid objects
 struct TreeInfo { int col, row; glm::vec3 leafColor; bool large; };
@@ -1009,6 +1009,470 @@ void initBlockGrid() {
     {
         TreeInfo ti; ti.col = 5; ti.row = 10; ti.leafColor = glm::vec3(0); ti.large = true;
         treeLocations.push_back(ti);
+    }
+
+    // =========================================================
+    // CASTLE — truly massive castle with courtyard and rooms
+    // Outer walls: col -5..40, row -20..25 (46 wide x 46 deep)
+    // Walls 12 blocks tall, towers 20 blocks tall
+    // Grand entrance, courtyard, great hall, bedroom, kitchen,
+    // library, throne room, armory, dungeon stairway
+    // =========================================================
+    {
+        // --- Castle outer bounds ---
+        const int C0 = -5, C1 = 40;    // col range (46 wide)
+        const int R0 = -20, R1 = 25;   // row range (46 deep)
+        const int wallH = 12;
+        const int twrH = 20;            // tower height
+        const int floorLevel = 1;
+        const int baseH = floorLevel + 2; // wall start (above floor)
+        const int fH = floorLevel + 2;    // furniture on top of floor
+
+        // --- Helper lambdas ---
+        auto foundation = [&](int rA, int rB, int cA, int cB) {
+            for (int r = rA; r <= rB; r++)
+                for (int c = cA; c <= cB; c++) {
+                    for (int h = 0; h <= floorLevel; h++)
+                        setBlock(c, r, h, BLOCK_STONE);
+                    setBlock(c, r, floorLevel + 1, BLOCK_WOOD);
+                    for (int h = floorLevel + 2; h < GRID_H; h++)
+                        setBlock(c, r, h, BLOCK_AIR);
+                }
+        };
+
+        auto walls = [&](int rA, int rB, int cA, int cB, int ht) {
+            for (int r = rA; r <= rB; r++)
+                for (int c = cA; c <= cB; c++) {
+                    if (r != rA && r != rB && c != cA && c != cB) continue;
+                    for (int h = baseH; h < baseH + ht && h < GRID_H; h++) {
+                        int bt = ((c + r + h) % 2 == 0) ? BLOCK_STONE : BLOCK_STONE_LIGHT;
+                        setBlock(c, r, h, bt);
+                    }
+                }
+        };
+
+        auto innerWall = [&](int fixedRow, int cA, int cB, int ht) {
+            for (int c = cA; c <= cB; c++)
+                for (int h = baseH; h < baseH + ht && h < GRID_H; h++)
+                    setBlock(c, fixedRow, h, BLOCK_STONE);
+        };
+
+        auto innerWallCol = [&](int fixedCol, int rA, int rB, int ht) {
+            for (int r = rA; r <= rB; r++)
+                for (int h = baseH; h < baseH + ht && h < GRID_H; h++)
+                    setBlock(fixedCol, r, h, BLOCK_STONE);
+        };
+
+        auto doorHole = [&](int cA, int cB, int row, int ht) {
+            for (int c = cA; c <= cB; c++)
+                for (int h = baseH; h < baseH + ht; h++)
+                    setBlock(c, row, h, BLOCK_AIR);
+        };
+
+        auto doorHoleCol = [&](int col, int rA, int rB, int ht) {
+            for (int r = rA; r <= rB; r++)
+                for (int h = baseH; h < baseH + ht; h++)
+                    setBlock(col, r, h, BLOCK_AIR);
+        };
+
+        auto win = [&](int c, int r) {
+            setBlock(c, r, baseH + 3, BLOCK_GLASS);
+            setBlock(c, r, baseH + 4, BLOCK_GLASS);
+            setBlock(c, r, baseH + 5, BLOCK_GLASS);
+        };
+
+        auto torch = [&](int c, int r, int h) {
+            TorchInfo t; t.col = c; t.row = r; t.height = h;
+            torchLocations.push_back(t);
+        };
+
+        // ============ FOUNDATION + FLOOR ============
+        foundation(R0, R1, C0, C1);
+
+        // ============ OUTER WALLS ============
+        walls(R0, R1, C0, C1, wallH);
+
+        // ============ BATTLEMENTS ============
+        {
+            int bH = baseH + wallH;
+            for (int c = C0; c <= C1; c += 2) {
+                if (bH < GRID_H) { setBlock(c, R0, bH, BLOCK_STONE); setBlock(c, R1, bH, BLOCK_STONE); }
+            }
+            for (int r = R0; r <= R1; r += 2) {
+                if (bH < GRID_H) { setBlock(C0, r, bH, BLOCK_STONE); setBlock(C1, r, bH, BLOCK_STONE); }
+            }
+        }
+
+        // ============ 4 CORNER TOWERS (5x5 each, 20 blocks tall) ============
+        {
+            int tw = 4; // tower is 5x5 (0..4)
+            int tCorners[][2] = { {C0, R0}, {C1 - tw, R0}, {C0, R1 - tw}, {C1 - tw, R1 - tw} };
+            for (int t = 0; t < 4; t++) {
+                int tc = tCorners[t][0], tr = tCorners[t][1];
+                for (int r = tr; r <= tr + tw; r++)
+                    for (int c = tc; c <= tc + tw; c++) {
+                        for (int h = baseH; h < baseH + twrH && h < GRID_H; h++) {
+                            bool edge = (r == tr || r == tr + tw || c == tc || c == tc + tw);
+                            if (edge)
+                                setBlock(c, r, h, ((c + r + h) % 3 == 0) ? BLOCK_STONE_LIGHT : BLOCK_STONE);
+                            else
+                                setBlock(c, r, h, BLOCK_AIR);
+                        }
+                        // Tower cap
+                        int capH = baseH + twrH;
+                        if (capH < GRID_H) setBlock(c, r, capH, BLOCK_STONE);
+                    }
+                // Tower battlement
+                for (int c = tc; c <= tc + tw; c += 2)
+                    if (baseH + twrH + 1 < GRID_H) {
+                        setBlock(c, tr, baseH + twrH + 1, BLOCK_STONE);
+                        setBlock(c, tr + tw, baseH + twrH + 1, BLOCK_STONE);
+                    }
+                for (int r = tr; r <= tr + tw; r += 2)
+                    if (baseH + twrH + 1 < GRID_H) {
+                        setBlock(tc, r, baseH + twrH + 1, BLOCK_STONE);
+                        setBlock(tc + tw, r, baseH + twrH + 1, BLOCK_STONE);
+                    }
+                torch(tc + 2, tr + 2, baseH + twrH + 1);
+            }
+        }
+
+        // ============ GRAND ENTRANCE — south wall, 7 wide x 5 tall ============
+        {
+            int dm = (C0 + C1) / 2;
+            doorHole(dm - 3, dm + 3, R0, 5);
+            // Wood frame pillars
+            for (int h = baseH; h < baseH + 5; h++) {
+                setBlock(dm - 4, R0, h, BLOCK_WOOD);
+                setBlock(dm + 4, R0, h, BLOCK_WOOD);
+            }
+            // Arch lintel
+            for (int c = dm - 3; c <= dm + 3; c++)
+                setBlock(c, R0, baseH + 5, BLOCK_WOOD);
+            // Path outside
+            for (int r = R0 - 3; r <= R0 - 1; r++)
+                for (int c = dm - 3; c <= dm + 3; c++)
+                    setBlock(c, r, floorLevel + 1, BLOCK_SAND);
+        }
+
+        // ============ WINDOWS on all outer walls ============
+        {
+            int dm = (C0 + C1) / 2;
+            for (int c = C0 + 6; c <= C1 - 6; c += 4) {
+                if (c >= dm - 4 && c <= dm + 4) continue; // skip door
+                win(c, R0);
+            }
+            for (int c = C0 + 6; c <= C1 - 6; c += 4) win(c, R1);
+            for (int r = R0 + 6; r <= R1 - 6; r += 4) { win(C0, r); win(C1, r); }
+        }
+
+        // ============ ROOF over entire castle ============
+        {
+            int roofLvl = baseH + wallH;
+            for (int r = R0; r <= R1; r++)
+                for (int c = C0; c <= C1; c++)
+                    if (roofLvl < GRID_H)
+                        setBlock(c, r, roofLvl, BLOCK_WOOD);
+        }
+
+        // ============ INTERIOR LAYOUT ============
+        // Divide castle into rooms with internal walls:
+        //
+        //  Row R1 (north)
+        //  +-----------+-----------+
+        //  | LIBRARY   | BEDROOM   |
+        //  | (NW)      | (NE)      |
+        //  +-----+-----+-----------+
+        //  |ARMRY| THRONE ROOM     |
+        //  |(MW) | (center-east)   |
+        //  +-----+---------+-------+
+        //  |  GREAT HALL   |KITCHEN|
+        //  |  (south)      | (SE)  |
+        //  +-------[DOOR]--+-------+
+        //  Row R0 (south)
+
+        // Dividing rows
+        int divRow1 = R0 + 15;   // separates great hall / kitchen from throne room / armory
+        int divRow2 = R0 + 30;   // separates throne/armory from library/bedroom
+        // Dividing columns
+        int divCol1 = C0 + 12;   // left column split (armory width)
+        int divCol2 = C1 - 12;   // right column split (kitchen width)
+        int midCol = (C0 + C1) / 2;
+
+        // --- Horizontal walls ---
+        innerWall(divRow1, C0 + 1, C1 - 1, wallH);
+        innerWall(divRow2, C0 + 1, C1 - 1, wallH);
+
+        // --- Vertical walls ---
+        // Kitchen wall (south section, east side)
+        innerWallCol(divCol2, R0 + 1, divRow1 - 1, wallH);
+        // Armory wall (middle section, west side)
+        innerWallCol(divCol1, divRow1 + 1, divRow2 - 1, wallH);
+        // Bedroom/library divider (north section, center)
+        innerWallCol(midCol, divRow2 + 1, R1 - 1, wallH);
+
+        // --- Doorways between rooms (5 wide, 4 tall) ---
+        // Great hall -> throne room
+        doorHole(midCol - 2, midCol + 2, divRow1, 4);
+        // Throne room -> library
+        doorHole(midCol - 6, midCol - 2, divRow2, 4);
+        // Throne room -> bedroom
+        doorHole(midCol + 2, midCol + 6, divRow2, 4);
+        // Great hall -> kitchen
+        doorHoleCol(divCol2, R0 + 6, R0 + 10, 4);
+        // Throne room -> armory
+        doorHoleCol(divCol1, divRow1 + 5, divRow1 + 9, 4);
+        // Library <-> bedroom
+        doorHole(midCol - 1, midCol + 1, divRow2 + (R1 - divRow2) / 2, 4);
+
+        // ============ ROOM 1: GREAT HALL (south-west, R0+1 to divRow1-1) ============
+        {
+            int rA = R0 + 2, rB = divRow1 - 2;
+            int cA = C0 + 2, cB = divCol2 - 2;
+            int tMid = (cA + cB) / 2;
+
+            // Two long banquet tables
+            for (int tr = rA + 2; tr <= rB - 2; tr++) {
+                // Left table
+                for (int tc = tMid - 8; tc <= tMid - 4; tc++)
+                    setBlock(tc, tr, fH + 1, BLOCK_WOOD);
+                if ((tr - rA) % 4 == 0) { setBlock(tMid - 8, tr, fH, BLOCK_WOOD); setBlock(tMid - 4, tr, fH, BLOCK_WOOD); }
+                // Right table
+                for (int tc = tMid + 4; tc <= tMid + 8; tc++)
+                    setBlock(tc, tr, fH + 1, BLOCK_WOOD);
+                if ((tr - rA) % 4 == 0) { setBlock(tMid + 4, tr, fH, BLOCK_WOOD); setBlock(tMid + 8, tr, fH, BLOCK_WOOD); }
+            }
+
+            // Chairs
+            for (int tr = rA + 2; tr <= rB - 2; tr += 2) {
+                setBlock(tMid - 9, tr, fH, BLOCK_STONE_LIGHT);
+                setBlock(tMid - 3, tr, fH, BLOCK_STONE_LIGHT);
+                setBlock(tMid + 3, tr, fH, BLOCK_STONE_LIGHT);
+                setBlock(tMid + 9, tr, fH, BLOCK_STONE_LIGHT);
+            }
+
+            // Grand fireplace (west wall, center)
+            {
+                int fpR = (rA + rB) / 2;
+                for (int dr = -2; dr <= 2; dr++)
+                    for (int h = fH; h < fH + 6 && h < GRID_H; h++)
+                        setBlock(cA, fpR + dr, h, BLOCK_STONE);
+                setBlock(cA, fpR - 1, fH + 1, BLOCK_ORE_GOLD);
+                setBlock(cA, fpR, fH + 1, BLOCK_ORE_GOLD);
+                setBlock(cA, fpR + 1, fH + 1, BLOCK_ORE_GOLD);
+            }
+
+            // Carpet runner from entrance
+            for (int r = R0 + 1; r <= divRow1 - 1; r++)
+                for (int c = midCol - 2; c <= midCol + 2; c++)
+                    setBlock(c, r, floorLevel + 1, BLOCK_SAND);
+
+            // Torches
+            torch(cA + 2, rA + 1, fH + 4);
+            torch(cB - 2, rA + 1, fH + 4);
+            torch(cA + 2, rB - 1, fH + 4);
+            torch(cB - 2, rB - 1, fH + 4);
+            torch(tMid, (rA + rB) / 2, fH + 4);
+        }
+
+        // ============ ROOM 2: KITCHEN (south-east corner) ============
+        {
+            int rA = R0 + 2, rB = divRow1 - 2;
+            int cA = divCol2 + 2, cB = C1 - 2;
+
+            // Long countertop along east wall
+            for (int r = rA + 1; r <= rB - 1; r++) {
+                setBlock(cB, r, fH, BLOCK_STONE);
+                setBlock(cB, r, fH + 1, BLOCK_STONE_LIGHT);
+            }
+            // Furnaces (emissive)
+            setBlock(cB, rA + 3, fH + 1, BLOCK_ORE_GOLD);
+            setBlock(cB, rA + 7, fH + 1, BLOCK_ORE_GOLD);
+
+            // Center prep table
+            int kMid = (cA + cB) / 2;
+            int kMidR = (rA + rB) / 2;
+            for (int c = kMid - 2; c <= kMid + 2; c++)
+                setBlock(c, kMidR, fH + 1, BLOCK_WOOD);
+            setBlock(kMid - 2, kMidR, fH, BLOCK_WOOD);
+            setBlock(kMid + 2, kMidR, fH, BLOCK_WOOD);
+
+            // Barrels (wood)
+            for (int c = cA; c <= cA + 3; c++) {
+                setBlock(c, rB, fH, BLOCK_WOOD);
+                if (c % 2 == 0) setBlock(c, rB, fH + 1, BLOCK_WOOD);
+            }
+
+            torch(kMid, rA + 1, fH + 4);
+            torch(kMid, rB - 1, fH + 4);
+        }
+
+        // ============ ROOM 3: THRONE ROOM (center) ============
+        {
+            int rA = divRow1 + 2, rB = divRow2 - 2;
+            int cA = divCol1 + 2, cB = C1 - 2;
+            int tMid = (cA + cB) / 2;
+            int tMidR = (rA + rB) / 2;
+
+            // Throne (elevated platform with gold accents)
+            for (int c = tMid - 2; c <= tMid + 2; c++)
+                for (int r = rB - 3; r <= rB - 1; r++) {
+                    setBlock(c, r, fH, BLOCK_STONE);       // platform
+                    setBlock(c, r, fH + 1, BLOCK_STONE);   // raised
+                }
+            // Throne chair
+            setBlock(tMid, rB - 2, fH + 2, BLOCK_WOOD);
+            setBlock(tMid, rB - 2, fH + 3, BLOCK_WOOD);   // back
+            setBlock(tMid - 1, rB - 2, fH + 2, BLOCK_WOOD);
+            setBlock(tMid + 1, rB - 2, fH + 2, BLOCK_WOOD);
+            // Gold accents
+            setBlock(tMid - 1, rB - 2, fH + 3, BLOCK_ORE_GOLD);
+            setBlock(tMid + 1, rB - 2, fH + 3, BLOCK_ORE_GOLD);
+
+            // Red carpet to throne
+            for (int r = rA; r <= rB - 4; r++)
+                for (int c = tMid - 1; c <= tMid + 1; c++)
+                    setBlock(c, r, floorLevel + 1, BLOCK_SAND);
+
+            // Pillars (stone columns, 2x2 at regular intervals)
+            for (int r = rA + 3; r <= rB - 5; r += 6) {
+                for (int h = fH; h < baseH + wallH - 1 && h < GRID_H; h++) {
+                    setBlock(cA + 3, r, h, BLOCK_STONE);
+                    setBlock(cB - 3, r, h, BLOCK_STONE);
+                }
+            }
+
+            // Diamond ore display stands
+            setBlock(tMid - 5, rB - 2, fH, BLOCK_STONE);
+            setBlock(tMid - 5, rB - 2, fH + 1, BLOCK_ORE_DIAMOND);
+            setBlock(tMid + 5, rB - 2, fH, BLOCK_STONE);
+            setBlock(tMid + 5, rB - 2, fH + 1, BLOCK_ORE_DIAMOND);
+
+            torch(cA + 2, rA + 1, fH + 4);
+            torch(cB - 2, rA + 1, fH + 4);
+            torch(cA + 2, rB - 1, fH + 4);
+            torch(cB - 2, rB - 1, fH + 4);
+            torch(tMid, tMidR, fH + 4);
+        }
+
+        // ============ ROOM 4: ARMORY (middle-west) ============
+        {
+            int rA = divRow1 + 2, rB = divRow2 - 2;
+            int cA = C0 + 2, cB = divCol1 - 2;
+
+            // Weapon racks along walls (wood + stone)
+            for (int r = rA + 1; r <= rB - 1; r += 2) {
+                setBlock(cA, r, fH, BLOCK_WOOD);
+                setBlock(cA, r, fH + 1, BLOCK_STONE);
+                setBlock(cA, r, fH + 2, BLOCK_STONE_LIGHT);
+            }
+
+            // Armor stands (center)
+            int aMid = (cA + cB) / 2;
+            for (int r = rA + 3; r <= rB - 3; r += 4) {
+                setBlock(aMid, r, fH, BLOCK_STONE);
+                setBlock(aMid, r, fH + 1, BLOCK_STONE_LIGHT);
+                setBlock(aMid, r, fH + 2, BLOCK_STONE_LIGHT);
+            }
+
+            // Anvil (stone + ore)
+            setBlock(cB - 1, (rA + rB) / 2, fH, BLOCK_STONE);
+            setBlock(cB - 1, (rA + rB) / 2, fH + 1, BLOCK_ORE_GOLD);
+
+            torch(aMid, rA + 1, fH + 4);
+            torch(aMid, rB - 1, fH + 4);
+        }
+
+        // ============ ROOM 5: LIBRARY (north-west) ============
+        {
+            int rA = divRow2 + 2, rB = R1 - 2;
+            int cA = C0 + 2, cB = midCol - 2;
+
+            // Floor-to-ceiling bookshelves along north and west walls
+            for (int c = cA; c <= cB; c++) {
+                for (int h = fH; h <= fH + 4 && h < GRID_H; h++)
+                    setBlock(c, rB, h, BLOCK_WOOD);
+            }
+            for (int r = rA + 1; r <= rB - 1; r++) {
+                for (int h = fH; h <= fH + 4 && h < GRID_H; h++)
+                    setBlock(cA, r, h, BLOCK_WOOD);
+            }
+
+            // Reading tables (2 tables)
+            int lMid = (cA + cB) / 2;
+            int lMidR = (rA + rB) / 2;
+            for (int c = lMid - 3; c <= lMid + 3; c++) {
+                setBlock(c, lMidR - 2, fH + 1, BLOCK_WOOD);
+                setBlock(c, lMidR + 2, fH + 1, BLOCK_WOOD);
+            }
+            // Table legs
+            setBlock(lMid - 3, lMidR - 2, fH, BLOCK_WOOD); setBlock(lMid + 3, lMidR - 2, fH, BLOCK_WOOD);
+            setBlock(lMid - 3, lMidR + 2, fH, BLOCK_WOOD); setBlock(lMid + 3, lMidR + 2, fH, BLOCK_WOOD);
+
+            // Chairs
+            for (int c = lMid - 2; c <= lMid + 2; c += 2) {
+                setBlock(c, lMidR - 3, fH, BLOCK_STONE_LIGHT);
+                setBlock(c, lMidR + 3, fH, BLOCK_STONE_LIGHT);
+            }
+
+            // Globe (diamond ore on pedestal)
+            setBlock(cB - 1, rA + 2, fH, BLOCK_STONE);
+            setBlock(cB - 1, rA + 2, fH + 1, BLOCK_ORE_DIAMOND);
+
+            torch(lMid, rA + 1, fH + 4);
+            torch(lMid, rB - 1, fH + 4);
+            torch(cA + 2, lMidR, fH + 4);
+        }
+
+        // ============ ROOM 6: BEDROOM (north-east) ============
+        {
+            int rA = divRow2 + 2, rB = R1 - 2;
+            int cA = midCol + 2, cB = C1 - 2;
+            int bMid = (cA + cB) / 2;
+            int bMidR = (rA + rB) / 2;
+
+            // Large king bed (5x3, against north wall)
+            for (int c = bMid - 2; c <= bMid + 2; c++)
+                for (int r = rB - 3; r <= rB - 1; r++)
+                    setBlock(c, r, fH, BLOCK_LEAF);
+            // Headboard
+            for (int c = bMid - 2; c <= bMid + 2; c++) {
+                setBlock(c, rB - 1, fH + 1, BLOCK_WOOD);
+                setBlock(c, rB - 1, fH + 2, BLOCK_WOOD);
+            }
+
+            // Nightstands with lamps
+            setBlock(bMid - 3, rB - 2, fH, BLOCK_WOOD);
+            setBlock(bMid - 3, rB - 2, fH + 1, BLOCK_ORE_GOLD);
+            setBlock(bMid + 3, rB - 2, fH, BLOCK_WOOD);
+            setBlock(bMid + 3, rB - 2, fH + 1, BLOCK_ORE_GOLD);
+
+            // Wardrobe (east wall)
+            for (int r = bMidR - 2; r <= bMidR + 2; r++) {
+                setBlock(cB, r, fH, BLOCK_WOOD);
+                setBlock(cB, r, fH + 1, BLOCK_WOOD);
+                setBlock(cB, r, fH + 2, BLOCK_WOOD);
+            }
+
+            // Desk and chair
+            for (int c = cA + 1; c <= cA + 4; c++)
+                setBlock(c, rA + 2, fH + 1, BLOCK_WOOD);
+            setBlock(cA + 1, rA + 2, fH, BLOCK_WOOD);
+            setBlock(cA + 4, rA + 2, fH, BLOCK_WOOD);
+            setBlock(cA + 2, rA + 3, fH, BLOCK_STONE_LIGHT);
+
+            // Rug in center (sand floor)
+            for (int r = bMidR - 2; r <= bMidR + 2; r++)
+                for (int c = bMid - 3; c <= bMid + 3; c++)
+                    setBlock(c, r, floorLevel + 1, BLOCK_SAND);
+
+            torch(bMid, rA + 1, fH + 4);
+            torch(bMid, bMidR, fH + 4);
+            torch(cA + 2, rB - 1, fH + 4);
+        }
+
+        printf("[Castle] Built at col %d..%d, row %d..%d (%dx%d), walls=%d, towers=%d\n",
+               C0, C1, R0, R1, C1 - C0 + 1, R1 - R0 + 1, wallH, twrH);
     }
 }
 
@@ -1707,13 +2171,52 @@ void updateCameraVectors() {
 // =====================================================
 // Key handling
 // =====================================================
-// Helper: get ground Y at a world XZ position (interpolated)
-float getGroundYWorld(float wx, float wz) {
+// Helper: convert world XZ to grid col/row
+void worldToColRow(float wx, float wz, int &col, int &row) {
     float zSpacing = HEX_RADIUS * 1.5f;
     float xSpacing = HEX_RADIUS * 2.0f * 0.866f;
-    int row = (int)roundf(wz / zSpacing);
+    row = (int)roundf(wz / zSpacing);
     float xOff = (abs(row) % 2 == 1) ? (xSpacing * 0.5f) : 0.0f;
-    int col = (int)roundf((wx - xOff) / xSpacing);
+    col = (int)roundf((wx - xOff) / xSpacing);
+}
+
+// Y-aware ground: find highest solid block BELOW the player's feet
+// This lets the player walk inside buildings instead of being teleported to the roof
+float getGroundYAtHeight(int col, int row, float currentY) {
+    int playerH = (int)floorf(currentY / HEX_HEIGHT); // block height at player's feet
+    // Search downward from player's feet to find the first solid block below
+    for (int h = playerH; h >= 0; h--) {
+        if (getBlock(col, row, h) != BLOCK_AIR) {
+            return (float)(h + 1) * HEX_HEIGHT;
+        }
+    }
+    // Fallback: nothing below, return 0
+    return 0.0f;
+}
+
+// Check if a block at (col, row, h) is solid (not air, not water)
+bool isSolid(int col, int row, int h) {
+    int bt = getBlock(col, row, h);
+    return bt != BLOCK_AIR && bt != BLOCK_WATER;
+}
+
+// Check if player can stand at world position (wx, wz) at current height
+// Player occupies 2 blocks vertically (feet + head)
+bool canMoveTo(float wx, float wz, float currentY) {
+    int col, row;
+    worldToColRow(wx, wz, col, row);
+    int feetH = (int)floorf(currentY / HEX_HEIGHT);
+    int headH = feetH + 1;
+    // If there's a solid block at feet or head height, can't move there
+    if (isSolid(col, row, feetH)) return false;
+    if (isSolid(col, row, headH)) return false;
+    return true;
+}
+
+// Legacy: get ground Y at a world XZ (uses highest block — for objects, not player)
+float getGroundYWorld(float wx, float wz) {
+    int col, row;
+    worldToColRow(wx, wz, col, row);
     return getGroundY(col, row);
 }
 
@@ -1746,8 +2249,18 @@ void processInput(GLFWwindow* window) {
 
         if (glm::length(moveDir) > 0.001f) {
             moveDir = glm::normalize(moveDir);
-            playerWorldPos.x += moveDir.x * pSpeed;
-            playerWorldPos.z += moveDir.z * pSpeed;
+            float newX = playerWorldPos.x + moveDir.x * pSpeed;
+            float newZ = playerWorldPos.z + moveDir.z * pSpeed;
+            // Horizontal collision: check if destination is walkable
+            // Try full move first, then axis-separated (wall sliding)
+            if (canMoveTo(newX, newZ, playerWorldPos.y)) {
+                playerWorldPos.x = newX;
+                playerWorldPos.z = newZ;
+            } else if (canMoveTo(newX, playerWorldPos.z, playerWorldPos.y)) {
+                playerWorldPos.x = newX; // slide along Z wall
+            } else if (canMoveTo(playerWorldPos.x, newZ, playerWorldPos.y)) {
+                playerWorldPos.z = newZ; // slide along X wall
+            }
             // Face movement direction
             playerYaw = atan2f(moveDir.z, moveDir.x);
         }
@@ -1762,12 +2275,16 @@ void processInput(GLFWwindow* window) {
         playerVelY -= 15.0f * deltaTime;
         playerWorldPos.y += playerVelY * deltaTime;
 
-        // Ground collision
-        float groundY = getGroundYWorld(playerWorldPos.x, playerWorldPos.z);
-        if (playerWorldPos.y <= groundY) {
-            playerWorldPos.y = groundY;
-            playerVelY = 0.0f;
-            playerOnGround = true;
+        // Ground collision — Y-aware: finds ground below player, not roof above
+        {
+            int col, row;
+            worldToColRow(playerWorldPos.x, playerWorldPos.z, col, row);
+            float groundY = getGroundYAtHeight(col, row, playerWorldPos.y);
+            if (playerWorldPos.y <= groundY) {
+                playerWorldPos.y = groundY;
+                playerVelY = 0.0f;
+                playerOnGround = true;
+            }
         }
 
         // Walk animation timer
