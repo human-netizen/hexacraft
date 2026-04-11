@@ -1,0 +1,8 @@
+{
+	"parent": "minecraft:block/warped_trapdoor_open",
+	"textures": {
+		"0": "chipped:block/dark_oak_trapdoor/distorted_dark_oak_trapdoor",
+		"texture": "chipped:block/dark_oak_trapdoor/distorted_dark_oak_trapdoor",		
+		"particle": "chipped:block/dark_oak_trapdoor/distorted_dark_oak_trapdoor"
+	}
+}

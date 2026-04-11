@@ -27,6 +27,9 @@ uniform bool specularOn;
 uniform bool isEmissive;
 uniform vec3 emissiveColor;
 
+// HUD Rendering
+uniform bool isHUD;
+
 // Directional light
 uniform vec3 dirLightDir;
 uniform vec3 dirLightColor;
@@ -77,6 +80,15 @@ void main()
         objColor = texColor * objectColor;
     }
 
+    // HUD objects draw exactly their color/texture with no lighting or fog.
+    // textureMode > 0: use objColor (has texture applied).
+    // textureMode == 0: use per-vertex color — isometric face shading is baked there.
+    if (isHUD) {
+        vec3 hudColor = (textureMode == 0) ? vertexColor : objColor;
+        FragColor = vec4(hudColor, alpha);
+        return;
+    }
+
     // Emissive objects always glow
     if (isEmissive) {
         float pulse = 0.8 + 0.2 * sin(time * 3.0);
@@ -84,7 +96,7 @@ void main()
         float dist = length(viewPos - FragPos);
         float fogFactor = clamp(exp(-fogDensity * dist * dist), 0.0, 1.0);
         emResult = mix(fogColor, emResult, fogFactor);
-        FragColor = vec4(emResult, 1.0);
+        FragColor = vec4(emResult, alpha);
         return;
     }
 

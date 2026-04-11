@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:block/template_flat_sided_trapdoor_top",
+	"textures": {
+		"texture": "chipped:block/acacia_trapdoor/twisted_acacia_trapdoor",		
+		"side": "chipped:block/acacia_trapdoor/pointless_acacia_trapdoor_side"
+	}
+}

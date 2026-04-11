@@ -1,0 +1,14 @@
+{
+    "variants": {
+        "normal": [
+            { "model": "coarse_dirt" },
+            { "model": "coarse_dirt", "x": 180 },
+            { "model": "coarse_dirt", "y": 90 },
+            { "model": "coarse_dirt", "y": 90, "x": 180 },
+            { "model": "coarse_dirt", "y": 180 },
+            { "model": "coarse_dirt", "y": 180, "x": 180 },
+            { "model": "coarse_dirt", "y": 270 },
+            { "model": "coarse_dirt", "y": 270, "x": 180 }
+        ]
+    }
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "modern_industrialization:block/tungsten_ore",
+    "textures": {
+		"particle": "modern_industrialization:block/deepslate_tungsten_ore",
+        "0": "modern_industrialization:block/deepslate_tungsten_ore"
+    }
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "modern_industrialization:block/lead_ore",
+    "textures": {
+		"particle": "modern_industrialization:block/titanium_ore",
+        "0": "modern_industrialization:block/titanium_ore"
+    }
+}

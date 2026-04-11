@@ -1,0 +1,12 @@
+{
+    "parent": "block/cube",
+    "textures": {
+        "particle": "block/empire_carver_pumpkin",
+        "down": "block/empire_carver_pumpkin_bottom",
+        "up": "block/empire_carver_pumpkin_top",
+        "north": "block/empire_carver_pumpkin",
+        "east": "block/empire_carver_pumpkin_side",
+        "south": "block/empire_carver_pumpkin_side",
+        "west": "block/empire_carver_pumpkin_side"
+    }
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/platinum_ore",
+    "textures": {
+		"0": "alltheores:block/other_platinum_ore",
+		"particle": "alltheores:block/other_platinum_ore"
+    }
+}

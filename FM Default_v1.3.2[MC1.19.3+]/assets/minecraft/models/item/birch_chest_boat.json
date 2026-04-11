@@ -1,0 +1,7 @@
+{
+    "parent": "item/chest_boat",
+	"textures": {
+		"texture": "item/chest_boat/birch",
+		"particle": "item/birch_boat"
+	}
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/diamond_ore",
+  "textures": {
+    "0": "aether:block/natural/gravitite_ore",
+	"particle": "aether:block/natural/gravitite_ore"
+  }
+}

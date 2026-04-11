@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/peridot_ore",
+  "textures": {
+    "0": "silentgems:block/end_peridot_ore",
+    "particle": "silentgems:block/end_peridot_ore"
+  }
+}

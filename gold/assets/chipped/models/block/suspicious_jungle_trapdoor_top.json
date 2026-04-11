@@ -1,0 +1,8 @@
+{
+	"parent": "minecraft:block/crimson_trapdoor_top",
+	"textures": {
+		"0": "chipped:block/jungle_trapdoor/suspicious_jungle_trapdoor",
+		"texture": "chipped:block/jungle_trapdoor/suspicious_jungle_trapdoor",		
+		"particle": "chipped:block/jungle_trapdoor/suspicious_jungle_trapdoor"
+	}
+}

@@ -1,0 +1,150 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "railcraft:block/launcher_track_on",
+		"rail": "railcraft:block/launcher_track_on"
+	},
+	"elements": [
+		{
+			"name": "Railing_1",
+			"from": [4.999, 0.001, 0],
+			"to": [5.999, 1.001, 3.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [5, 0, 6, 1], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [5, 0, 6, 3], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 2, 6, 3], "texture": "#rail"},
+				"west": {"uv": [5, 0, 6, 3], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 0, 6, 3], "texture": "#rail"},
+				"down": {"uv": [5, 3, 6, 0], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Railing_2",
+			"from": [5.999, 0.001, 0],
+			"to": [7.001, 1.001, 4.999],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [6, 0, 7, 1], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [6, 0, 7, 5], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 4, 7, 5], "texture": "#rail"},
+				"west": {"uv": [6, 0, 7, 5], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 0, 7, 5], "texture": "#rail"},
+				"down": {"uv": [6, 5, 7, 0], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Railing_3",
+			"from": [8.999, 0.001, 0],
+			"to": [10.001, 1.001, 4.999],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [9, 0, 10, 1], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 0, 10, 5], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [9, 4, 10, 5], "texture": "#rail"},
+				"west": {"uv": [9, 0, 10, 5], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [9, 0, 10, 5], "texture": "#rail"},
+				"down": {"uv": [9, 5, 10, 0], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Railing_4",
+			"from": [10.001, 0.001, 0],
+			"to": [11.001, 1.001, 3.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [10, 0, 11, 1], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 0, 11, 3], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [10, 2, 11, 3], "texture": "#rail"},
+				"west": {"uv": [10, 0, 11, 3], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [10, 0, 11, 3], "texture": "#rail"},
+				"down": {"uv": [10, 3, 11, 0], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Railing_5",
+			"from": [4.999, 0.001, 12.999],
+			"to": [5.999, 1.001, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [5, 13, 6, 14], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [5, 13, 6, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 15, 6, 16], "texture": "#rail"},
+				"west": {"uv": [5, 13, 6, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 13, 6, 16], "texture": "#rail"},
+				"down": {"uv": [5, 16, 6, 13], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Railing_6",
+			"from": [5.999, 0.001, 10.999],
+			"to": [7.001, 1.001, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [6, 11, 7, 12], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [6, 11, 7, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 15, 7, 16], "texture": "#rail"},
+				"west": {"uv": [6, 11, 7, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 11, 7, 16], "texture": "#rail"},
+				"down": {"uv": [6, 16, 7, 11], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Railing_7",
+			"from": [8.999, 0.001, 10.999],
+			"to": [10.001, 1.001, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [9, 11, 10, 12], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 11, 10, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [9, 15, 10, 16], "texture": "#rail"},
+				"west": {"uv": [9, 11, 10, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [9, 11, 10, 16], "texture": "#rail"},
+				"down": {"uv": [9, 16, 10, 11], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Railing_8",
+			"from": [10, 0.001, 12.999],
+			"to": [11.001, 1.001, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [10, 13, 11, 14], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 13, 11, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [10, 15, 11, 16], "texture": "#rail"},
+				"west": {"uv": [10, 13, 11, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [10, 13, 11, 16], "texture": "#rail"},
+				"down": {"uv": [10, 16, 11, 13], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Platform",
+			"from": [5.999, 0.002, 5.999],
+			"to": [10.001, 1.502, 10.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [6, 6, 10, 7], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 6, 10, 10], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 9, 10, 10], "texture": "#rail"},
+				"west": {"uv": [6, 6, 7, 10], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 6, 10, 10], "texture": "#rail"}
+			}
+		},
+		{
+			"name": "PlatformBase",
+			"from": [4.999, 0.001, 4.999],
+			"to": [11.001, 1.001, 11.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [5, 5, 11, 6], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 5, 11, 11], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 10, 11, 11], "texture": "#rail"},
+				"west": {"uv": [5, 5, 6, 11], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 5, 11, 11], "texture": "#rail"},
+				"down": {"uv": [5, 11, 11, 5], "texture": "#rail", "cullface": "down"}
+			}
+		}
+	]
+}

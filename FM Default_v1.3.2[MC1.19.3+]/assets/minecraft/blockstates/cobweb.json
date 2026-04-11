@@ -1,0 +1,14 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/cobweb" },
+            { "model": "block/cobweb", "x": 180 },
+            { "model": "block/cobweb", "y": 90 },
+            { "model": "block/cobweb", "y": 90, "x": 180 },
+            { "model": "block/cobweb", "y": 180 },
+            { "model": "block/cobweb", "y": 180, "x": 180 },
+            { "model": "block/cobweb", "y": 270 },
+            { "model": "block/cobweb", "y": 270, "x": 180 }
+        ]
+    }
+}

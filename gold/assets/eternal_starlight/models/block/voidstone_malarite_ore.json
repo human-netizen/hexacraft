@@ -1,0 +1,7 @@
+{
+  "parent": "eternal_starlight:block/grimstone_malarite_ore",
+  "textures": {
+    "0": "eternal_starlight:block/voidstone_malarite_ore",
+    "particle": "eternal_starlight:block/voidstone_malarite_ore"
+  }
+}

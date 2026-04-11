@@ -1,0 +1,26 @@
+{
+	"____comment": "Colors are in #RRGGBB format",
+	"quark.misc.saturation0": "Fulfilling Meal",
+	"quark.misc.saturation1": "Hearty Meal",
+	"quark.misc.saturation2": "Meal",
+	"quark.misc.saturation3": "Light Meal",
+	"quark.misc.saturation4": "Light Snack",
+	"quark.misc.saturation5": "Full-Course Meal",
+	"quark.misc.bad_saturation0": "Worryingly Fulfilling",
+	"quark.misc.bad_saturation1": "Disturbingly Hearty",
+	"quark.misc.bad_saturation2": "Ill-Advised Meal",
+	"quark.misc.bad_saturation3": "Questionable Rations",
+	"quark.misc.bad_saturation4": "Disgusting Snack",
+	"quark.misc.bad_saturation5": "Dangerously Tantalizing",
+
+	"item.quark.slime_in_a_bucket": "Bucket of Slime",
+	"item.quark.slime_in_a_bucket.named": "Bucket of %s",
+	"item.minecraft.potion.effect.quark.resilience": "Potion of Stability",
+	"item.minecraft.splash_potion.effect.quark.resilience": "Splash Potion of Stability",
+	"item.minecraft.lingering_potion.effect.quark.resilience": "Lingering Potion of Stability",
+	"item.minecraft.tipped_arrow.effect.quark.resilience": "Arrow of Stability",
+	"item.minecraft.potion.effect.quark.resistance": "Potion of Fortitude",
+	"item.minecraft.splash_potion.effect.quark.resistance": "Splash Potion of Fortitude",
+	"item.minecraft.lingering_potion.effect.quark.resistance": "Lingering Potion of Fortitude",
+	"item.minecraft.tipped_arrow.effect.quark.resistance": "Arrow of Fortitude"
+}

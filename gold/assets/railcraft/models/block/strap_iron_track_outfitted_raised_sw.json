@@ -1,0 +1,8 @@
+{
+  "parent": "railcraft:block/rail_outfitted_raised_sw",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/strap_iron_track_outfitted",
+    "particle": "railcraft:block/strap_iron_track_outfitted"
+  }
+}

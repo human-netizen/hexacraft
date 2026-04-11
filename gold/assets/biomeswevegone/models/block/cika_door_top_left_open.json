@@ -1,0 +1,103 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "biomeswevegone:block/cika/door_top",
+		"top": "biomeswevegone:block/cika/door_top",
+		"side": "biomeswevegone:block/cika/door_side"
+	},
+	"elements": [
+		{
+			"name": "Top",
+			"from": [0, 12, 5],
+			"to": [3, 16, 12],
+			"faces": {
+				"east": {"uv": [4, 0, 11, 4], "texture": "#top"},
+				"west": {"uv": [11, 0, 4, 4], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 4, 15, 11], "rotation": 180, "texture": "#side", "cullface": "up"},
+				"down": {"uv": [12, 4, 15, 11], "rotation": 180, "texture": "#side"}
+			}
+		},
+		{
+			"name": "Left",
+			"from": [0, 0, 12],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [9, 0, 12, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 4, 16], "texture": "#top"},
+				"south": {"uv": [6, 0, 3, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [4, 0, 0, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 0, 15, 4], "rotation": 180, "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "Right",
+			"from": [0, 0, 0],
+			"to": [3, 16, 5],
+			"faces": {
+				"north": {"uv": [9, 0, 12, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [11, 0, 16, 16], "texture": "#top"},
+				"south": {"uv": [12, 0, 9, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 11, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 11, 15, 16], "rotation": 180, "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "IronBars1",
+			"from": [1, 0, 9],
+			"to": [2, 12, 11],
+			"faces": {
+				"north": {"uv": [6, 4, 7, 16], "texture": "#top"},
+				"east": {"uv": [5, 4, 7, 16], "texture": "#top"},
+				"south": {"uv": [5, 4, 6, 16], "texture": "#top"},
+				"west": {"uv": [7, 4, 5, 16], "texture": "#top", "cullface": "west"}
+			}
+		},
+		{
+			"name": "IronBars2",
+			"from": [1, 0, 6],
+			"to": [2, 12, 8],
+			"faces": {
+				"north": {"uv": [6, 4, 7, 16], "texture": "#top"},
+				"east": {"uv": [5, 4, 7, 16], "texture": "#top"},
+				"south": {"uv": [5, 4, 6, 16], "texture": "#top"},
+				"west": {"uv": [7, 4, 5, 16], "texture": "#top", "cullface": "west"}
+			}
+		},
+		{
+			"name": "IronBars3",
+			"from": [1, 1, 11],
+			"to": [2, 3, 12],
+			"faces": {
+				"east": {"uv": [4, 13, 5, 15], "texture": "#top"},
+				"west": {"uv": [5, 13, 4, 15], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [4, 13, 5, 14], "rotation": 180, "texture": "#top"},
+				"down": {"uv": [4, 14, 5, 15], "rotation": 180, "texture": "#top"}
+			}
+		},
+		{
+			"name": "IronBars4",
+			"from": [1, 4, 8],
+			"to": [2, 6, 9],
+			"faces": {
+				"east": {"uv": [7, 10, 8, 12], "texture": "#top"},
+				"west": {"uv": [8, 10, 7, 12], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [7, 10, 8, 11], "rotation": 180, "texture": "#top"},
+				"down": {"uv": [7, 11, 8, 12], "rotation": 180, "texture": "#top"}
+			}
+		},
+		{
+			"name": "IronBars5",
+			"from": [1, 8, 5],
+			"to": [2, 10, 6],
+			"faces": {
+				"east": {"uv": [10, 6, 11, 8], "texture": "#top"},
+				"west": {"uv": [11, 6, 10, 8], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [10, 6, 11, 7], "rotation": 180, "texture": "#top"},
+				"down": {"uv": [10, 7, 11, 8], "rotation": 180, "texture": "#top"}
+			}
+		}
+	]
+}

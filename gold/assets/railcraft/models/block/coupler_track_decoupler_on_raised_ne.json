@@ -1,0 +1,10 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"parent": "railcraft:block/coupler_track_decoupler_raised_ne",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "railcraft:block/coupler_track_decoupler_on",
+		"rail": "railcraft:block/coupler_track_decoupler_on"
+	}
+}

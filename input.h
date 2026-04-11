@@ -21,10 +21,18 @@ float getGroundYAtHeight(int col, int row, float currentY) {
     return 0.0f;
 }
 
-// Check if a block at (col, row, h) is solid (not air, not water)
+// Check if a block at (col, row, h) is solid for collision
 bool isSolid(int col, int row, int h) {
     int bt = getBlock(col, row, h);
-    return bt != BLOCK_AIR && bt != BLOCK_WATER;
+    if (bt == BLOCK_AIR || bt == BLOCK_WATER) return false;
+    BlockProperties props = getBlockProps(bt);
+    if (!props.isSolid) return false;
+    // Open interactive blocks (doors, trapdoors, fence gates) are passable
+    if (props.isInteractive) {
+        uint16_t state = getBlockState(col, row, h);
+        if ((state >> 2) & 1) return false; // open = not solid
+    }
+    return true;
 }
 
 // Check if player can stand at world position (wx, wz) at current height
@@ -96,12 +104,37 @@ void breakBlock() {
     printf("[Block] Broke block at (%d, %d, %d)\n", targetCol, targetRow, targetHeight);
 }
 
+// Convert player yaw to 4-direction facing (0=+Z, 1=+X, 2=-Z, 3=-X)
+int yawToFacing(float yaw) {
+    // yaw is atan2(z, x); normalize to [0, 2PI)
+    float a = fmodf(yaw + 2.0f * PI, 2.0f * PI);
+    // split into 4 quadrants
+    if (a < PI * 0.25f || a >= PI * 1.75f) return 0;
+    if (a < PI * 0.75f) return 1;
+    if (a < PI * 1.25f) return 2;
+    return 3;
+}
+
 void placeBlock() {
     if (!hasTarget) return;
     if (!gridInBounds(placeCol, placeRow, placeHeight)) return;
     if (getBlock(placeCol, placeRow, placeHeight) != BLOCK_AIR) return;
-    setBlock(placeCol, placeRow, placeHeight, hotbarBlocks[hotbarSlot]);
-    printf("[Block] Placed %d at (%d, %d, %d)\n", hotbarBlocks[hotbarSlot], placeCol, placeRow, placeHeight);
+    int bt = playerInventory[hotbarSlot].type;
+    if (bt == BLOCK_AIR || playerInventory[hotbarSlot].count <= 0) return;
+
+    setBlock(placeCol, placeRow, placeHeight, bt);
+    playerInventory[hotbarSlot].count--;
+    if (playerInventory[hotbarSlot].count <= 0) playerInventory[hotbarSlot].type = BLOCK_AIR;
+
+    // Set initial facing state for directional blocks
+    BlockProperties props = getBlockProps(bt);
+    if (props.shape == SHAPE_DOOR || props.shape == SHAPE_TRAPDOOR
+        || props.shape == SHAPE_STAIR || props.shape == SHAPE_FENCE
+        || props.shape == SHAPE_FLAT_PANEL) {
+        uint16_t state = yawToFacing(playerYaw) & 3;
+        setBlockState(placeCol, placeRow, placeHeight, state);
+    }
+    printf("[Block] Placed %d at (%d, %d, %d)\n", bt, placeCol, placeRow, placeHeight);
 }
 
 // =====================================================
@@ -163,27 +196,28 @@ void drawMob(const Mob& m, float time) {
         drawHex(p + glm::vec3(-0.15f, 0.1f, 0.15f), darkPink, glm::vec3(0.06f, 0.15f, 0.06f));
         drawHex(p + glm::vec3(-0.15f, 0.1f, -0.15f), darkPink, glm::vec3(0.06f, 0.15f, 0.06f));
     } else if (m.type == MOB_ZOMBIE) {
-        // Green humanoid
+        // Green humanoid — same proportions as player (1.8 blocks tall)
         float bob = sinf(m.walkTime * 3.5f) * 0.04f;
         glm::vec3 zGreen(0.3f, 0.5f, 0.2f);
         glm::vec3 zDark(0.2f, 0.35f, 0.15f);
-        // Body
-        drawHex(p + glm::vec3(0, 0.6f + bob, 0), zGreen, glm::vec3(0.3f, 0.45f, 0.2f));
+        glm::vec3 zShirt(0.25f, 0.4f, 0.3f);
+        // Body (torso)
+        drawHex(p + glm::vec3(0, 0.975f + bob, 0), zShirt, glm::vec3(0.40f, 0.65f, 0.25f));
         // Head
-        drawHex(p + glm::vec3(0, 1.1f + bob, 0), zDark, glm::vec3(0.22f, 0.22f, 0.22f));
-        // Arms (outstretched forward)
+        drawHex(p + glm::vec3(0, 1.55f + bob, 0), zDark, glm::vec3(0.35f, 0.45f, 0.35f));
+        // Arms (outstretched forward — zombie pose)
         float armSwing = sinf(m.walkTime * 3.5f) * 0.15f;
-        drawHex(p + glm::vec3(0.35f, 0.7f + bob, armSwing), zGreen, glm::vec3(0.08f, 0.35f, 0.08f));
-        drawHex(p + glm::vec3(-0.35f, 0.7f + bob, -armSwing), zGreen, glm::vec3(0.08f, 0.35f, 0.08f));
+        drawHex(p + glm::vec3(0.35f, 0.85f + bob, 0.2f + armSwing), zGreen, glm::vec3(0.14f, 0.55f, 0.14f));
+        drawHex(p + glm::vec3(-0.35f, 0.85f + bob, 0.2f - armSwing), zGreen, glm::vec3(0.14f, 0.55f, 0.14f));
         // Legs
-        float legSwing = sinf(m.walkTime * 3.5f) * 0.1f;
-        drawHex(p + glm::vec3(0.1f, 0.15f, legSwing), zDark, glm::vec3(0.1f, 0.25f, 0.1f));
-        drawHex(p + glm::vec3(-0.1f, 0.15f, -legSwing), zDark, glm::vec3(0.1f, 0.25f, 0.1f));
+        float legSwing = sinf(m.walkTime * 3.5f) * 0.12f;
+        drawHex(p + glm::vec3(0.12f, 0.325f, legSwing), zDark, glm::vec3(0.15f, 0.55f, 0.15f));
+        drawHex(p + glm::vec3(-0.12f, 0.325f, -legSwing), zDark, glm::vec3(0.15f, 0.55f, 0.15f));
 
         // Health bar above head if damaged
         if (m.health < m.maxHealth) {
             float hFrac = m.health / m.maxHealth;
-            drawHex(p + glm::vec3(0, 1.5f, 0), glm::vec3(0.8f, 0.1f, 0.1f), glm::vec3(0.3f * hFrac, 0.04f, 0.04f));
+            drawHex(p + glm::vec3(0, 2.0f, 0), glm::vec3(0.8f, 0.1f, 0.1f), glm::vec3(0.3f * hFrac, 0.04f, 0.04f));
         }
     }
 }
@@ -516,38 +550,38 @@ void renderObjects(float time) {
         drawPlayer(playerWorldPos, time, playerYaw, playerWalking, playerWalkTime);
     }
 
-    // Fan — inside castle great hall
-    int fCol = -5, fRow = 18;
+    // Fan — inside castle keep (great hall area)
+    int fCol = -15, fRow = 5;
     glm::vec3 fanPos = hexGridPos(fCol, fRow, 0.0f);
     fanPos.y = getGroundY(fCol, fRow);
     drawFan(fanPos);
 
-    // Door — castle great hall to throne room doorway
-    int dCol = 2, dRow = 27;
+    // Door — castle keep entrance doorway
+    int dCol = -11, dRow = 13;
     glm::vec3 doorPos = hexGridPos(dCol, dRow, 0.0f);
     doorPos.y = getGroundY(dCol, dRow);
     drawDoor(doorPos);
 
     // Windows — on castle walls (P key toggles)
     {
-        int wCol1 = -8, wRow1 = 22;
+        int wCol1 = -24, wRow1 = 6;
         glm::vec3 wPos1 = hexGridPos(wCol1, wRow1, 0.0f);
         wPos1.y = getGroundY(wCol1, wRow1) + 1.5f;
         drawWindow(wPos1, windowAngle, 0.0f);
 
-        int wCol2 = 8, wRow2 = 22;
+        int wCol2 = 3, wRow2 = 6;
         glm::vec3 wPos2 = hexGridPos(wCol2, wRow2, 0.0f);
         wPos2.y = getGroundY(wCol2, wRow2) + 1.5f;
         drawWindow(wPos2, windowAngle, 180.0f);
 
-        int wCol3 = 0, wRow3 = 35;
+        int wCol3 = -10, wRow3 = -1;
         glm::vec3 wPos3 = hexGridPos(wCol3, wRow3, 0.0f);
         wPos3.y = getGroundY(wCol3, wRow3) + 1.5f;
         drawWindow(wPos3, windowAngle, 90.0f);
     }
 
-    // Clock — inside castle throne room (on a pillar)
-    int cCol = 10, cRow = 34;
+    // Clock — in castle courtyard on a pillar
+    int cCol = -5, cRow = 20;
     glm::vec3 clockBase = hexGridPos(cCol, cRow, 0.0f);
     clockBase.y = getGroundY(cCol, cRow);
     drawHex(clockBase + glm::vec3(0, 1.0f, 0), COL_STONE, glm::vec3(0.3f, 2.0f, 0.3f));
@@ -567,7 +601,7 @@ void renderObjects(float time) {
     // --- Curvy Objects (with textures applied) ---
 
     // Sphere — crystal ball with BLENDED grass texture (texture * color)
-    int sphCol = -10, sphRow = 48;
+    int sphCol = -20, sphRow = 8;
     glm::vec3 sphBase = hexGridPos(sphCol, sphRow, 0.0f);
     sphBase.y = getGroundY(sphCol, sphRow);
     drawHex(sphBase + glm::vec3(0, 0.5f, 0), COL_STONE, glm::vec3(0.4f, 1.0f, 0.4f));
@@ -601,7 +635,7 @@ void renderObjects(float time) {
 
     // Wine glass — surface of revolution on castle table
     {
-        int wgCol = 5, wgRow = 30;
+        int wgCol = -8, wgRow = 5;
         glm::vec3 wgBase = hexGridPos(wgCol, wgRow, 0.0f);
         wgBase.y = getGroundY(wgCol, wgRow);
         // Small table
@@ -700,9 +734,30 @@ void renderObjects(float time) {
         // Pickup: check distance to player
         float dist = glm::length(d.pos - playerWorldPos);
         if (dist < ITEM_PICKUP_RADIUS) {
-            inventoryCounts[d.type]++;
-            printf("[Pickup] Got %d (total: %d)\n", d.type, inventoryCounts[d.type]);
-            itemDrops.erase(itemDrops.begin() + i);
+            bool pickedUp = false;
+            // 1. Try to stack in existing slot
+            for (int j = 0; j < 36; j++) {
+                if (playerInventory[j].type == d.type && playerInventory[j].count < 64) {
+                    playerInventory[j].count++;
+                    pickedUp = true;
+                    break;
+                }
+            }
+            // 2. Try empty slot
+            if (!pickedUp) {
+                for (int j = 0; j < 36; j++) {
+                    if (playerInventory[j].type == BLOCK_AIR) {
+                        playerInventory[j].type = d.type;
+                        playerInventory[j].count = 1;
+                        pickedUp = true;
+                        break;
+                    }
+                }
+            }
+            if (pickedUp) {
+                printf("[Pickup] Got %d\n", d.type);
+                itemDrops.erase(itemDrops.begin() + i);
+            }
         }
     }
 }
@@ -824,6 +879,27 @@ void processInput(GLFWwindow* window) {
             flying = true;
         }
 
+        // Ladder climbing: detect if player is overlapping a ladder block
+        {
+            int lCol, lRow;
+            worldToColRow(playerWorldPos.x, playerWorldPos.z, lCol, lRow);
+            int lH = (int)floorf(playerWorldPos.y / HEX_HEIGHT);
+            int btFeet = getBlock(lCol, lRow, lH);
+            int btBody = getBlock(lCol, lRow, lH + 1);
+            playerOnLadder = (btFeet == BLOCK_LADDER || btBody == BLOCK_LADDER);
+        }
+        if (playerOnLadder && !flying) {
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+                playerVelY = 4.0f;
+                playerOnGround = false;
+            } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+                playerVelY = -4.0f;
+            } else {
+                playerVelY = 0.0f; // hold position on ladder
+            }
+            flying = true; // suppress gravity while on ladder
+        }
+
         // Track fall start
         if (!playerOnGround && !trackingFall && !flying) {
             fallStartY = playerWorldPos.y;
@@ -904,19 +980,21 @@ void processInput(GLFWwindow* window) {
             playerWalkTime += deltaTime * 6.0f;
         }
 
-        // Update camera to follow player
+        // Update camera to follow player (Minecraft-style)
+        // Eye height: 1.62 blocks from feet (Minecraft standard)
+        float eyeHeight = 1.62f;
         if (cameraMode == 0) {
-            // Third-person: camera behind and above
+            // Third-person: camera behind and above player's head
             float camYawRad = glm::radians(camYaw);
             float camPitchRad = glm::radians(camPitch);
             glm::vec3 offset;
             offset.x = -cosf(camYawRad) * cosf(camPitchRad) * thirdPersonDist;
             offset.y = -sinf(camPitchRad) * thirdPersonDist + thirdPersonHeight;
             offset.z = -sinf(camYawRad) * cosf(camPitchRad) * thirdPersonDist;
-            camPos = playerWorldPos + glm::vec3(0, 2.0f, 0) + offset;
+            camPos = playerWorldPos + glm::vec3(0, eyeHeight, 0) + offset;
         } else {
-            // First-person: camera at player head
-            camPos = playerWorldPos + glm::vec3(0, 2.2f, 0);
+            // First-person: camera at player eye level
+            camPos = playerWorldPos + glm::vec3(0, eyeHeight, 0);
         }
 
         // E/R fly is now handled above with proper gravity override
@@ -993,6 +1071,12 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
         firstMouse = false;
         return;
     }
+    
+    if (inventoryOpen) {
+        lastMouseX = xpos;
+        lastMouseY = ypos;
+        return;
+    }
 
     float dx = (float)(xpos - lastMouseX) * mouseSensitivity;
     float dy = (float)(lastMouseY - ypos) * mouseSensitivity;
@@ -1010,6 +1094,296 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (action != GLFW_PRESS) return;
 
+    if (inventoryOpen) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) {
+            bool isLeft = (button == GLFW_MOUSE_BUTTON_LEFT);
+            bool isRight = (button == GLFW_MOUSE_BUTTON_RIGHT);
+            bool isShift = (mods & GLFW_MOD_SHIFT) != 0;
+
+            int screenW, screenH;
+            glfwGetWindowSize(window, &screenW, &screenH);
+
+            // Replicate centered panel layout math from hud.h
+            float slotSize = 40.0f;
+            float slotGap = 4.0f;
+            float slotStep = slotSize + slotGap; // 44
+            float totalW = HOTBAR_SIZE * slotSize + (HOTBAR_SIZE - 1) * slotGap; // 392
+
+            float panelPad = 15.0f;
+            float sectionGap = 14.0f;
+            float craftRowW = 3 * slotStep - slotGap;  // 128
+            float arrowW = 30.0f;
+            float arrowGapL = 10.0f, arrowGapR = 10.0f;
+            float outputW = slotSize;
+
+            float panelW = panelPad + totalW + panelPad;
+            float panelH = panelPad + slotSize + sectionGap + 3 * slotStep - slotGap + sectionGap + 3 * slotStep - slotGap + panelPad;
+            float panelX = (screenW - panelW) / 2.0f;
+            float panelY = (screenH - panelH) / 2.0f;
+            float gridX = panelX + panelPad;
+
+            float hotbarY = panelY + panelPad;
+            float storageY = hotbarY + slotSize + sectionGap;
+            float craftY = storageY + 3 * slotStep - slotGap + sectionGap;
+            float craftTotalW = craftRowW + arrowGapL + arrowW + arrowGapR + outputW;
+            float craftOffX = gridX + (totalW - craftTotalW) / 2.0f;
+
+            // Mouse Y: GLFW top=0, HUD bottom=0
+            float my = screenH - lastMouseY;
+            float mx = lastMouseX;
+
+            int clickedSlot = -1;
+
+            // Check hotbar (slots 0-8)
+            for (int i = 0; i < HOTBAR_SIZE; i++) {
+                float sx = gridX + i * slotStep;
+                float sy = hotbarY;
+                if (mx >= sx && mx <= sx + slotSize && my >= sy && my <= sy + slotSize) {
+                    clickedSlot = i; break;
+                }
+            }
+
+            // Check storage grid (slots 9-35)
+            if (clickedSlot == -1) {
+                for (int r = 0; r < 3; r++) {
+                    for (int c = 0; c < 9; c++) {
+                        float sx = gridX + c * slotStep;
+                        float sy = storageY + r * slotStep;
+                        if (mx >= sx && mx <= sx + slotSize && my >= sy && my <= sy + slotSize) {
+                            clickedSlot = 9 + r * 9 + c; break;
+                        }
+                    }
+                    if (clickedSlot != -1) break;
+                }
+            }
+
+            // Check crafting grid (slots 36-44)
+            if (clickedSlot == -1) {
+                for (int r = 0; r < 3; r++) {
+                    for (int c = 0; c < 3; c++) {
+                        float sx = craftOffX + c * slotStep;
+                        float sy = craftY + (2 - r) * slotStep;
+                        if (mx >= sx && mx <= sx + slotSize && my >= sy && my <= sy + slotSize) {
+                            clickedSlot = 36 + r * 3 + c; break;
+                        }
+                    }
+                    if (clickedSlot != -1) break;
+                }
+            }
+
+            // Check crafting output slot (slot 45)
+            if (clickedSlot == -1) {
+                float arrowX = craftOffX + craftRowW + arrowGapL;
+                float outX = arrowX + arrowW + arrowGapR;
+                float outY = craftY + slotStep;
+                if (mx >= outX && mx <= outX + slotSize && my >= outY && my <= outY + slotSize) {
+                    clickedSlot = 45;
+                }
+            }
+
+            // Recipe Book toggle button
+            float bookBtnX = craftOffX - 40.0f;
+            float bookBtnY = craftY + slotStep;
+            if (mx >= bookBtnX && mx <= bookBtnX + 24.0f && my >= bookBtnY && my <= bookBtnY + 24.0f) {
+                recipeBookOpen = !recipeBookOpen;
+                recipeSearchText = "";
+                recipePage = 0;
+                printf("[RecipeBook] Toggled: %d\n", recipeBookOpen);
+                return;
+            }
+
+            // Recipe Book interactions
+            if (recipeBookOpen) {
+                float rbW = 180.0f;
+                float rbH = panelH;
+                float rbX = panelX - rbW - 10.0f;
+                float rbY = panelY;
+
+                // Build same filtered list as hud.h
+                std::vector<int> filtered;
+                for (int i = 0; i < NUM_RECIPES; i++) {
+                    if (recipeSearchText.empty()) {
+                        filtered.push_back(i);
+                    } else {
+                        std::string name = getBlockName(recipes[i].resultType);
+                        bool found = false;
+                        if (name.size() >= recipeSearchText.size()) {
+                            for (size_t k = 0; k <= name.size() - recipeSearchText.size(); k++) {
+                                bool match = true;
+                                for (size_t m = 0; m < recipeSearchText.size(); m++) {
+                                    if (tolower(name[k+m]) != recipeSearchText[m]) { match = false; break; }
+                                }
+                                if (match) { found = true; break; }
+                            }
+                        }
+                        if (found) filtered.push_back(i);
+                    }
+                }
+                int totalPages = ((int)filtered.size() + 3) / 4;
+
+                // Pagination buttons
+                float btnY = rbY + 15.0f;
+                float btnW = 30.0f;
+                float btnH = 20.0f;
+                float prevX = rbX + 30.0f;
+                float nextX = rbX + rbW - 30.0f - btnW;
+
+                if (my >= btnY && my <= btnY + btnH) {
+                    if (mx >= prevX && mx <= prevX + btnW) {
+                        if (recipePage > 0) recipePage--;
+                        return;
+                    }
+                    if (mx >= nextX && mx <= nextX + btnW) {
+                        if (recipePage < totalPages - 1) recipePage++;
+                        return;
+                    }
+                }
+
+                // Recipe row clicking (uses filtered list)
+                float sbY = rbY + rbH - 26.0f;
+                int startIdx = recipePage * 4;
+                float startY = sbY - 18.0f - 60.0f;
+                for (int i = 0; i < 4; i++) {
+                    int fi = startIdx + i;
+                    if (fi >= (int)filtered.size()) break;
+                    int rIdx = filtered[fi];
+                    float rowY = startY - i * 70.0f;
+                    if (rowY < rbY + 40.0f) break;
+                    if (mx >= rbX + 10 && mx <= rbX + 10 + rbW - 20 && my >= rowY && my <= rowY + 60) {
+                        autoCraftRecipe(rIdx);
+                        return;
+                    }
+                }
+            }
+
+
+            // Handle clicks
+            if (clickedSlot >= 0 && clickedSlot <= 35) {
+                InventorySlot* target = &playerInventory[clickedSlot];
+                if (isShift && isLeft) {
+                    if (target->type != BLOCK_AIR) {
+                        int startIdx = (clickedSlot < 9) ? 9 : 0;
+                        int endIdx = (clickedSlot < 9) ? 36 : 9;
+                        for (int k = startIdx; k < endIdx; k++) {
+                            if (playerInventory[k].type == target->type && playerInventory[k].count < 64) {
+                                int space = 64 - playerInventory[k].count;
+                                int move = (target->count < space) ? target->count : space;
+                                playerInventory[k].count += move;
+                                target->count -= move;
+                                if (target->count == 0) { target->type = BLOCK_AIR; break; }
+                            }
+                        }
+                        if (target->count > 0) {
+                            for (int k = startIdx; k < endIdx; k++) {
+                                if (playerInventory[k].type == BLOCK_AIR) {
+                                    playerInventory[k] = *target;
+                                    target->type = BLOCK_AIR;
+                                    target->count = 0;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else if (isRight) {
+                    if (draggedSlot.type == BLOCK_AIR && target->type != BLOCK_AIR) {
+                        int half = (target->count + 1) / 2;
+                        draggedSlot.type = target->type;
+                        draggedSlot.count = half;
+                        target->count -= half;
+                        if (target->count == 0) target->type = BLOCK_AIR;
+                    } else if (draggedSlot.type != BLOCK_AIR) {
+                        if (target->type == BLOCK_AIR) {
+                            target->type = draggedSlot.type;
+                            target->count = 1;
+                            draggedSlot.count--;
+                            if (draggedSlot.count == 0) draggedSlot.type = BLOCK_AIR;
+                        } else if (target->type == draggedSlot.type && target->count < 64) {
+                            target->count++;
+                            draggedSlot.count--;
+                            if (draggedSlot.count == 0) draggedSlot.type = BLOCK_AIR;
+                        }
+                    }
+                } else if (isLeft) {
+                    if (draggedSlot.type == target->type && draggedSlot.type != BLOCK_AIR && target->count < 64) {
+                        int space = 64 - target->count;
+                        int move = (draggedSlot.count < space) ? draggedSlot.count : space;
+                        target->count += move;
+                        draggedSlot.count -= move;
+                        if (draggedSlot.count == 0) draggedSlot.type = BLOCK_AIR;
+                    } else {
+                        InventorySlot temp = *target;
+                        *target = draggedSlot;
+                        draggedSlot = temp;
+                    }
+                }
+            } else if (clickedSlot >= 36 && clickedSlot <= 44) {
+                int ci = clickedSlot - 36;
+                InventorySlot* target = &craftingGrid[ci];
+                if (isRight) {
+                    if (draggedSlot.type == BLOCK_AIR && target->type != BLOCK_AIR) {
+                        int half = (target->count + 1) / 2;
+                        draggedSlot.type = target->type;
+                        draggedSlot.count = half;
+                        target->count -= half;
+                        if (target->count == 0) target->type = BLOCK_AIR;
+                    } else if (draggedSlot.type != BLOCK_AIR) {
+                        if (target->type == BLOCK_AIR || (target->type == draggedSlot.type && target->count < 64)) {
+                            target->type = draggedSlot.type;
+                            target->count++;
+                            draggedSlot.count--;
+                            if (draggedSlot.count == 0) draggedSlot.type = BLOCK_AIR;
+                        }
+                    }
+                } else if (isLeft && !isShift) {
+                    if (draggedSlot.type == target->type && draggedSlot.type != BLOCK_AIR && target->count < 64) {
+                        int space = 64 - target->count;
+                        int move = (draggedSlot.count < space) ? draggedSlot.count : space;
+                        target->count += move;
+                        draggedSlot.count -= move;
+                        if (draggedSlot.count == 0) draggedSlot.type = BLOCK_AIR;
+                    } else {
+                        InventorySlot temp = *target;
+                        *target = draggedSlot;
+                        draggedSlot = temp;
+                    }
+                }
+                checkCraftingRecipes();
+            } else if (clickedSlot == 45) {
+                if (craftingOutput.type != BLOCK_AIR) {
+                    if (isShift && isLeft) {
+                        bool placed = false;
+                        for (int k = 0; k < 36; k++) {
+                            if (playerInventory[k].type == craftingOutput.type && playerInventory[k].count + craftingOutput.count <= 64) {
+                                playerInventory[k].count += craftingOutput.count;
+                                placed = true; break;
+                            }
+                        }
+                        if (!placed) {
+                            for (int k = 0; k < 36; k++) {
+                                if (playerInventory[k].type == BLOCK_AIR) {
+                                    playerInventory[k] = craftingOutput;
+                                    placed = true; break;
+                                }
+                            }
+                        }
+                        if (placed) {
+                            consumeCraftingInputs();
+                        }
+                    } else if (isLeft) {
+                        if (draggedSlot.type == BLOCK_AIR) {
+                            draggedSlot = craftingOutput;
+                            consumeCraftingInputs();
+                        } else if (draggedSlot.type == craftingOutput.type && draggedSlot.count + craftingOutput.count <= 64) {
+                            draggedSlot.count += craftingOutput.count;
+                            consumeCraftingInputs();
+                        }
+                    }
+                }
+            }
+        }
+        return;
+    }
+
     // Left-click = attack mob or break block
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         // Try attacking a mob first (melee range)
@@ -1022,8 +1396,21 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         return;
     }
 
-    // Right-click = place block
+    // Right-click = interact with block or place
     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        if (hasTarget) {
+            int tbt = getBlock(targetCol, targetRow, targetHeight);
+            BlockProperties tprops = getBlockProps(tbt);
+            if (tprops.isInteractive) {
+                // Toggle open/closed (bit 2 of state)
+                uint16_t state = getBlockState(targetCol, targetRow, targetHeight);
+                state ^= (1 << 2);
+                setBlockState(targetCol, targetRow, targetHeight, state);
+                printf("[Block] Toggled interactive block at (%d,%d,%d) -> %s\n",
+                       targetCol, targetRow, targetHeight, (state >> 2) & 1 ? "open" : "closed");
+                return;
+            }
+        }
         placeBlock();
         return;
     }
@@ -1040,11 +1427,26 @@ void scrollCallback(GLFWwindow* window, double xoff, double yoff) {
     // Hold Ctrl + Scroll for zoom
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
         glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) {
-        camPos += camFront * (float)yoff * 1.5f;
+        if (cameraMode == 0) {
+            thirdPersonDist -= (float)yoff * 0.5f;
+            if (thirdPersonDist < 1.5f) thirdPersonDist = 1.5f;
+            if (thirdPersonDist > 10.0f) thirdPersonDist = 10.0f;
+        } else if (cameraMode == 2) {
+            camPos += camFront * (float)yoff * 1.5f;
+        }
     } else {
         hotbarSlot = ((hotbarSlot - (int)yoff) % HOTBAR_SIZE + HOTBAR_SIZE) % HOTBAR_SIZE;
         printf("[Hotbar] Selected: slot %d (%s)\n", hotbarSlot + 1,
                (const char*[]){"Grass","Dirt","Sand","Stone","Wood","Leaf","Diamond","Gold","Glass"}[hotbarSlot]);
+    }
+}
+
+// Typed character callback — feeds search box when recipe book is open
+void charCallback(GLFWwindow* window, unsigned int codepoint) {
+    if (!inventoryOpen || !recipeBookOpen) return;
+    if (codepoint < 128) { // ASCII only
+        recipeSearchText += (char)tolower((int)codepoint);
+        recipePage = 0; // reset to first page of results
     }
 }
 
@@ -1066,6 +1468,67 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         case GLFW_KEY_V:
             fourViewport = !fourViewport;
             printf("[Camera] 4-Viewport: %s\n", fourViewport ? "ON" : "OFF");
+            break;
+            
+        // Inventory UI Toggle
+        case GLFW_KEY_BACKSPACE:
+            if (inventoryOpen && recipeBookOpen && !recipeSearchText.empty()) {
+                recipeSearchText.pop_back();
+                recipePage = 0;
+            }
+            break;
+
+        case GLFW_KEY_I:
+            inventoryOpen = !inventoryOpen;
+            if (inventoryOpen) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                printf("[Inventory] Opened\n");
+            } else {
+                recipeSearchText = ""; // clear search on close
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                // Return crafting grid items to inventory
+                for (int ci = 0; ci < 9; ci++) {
+                    if (craftingGrid[ci].type != BLOCK_AIR) {
+                        bool placed = false;
+                        for (int j = 0; j < 36; j++) {
+                            if (playerInventory[j].type == craftingGrid[ci].type && playerInventory[j].count + craftingGrid[ci].count <= 64) {
+                                playerInventory[j].count += craftingGrid[ci].count;
+                                placed = true; break;
+                            }
+                        }
+                        if (!placed) {
+                            for (int j = 0; j < 36; j++) {
+                                if (playerInventory[j].type == BLOCK_AIR) {
+                                    playerInventory[j] = craftingGrid[ci];
+                                    placed = true; break;
+                                }
+                            }
+                        }
+                        craftingGrid[ci] = {BLOCK_AIR, 0};
+                    }
+                }
+                craftingOutput = {BLOCK_AIR, 0};
+                // Also return dragged item
+                if (draggedSlot.type != BLOCK_AIR) {
+                    bool placed = false;
+                    for (int j = 0; j < 36; j++) {
+                        if (playerInventory[j].type == draggedSlot.type && playerInventory[j].count + draggedSlot.count <= 64) {
+                            playerInventory[j].count += draggedSlot.count;
+                            placed = true; break;
+                        }
+                    }
+                    if (!placed) {
+                        for (int j = 0; j < 36; j++) {
+                            if (playerInventory[j].type == BLOCK_AIR) {
+                                playerInventory[j] = draggedSlot;
+                                placed = true; break;
+                            }
+                        }
+                    }
+                    draggedSlot = {BLOCK_AIR, 0};
+                }
+                printf("[Inventory] Closed\n");
+            }
             break;
 
         // Lighting type toggles

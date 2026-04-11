@@ -1,0 +1,115 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "railcraft:block/locking_track_boarding",
+		"rail": "railcraft:block/locking_track_boarding"
+	},
+	"elements": [
+		{
+			"name": "Gold Railing L",
+			"from": [3.999, 0.001, 0],
+			"to": [5.001, 1.001, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, -1, 16]},
+			"faces": {
+				"north": {"uv": [4, 0, 5, 1], "texture": "#rail", "cullface": "north"},
+				"east": {"uv": [4, 0, 5, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [4, 15, 5, 16], "texture": "#rail", "cullface": "south"},
+				"west": {"uv": [4, 0, 5, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [4, 0, 5, 16], "texture": "#rail"},
+				"down": {"uv": [4, 0, 5, 16], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Gold Railing R",
+			"from": [10.999, 0.001, 0],
+			"to": [12.001, 1.001, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, -1, 16]},
+			"faces": {
+				"north": {"uv": [11, 0, 12, 1], "texture": "#rail", "cullface": "north"},
+				"east": {"uv": [11, 0, 12, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [11, 15, 12, 16], "texture": "#rail", "cullface": "south"},
+				"west": {"uv": [11, 0, 12, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [11, 0, 12, 16], "texture": "#rail"},
+				"down": {"uv": [11, 0, 12, 16], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Power_Strip",
+			"from": [6.999, 0.001, 4],
+			"to": [9.001, 1.001, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"east": {"uv": [8, 4, 9, 12], "rotation": 90, "texture": "#rail"},
+				"west": {"uv": [7, 4, 8, 12], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [7, 4, 9, 12], "texture": "#rail"},
+				"down": {"uv": [7, 12, 9, 4], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Lock_Base",
+			"from": [5, 0.001, 4.999],
+			"to": [11, 1.001, 11.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [5, 5, 11, 6], "rotation": 180, "texture": "#rail"},
+				"south": {"uv": [5, 10, 11, 11], "texture": "#rail"},
+				"up": {"uv": [5, 5, 11, 11], "texture": "#rail"},
+				"down": {"uv": [5, 11, 11, 5], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Arrow_1",
+			"from": [6.999, 0.001, 0.999],
+			"to": [9.001, 1.001, 1.999],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [7, 1, 9, 2], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [8, 1, 9, 2], "rotation": 90, "texture": "#rail"},
+				"west": {"uv": [7, 1, 8, 2], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [7, 1, 9, 2], "texture": "#rail"},
+				"down": {"uv": [7, 2, 9, 1], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Arrow_2",
+			"from": [5.999, 0.001, 1.999],
+			"to": [10.001, 1.001, 2.999],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [6, 2, 10, 3], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 2, 10, 3], "rotation": 90, "texture": "#rail"},
+				"west": {"uv": [6, 2, 7, 3], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 2, 10, 3], "texture": "#rail"},
+				"down": {"uv": [6, 3, 10, 2], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Arrow_3",
+			"from": [5, 0.001, 2.999],
+			"to": [11, 1.001, 4.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [5, 3, 11, 4], "rotation": 180, "texture": "#rail"},
+				"south": {"uv": [5, 3, 11, 4], "texture": "#rail"},
+				"up": {"uv": [5, 3, 11, 4], "texture": "#rail"},
+				"down": {"uv": [5, 4, 11, 3], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Arrow_4_Back",
+			"from": [5.999, 0.001, 11.999],
+			"to": [10.001, 1.001, 14.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [6, 12, 10, 13], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 12, 10, 14], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 13, 10, 14], "texture": "#rail"},
+				"west": {"uv": [6, 12, 7, 14], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 12, 10, 14], "texture": "#rail"},
+				"down": {"uv": [6, 14, 10, 12], "texture": "#rail", "cullface": "down"}
+			}
+		}
+	]
+}

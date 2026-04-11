@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_top_right",
+	"textures": {
+		"top": "biomeswevegone:block/sakura/door_top",
+		"side": "biomeswevegone:block/sakura/door_side",
+		"particle": "biomeswevegone:block/sakura/door_top"
+	}
+}

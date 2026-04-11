@@ -1,0 +1,6 @@
+{
+	"parent": "item/hanging_sign",
+	"textures": {
+		"texture": "block/bamboo_hanging_sign"
+	}
+}

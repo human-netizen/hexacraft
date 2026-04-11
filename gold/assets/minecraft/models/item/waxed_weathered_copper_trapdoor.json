@@ -1,0 +1,8 @@
+{
+	"parent": "item/waxed_copper_trapdoor",
+	"textures": {
+		"0": "block/weathered_copper_trapdoor",
+		"1": "block/waxed_weathered_copper_trapdoor",
+		"2": "block/waxed_weathered_copper_trapdoor_side"
+	}
+}

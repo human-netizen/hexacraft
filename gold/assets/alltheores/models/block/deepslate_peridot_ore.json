@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/peridot_ore",
+    "textures": {
+		"0": "alltheores:block/deepslate_peridot_ore",
+		"particle": "alltheores:block/deepslate_peridot_ore"
+    }
+}

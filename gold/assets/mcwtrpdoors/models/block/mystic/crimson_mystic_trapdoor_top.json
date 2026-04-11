@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/warped_trapdoor_top",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/mystic/crimson_mystic_trapdoor",
+        "0": "mcwtrpdoors:block/mystic/crimson_mystic_trapdoor"
+    }
+}

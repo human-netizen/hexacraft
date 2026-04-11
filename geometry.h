@@ -407,3 +407,167 @@ void drawWineGlass(glm::vec3 pos, float scale, glm::vec3 color) {
     setMat4(shaderProgram, "model", model); setVec3(shaderProgram, "objectColor", color);
     glBindVertexArray(wineGlassVAO); glDrawArrays(GL_TRIANGLES, 0, wineGlassVertCount);
 }
+
+// =====================================================
+// Slab Mesh — half-height hex prism
+// Centered at origin: y in [-HEX_HEIGHT/4, +HEX_HEIGHT/4]
+// drawSlab positions it at bottom or top half of a full block
+// =====================================================
+GLuint slabVAO, slabVBO;
+int slabVertCount = 0;
+
+void initSlabMesh() {
+    std::vector<Vertex> verts;
+    float r = HEX_RADIUS;
+    float h = HEX_HEIGHT * 0.5f; // half height
+    float halfH = h / 2.0f;
+
+    glm::vec3 top[6], bot[6];
+    for (int i = 0; i < 6; i++) {
+        float angle = PI / 3.0f * i + PI / 6.0f;
+        float x = r * cosf(angle);
+        float z = r * sinf(angle);
+        top[i] = glm::vec3(x,  halfH, z);
+        bot[i] = glm::vec3(x, -halfH, z);
+    }
+
+    glm::vec3 white(1.0f);
+    glm::vec3 topCenter(0,  halfH, 0);
+    glm::vec3 botCenter(0, -halfH, 0);
+
+    // Top cap
+    for (int i = 0; i < 6; i++) {
+        int next = (i + 1) % 6;
+        verts.push_back({topCenter, glm::vec3(0,1,0), white, glm::vec2(0.5f, 0.5f)});
+        verts.push_back({top[i],    glm::vec3(0,1,0), white, glm::vec2(0.5f + 0.5f*cosf(PI/3.0f*i),       0.5f + 0.5f*sinf(PI/3.0f*i))});
+        verts.push_back({top[next], glm::vec3(0,1,0), white, glm::vec2(0.5f + 0.5f*cosf(PI/3.0f*(i+1)), 0.5f + 0.5f*sinf(PI/3.0f*(i+1)))});
+    }
+    // Bottom cap
+    for (int i = 0; i < 6; i++) {
+        int next = (i + 1) % 6;
+        verts.push_back({botCenter, glm::vec3(0,-1,0), white, glm::vec2(0.5f, 0.5f)});
+        verts.push_back({bot[next], glm::vec3(0,-1,0), white, glm::vec2(0,0)});
+        verts.push_back({bot[i],    glm::vec3(0,-1,0), white, glm::vec2(0,0)});
+    }
+    // 6 side faces
+    for (int i = 0; i < 6; i++) {
+        int next = (i + 1) % 6;
+        glm::vec3 edge = top[next] - top[i];
+        glm::vec3 sideNorm = glm::normalize(glm::cross(edge, glm::vec3(0,1,0)));
+        float u1 = (float)i / 6.0f, u2 = (float)(i+1) / 6.0f;
+        verts.push_back({top[i],    sideNorm, white, glm::vec2(u1, 1.0f)});
+        verts.push_back({bot[i],    sideNorm, white, glm::vec2(u1, 0.0f)});
+        verts.push_back({bot[next], sideNorm, white, glm::vec2(u2, 0.0f)});
+        verts.push_back({top[i],    sideNorm, white, glm::vec2(u1, 1.0f)});
+        verts.push_back({bot[next], sideNorm, white, glm::vec2(u2, 0.0f)});
+        verts.push_back({top[next], sideNorm, white, glm::vec2(u2, 1.0f)});
+    }
+
+    slabVertCount = (int)verts.size();
+    glGenVertexArrays(1, &slabVAO); glGenBuffers(1, &slabVBO);
+    glBindVertexArray(slabVAO); glBindBuffer(GL_ARRAY_BUFFER, slabVBO);
+    glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(Vertex), verts.data(), GL_STATIC_DRAW);
+    setupVertexAttribs();
+}
+
+// topHalf=true  → slab sits in upper half of block (+HEX_HEIGHT/4 offset)
+// topHalf=false → slab sits in lower half of block (-HEX_HEIGHT/4 offset)
+void drawSlab(glm::vec3 blockPos, glm::vec3 color, bool topHalf = false) {
+    float yOff = topHalf ? HEX_HEIGHT * 0.25f : -HEX_HEIGHT * 0.25f;
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), blockPos + glm::vec3(0, yOff, 0));
+    setMat4(shaderProgram, "model", model);
+    setVec3(shaderProgram, "objectColor", color);
+    glBindVertexArray(slabVAO);
+    glDrawArrays(GL_TRIANGLES, 0, slabVertCount);
+}
+
+// =====================================================
+// Stair — drawn as two slab draws (no custom VAO needed)
+// facing: 0=+Z, 1=+X, 2=-Z, 3=-X  (which direction the step goes up)
+// =====================================================
+void drawStair(glm::vec3 blockPos, glm::vec3 color, int facing = 0) {
+    // Bottom slab (full width, bottom half)
+    glm::mat4 mBot = glm::translate(glm::mat4(1.0f), blockPos + glm::vec3(0, -HEX_HEIGHT * 0.25f, 0));
+    setMat4(shaderProgram, "model", mBot);
+    setVec3(shaderProgram, "objectColor", color);
+    glBindVertexArray(slabVAO);
+    glDrawArrays(GL_TRIANGLES, 0, slabVertCount);
+
+    // Top slab (half depth, top half) — scale Z by 0.5, offset toward back
+    static const glm::vec3 offsets[4] = {
+        glm::vec3(0, 0, -HEX_RADIUS * 0.5f),  // facing +Z: step goes forward → back half raised
+        glm::vec3(-HEX_RADIUS * 0.5f, 0, 0),
+        glm::vec3(0, 0,  HEX_RADIUS * 0.5f),
+        glm::vec3( HEX_RADIUS * 0.5f, 0, 0),
+    };
+    glm::vec3 topPos = blockPos + glm::vec3(0, HEX_HEIGHT * 0.25f, 0) + offsets[facing & 3];
+    glm::mat4 mTop = glm::translate(glm::mat4(1.0f), topPos);
+    // Scale to half depth
+    if (facing == 0 || facing == 2)
+        mTop = glm::scale(mTop, glm::vec3(1.0f, 1.0f, 0.5f));
+    else
+        mTop = glm::scale(mTop, glm::vec3(0.5f, 1.0f, 1.0f));
+    setMat4(shaderProgram, "model", mTop);
+    setVec3(shaderProgram, "objectColor", color);
+    glBindVertexArray(slabVAO);
+    glDrawArrays(GL_TRIANGLES, 0, slabVertCount);
+}
+
+// =====================================================
+// Panel Mesh — flat double-sided quad, 1×1 in XY, facing +Z
+// Used for: doors, trapdoors, glass panes, iron bars, ladders, signs, banners
+// =====================================================
+GLuint panelVAO, panelVBO;
+int panelVertCount = 0;
+
+void initPanelMesh() {
+    // Unit quad centered at origin in XY plane, facing ±Z
+    // Corners: (-0.5,-0.5,0), (0.5,-0.5,0), (0.5,0.5,0), (-0.5,0.5,0)
+    glm::vec3 white(1.0f);
+    glm::vec3 fwd(0, 0, 1), bwd(0, 0, -1);
+
+    glm::vec3 p[4] = {
+        {-0.5f, -0.5f, 0},
+        { 0.5f, -0.5f, 0},
+        { 0.5f,  0.5f, 0},
+        {-0.5f,  0.5f, 0},
+    };
+    glm::vec2 uv[4] = {
+        {0.0f, 0.0f},
+        {1.0f, 0.0f},
+        {1.0f, 1.0f},
+        {0.0f, 1.0f},
+    };
+
+    std::vector<Vertex> verts;
+    // Front face (+Z normal)
+    verts.push_back({p[0], fwd, white, uv[0]});
+    verts.push_back({p[1], fwd, white, uv[1]});
+    verts.push_back({p[2], fwd, white, uv[2]});
+    verts.push_back({p[0], fwd, white, uv[0]});
+    verts.push_back({p[2], fwd, white, uv[2]});
+    verts.push_back({p[3], fwd, white, uv[3]});
+    // Back face (-Z normal)
+    verts.push_back({p[0], bwd, white, uv[1]});
+    verts.push_back({p[2], bwd, white, uv[3]});
+    verts.push_back({p[1], bwd, white, uv[0]});
+    verts.push_back({p[0], bwd, white, uv[1]});
+    verts.push_back({p[3], bwd, white, uv[2]});
+    verts.push_back({p[2], bwd, white, uv[3]});
+
+    panelVertCount = (int)verts.size();
+    glGenVertexArrays(1, &panelVAO); glGenBuffers(1, &panelVBO);
+    glBindVertexArray(panelVAO); glBindBuffer(GL_ARRAY_BUFFER, panelVBO);
+    glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(Vertex), verts.data(), GL_STATIC_DRAW);
+    setupVertexAttribs();
+}
+
+// Draw a panel given a parent transform matrix (caller handles position/rotation)
+// width/height scale the 1×1 base mesh to the desired block face size
+void drawPanel(glm::mat4 parentModel, glm::vec3 color, float width = 1.0f, float height = 1.0f) {
+    glm::mat4 model = glm::scale(parentModel, glm::vec3(width, height, 1.0f));
+    setMat4(shaderProgram, "model", model);
+    setVec3(shaderProgram, "objectColor", color);
+    glBindVertexArray(panelVAO);
+    glDrawArrays(GL_TRIANGLES, 0, panelVertCount);
+}

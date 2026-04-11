@@ -1,0 +1,135 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "railcraft:block/abandoned_track_1",
+		"rail": "railcraft:block/abandoned_track_1"
+	},
+	"elements": [
+		{
+			"name": "Railing L",
+			"from": [2, 0.25, -6.62742],
+			"to": [4, 1, 16],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [2, 0, 4, 1], "rotation": 180, "texture": "#rail", "cullface": "north"},
+				"east": {"uv": [3, 0, 4, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [2, 15, 4, 16], "texture": "#rail", "cullface": "south"},
+				"west": {"uv": [2, 0, 3, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [2, 0, 4, 16], "texture": "#rail"},
+				"down": {"uv": [2, 0, 4, 16], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Railing R",
+			"from": [12, 0.25, -6.62742],
+			"to": [14, 1, 16],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [12, 0, 14, 1], "rotation": 180, "texture": "#rail", "cullface": "north"},
+				"east": {"uv": [13, 0, 14, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [12, 15, 14, 16], "texture": "#rail", "cullface": "south"},
+				"west": {"uv": [12, 0, 13, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [12, 0, 14, 16], "texture": "#rail"},
+				"down": {"uv": [12, 0, 14, 16], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "p1",
+			"from": [1, 0, -5.2132],
+			"to": [8, 0.75, -2.38478],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [1, 1, 8, 2], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [7, 1, 8, 3], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [1, 2, 8, 3], "texture": "#rail"},
+				"west": {"uv": [1, 1, 2, 3], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [1, 1, 8, 3], "texture": "#rail"},
+				"down": {"uv": [1, 3, 8, 1], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "p2",
+			"from": [1, 0, 0.44365],
+			"to": [15, 0.75, 3.27208],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [1, 5, 15, 6], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [14, 5, 15, 7], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [1, 6, 15, 7], "texture": "#rail"},
+				"west": {"uv": [1, 5, 2, 7], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [1, 5, 15, 7], "texture": "#rail"},
+				"down": {"uv": [1, 7, 15, 5], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "p3",
+			"from": [9, 0, 6.10051],
+			"to": [15, 0.75, 8.92893],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [9, 9, 15, 10], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [14, 9, 15, 11], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [9, 10, 15, 11], "texture": "#rail"},
+				"west": {"uv": [9, 9, 10, 11], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [9, 9, 15, 11], "texture": "#rail"},
+				"down": {"uv": [9, 11, 15, 9], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "p4",
+			"from": [1, 0, 11.75736],
+			"to": [15, 0.75, 14.58579],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [1, 13, 15, 14], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [14, 13, 15, 15], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [1, 14, 15, 15], "texture": "#rail"},
+				"west": {"uv": [1, 13, 2, 15], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [1, 13, 15, 15], "texture": "#rail"},
+				"down": {"uv": [1, 15, 15, 13], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "p5",
+			"from": [8, 0, -5.2132],
+			"to": [9, 0.75, -3.79899],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [8, 1, 9, 2], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [8, 1, 9, 2], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [8, 1, 9, 2], "texture": "#rail"},
+				"up": {"uv": [8, 1, 9, 2], "texture": "#rail"},
+				"down": {"uv": [8, 2, 9, 1], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "p6",
+			"from": [8, 0, 6.10051],
+			"to": [9, 0.75, 7.51472],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [8, 9, 9, 10], "rotation": 180, "texture": "#rail"},
+				"south": {"uv": [8, 9, 9, 10], "texture": "#rail"},
+				"west": {"uv": [8, 9, 9, 10], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [8, 9, 9, 10], "texture": "#rail"},
+				"down": {"uv": [8, 10, 9, 9], "texture": "#rail", "cullface": "down"}
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "Rails",
+			"origin": [0, 0, 0],
+			"color": 0,
+			"children": [0, 1]
+		},
+		{
+			"name": "Planks",
+			"origin": [0, 0, -12],
+			"color": 0,
+			"children": [2, 3, 4, 5, 6, 7]
+		}
+	]
+}

@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_bottom_right",
+	"textures": {
+		"bottom": "chipped:block/warped_door/modern_warped_door_bottom",
+		"side": "chipped:block/warped_door/chipped_warped_door_side",
+		"particle": "chipped:block/warped_door/modern_warped_door_bottom"
+	}
+}

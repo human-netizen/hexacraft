@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/sulfur_ore",
+    "textures": {
+		"0": "alltheores:block/nether_sulfur_ore",
+		"particle": "alltheores:block/nether_sulfur_ore"
+    }
+}

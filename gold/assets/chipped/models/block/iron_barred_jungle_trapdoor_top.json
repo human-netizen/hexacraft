@@ -1,0 +1,7 @@
+{
+	"parent": "chipped:block/template_metal_barred_trapdoor_top",
+	"textures": {
+		"texture": "chipped:block/jungle_trapdoor/iron_barred_jungle_trapdoor",		
+		"side": "chipped:block/jungle_trapdoor/pointless_jungle_trapdoor_side"
+	}
+}

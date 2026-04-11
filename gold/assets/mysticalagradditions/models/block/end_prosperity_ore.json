@@ -1,0 +1,8 @@
+{
+	"parent": "mysticalagriculture:block/prosperity_ore",
+    "textures": {
+		"all": "minecraft:block/end_stone",
+		"0": "mysticalagriculture:block/prosperity_ore",
+		"particle": "minecraft:block/end_stone"
+    }
+}

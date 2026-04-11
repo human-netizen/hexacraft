@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": [
+      { "model": "deeperdarker:block/gloomslate_redstone_ore_off" }
+    ],
+	"lit=true": [
+      { "model": "deeperdarker:block/gloomslate_redstone_ore" }
+    ]
+  }
+}

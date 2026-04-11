@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/ammolite_ore",
+  "textures": {
+    "0": "silentgems:block/nether_ammolite_ore",
+    "particle": "silentgems:block/nether_ammolite_ore"
+  }
+}

@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_top_left",
+	"textures": {
+		"top": "regions_unexplored:block/cypress_door_top",
+		"side": "regions_unexplored:block/cypress_door_side",
+		"particle": "regions_unexplored:block/cypress_door_top"
+	}
+}

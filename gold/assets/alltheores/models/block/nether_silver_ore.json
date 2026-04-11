@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/silver_ore",
+    "textures": {
+		"0": "alltheores:block/nether_silver_ore",
+		"particle": "alltheores:block/nether_silver_ore"
+    }
+}

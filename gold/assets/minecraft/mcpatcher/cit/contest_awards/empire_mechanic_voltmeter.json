@@ -1,0 +1,6 @@
+{
+    "parent": "item/torch",
+    "textures": {
+        "torch": "block/empire_mechanic_voltmeter"
+    }
+}

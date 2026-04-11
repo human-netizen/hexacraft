@@ -1,0 +1,10 @@
+{
+    "parent": "minecraft:item/hopper_minecart",
+    "textures": {
+		"particle": "goldenhopper:block/golden_hopper_outside",
+		"texture": "minecraft:item/minecart",
+		"top": "goldenhopper:block/golden_hopper_top",
+		"side": "goldenhopper:block/golden_hopper_outside",
+		"inside": "goldenhopper:block/golden_hopper_inside"
+    }
+}

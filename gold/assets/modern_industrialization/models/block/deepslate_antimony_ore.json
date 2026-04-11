@@ -1,0 +1,7 @@
+{
+	"parent": "modern_industrialization:block/antimony_ore",
+    "textures": {
+		"particle": "modern_industrialization:block/deepslate_antimony_ore",
+        "0": "modern_industrialization:block/deepslate_antimony_ore"
+    }
+}

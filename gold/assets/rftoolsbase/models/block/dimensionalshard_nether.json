@@ -1,0 +1,7 @@
+{
+  "parent": "rftoolsbase:block/dimensionalshard_overworld",
+  "textures": {
+	"0": "rftoolsbase:block/ores/dimensionalshard_nether",
+	"particle": "rftoolsbase:block/ores/dimensionalshard_nether"
+  }
+}

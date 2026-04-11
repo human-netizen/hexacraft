@@ -62,7 +62,7 @@ unsigned int gridSeed(int col, int row) {
 const glm::vec3 COL_GRASS(0.3f, 0.7f, 0.15f);
 const glm::vec3 COL_DIRT(0.55f, 0.35f, 0.17f);
 const glm::vec3 COL_STONE(0.5f, 0.5f, 0.5f);
-const glm::vec3 COL_STONE_LIGHT(0.62f, 0.6f, 0.55f);
+const glm::vec3 COL_STONE_LIGHT(0.85f, 0.85f, 0.85f); // White concrete
 const glm::vec3 COL_SAND(0.76f, 0.7f, 0.5f);
 const glm::vec3 COL_WATER(0.15f, 0.4f, 0.7f);
 const glm::vec3 COL_WATER_DEEP(0.1f, 0.3f, 0.6f);
@@ -103,14 +103,35 @@ void setBlock(int col, int row, int h, int type) {
     // Update columnMaxH cache
     if (type != BLOCK_AIR) {
         if (h > columnMaxH[gi][gj]) columnMaxH[gi][gj] = h;
-    } else if (h >= columnMaxH[gi][gj]) {
-        // Broke the top block — scan down for new max
-        int newMax = 0;
-        for (int hh = h; hh >= 0; hh--) {
-            if (blockGrid[gi][gj][hh] != BLOCK_AIR) { newMax = hh; break; }
+    } else {
+        // Clear any block state when removing a block
+        uint32_t key = blockStateKey(col, row, h);
+        blockState.erase(key);
+        if (h >= columnMaxH[gi][gj]) {
+            // Broke the top block — scan down for new max
+            int newMax = 0;
+            for (int hh = h; hh >= 0; hh--) {
+                if (blockGrid[gi][gj][hh] != BLOCK_AIR) { newMax = hh; break; }
+            }
+            columnMaxH[gi][gj] = newMax;
         }
-        columnMaxH[gi][gj] = newMax;
     }
+}
+
+uint16_t getBlockState(int col, int row, int h) {
+    if (!gridInBounds(col, row, h)) return 0;
+    uint32_t key = blockStateKey(col, row, h);
+    auto it = blockState.find(key);
+    return (it != blockState.end()) ? it->second : 0;
+}
+
+void setBlockState(int col, int row, int h, uint16_t state) {
+    if (!gridInBounds(col, row, h)) return;
+    uint32_t key = blockStateKey(col, row, h);
+    if (state == 0)
+        blockState.erase(key);
+    else
+        blockState[key] = state;
 }
 
 glm::vec3 getBlockColor(int type) {
@@ -127,7 +148,85 @@ glm::vec3 getBlockColor(int type) {
         case BLOCK_ORE_GOLD: return COL_ORE_GOLD;
         case BLOCK_GLASS: return glm::vec3(0.8f, 0.9f, 0.95f);
         case BLOCK_BEDROCK: return glm::vec3(0.15f, 0.15f, 0.15f);
-        case BLOCK_COAL_ORE: return glm::vec3(0.22f, 0.22f, 0.22f);
+        case BLOCK_COAL_ORE: return glm::vec3(0.12f, 0.12f, 0.12f);
+        case BLOCK_GRAVEL: return glm::vec3(0.55f, 0.52f, 0.48f);
+        case BLOCK_CLAY: return glm::vec3(0.62f, 0.58f, 0.55f);
+        case BLOCK_SNOW: return glm::vec3(0.95f, 0.97f, 1.0f);
+        case BLOCK_ICE: return glm::vec3(0.6f, 0.8f, 1.0f);
+        case BLOCK_PLANKS: return glm::vec3(0.6f, 0.45f, 0.25f);
+        case BLOCK_CRAFTING_TABLE: return glm::vec3(0.5f, 0.35f, 0.2f);
+        case BLOCK_SANDSTONE: return glm::vec3(0.85f, 0.8f, 0.6f);
+        case BLOCK_BRICKS: return glm::vec3(0.6f, 0.3f, 0.25f);
+        case BLOCK_WOOL_WHITE: return glm::vec3(0.9f, 0.9f, 0.9f);
+        case BLOCK_WOOL_RED: return glm::vec3(0.7f, 0.2f, 0.2f);
+        case BLOCK_WOOL_BLUE: return glm::vec3(0.2f, 0.3f, 0.7f);
+        case BLOCK_COBBLESTONE: return glm::vec3(0.45f, 0.45f, 0.45f);
+        case BLOCK_MOSSY_COBBLESTONE: return glm::vec3(0.4f, 0.5f, 0.4f);
+        case BLOCK_GLOWSTONE: return glm::vec3(0.9f, 0.8f, 0.3f);
+        case BLOCK_POLISHED_DIORITE: return glm::vec3(0.8f, 0.8f, 0.8f);
+        case BLOCK_POLISHED_GRANITE: return glm::vec3(0.6f, 0.4f, 0.35f);
+        case BLOCK_POLISHED_ANDESITE: return glm::vec3(0.5f, 0.5f, 0.5f);
+        case BLOCK_QUARTZ_BLOCK: return glm::vec3(0.9f, 0.88f, 0.85f);
+        case BLOCK_IRON_BLOCK: return glm::vec3(0.85f, 0.85f, 0.85f);
+        case BLOCK_DIAMOND_BLOCK: return glm::vec3(0.3f, 0.8f, 0.8f);
+        case BLOCK_GOLD_BLOCK: return glm::vec3(0.95f, 0.85f, 0.2f);
+        case BLOCK_CUT_SANDSTONE: return glm::vec3(0.82f, 0.77f, 0.55f);
+        case BLOCK_MOSSY_BRICKS: return glm::vec3(0.45f, 0.4f, 0.3f);
+        case BLOCK_OBSIDIAN: return glm::vec3(0.1f, 0.05f, 0.15f);
+
+        // --- Building & Decoration ---
+        // Wool colors
+        case BLOCK_WOOL_GREEN: return glm::vec3(0.2f, 0.5f, 0.15f);
+        case BLOCK_WOOL_YELLOW: return glm::vec3(0.9f, 0.85f, 0.2f);
+        case BLOCK_WOOL_BLACK: return glm::vec3(0.1f, 0.1f, 0.1f);
+        case BLOCK_WOOL_ORANGE: return glm::vec3(0.85f, 0.5f, 0.1f);
+        case BLOCK_WOOL_PINK: return glm::vec3(0.85f, 0.55f, 0.65f);
+        case BLOCK_WOOL_PURPLE: return glm::vec3(0.45f, 0.2f, 0.6f);
+        case BLOCK_WOOL_CYAN: return glm::vec3(0.15f, 0.6f, 0.6f);
+        case BLOCK_WOOL_BROWN: return glm::vec3(0.4f, 0.25f, 0.12f);
+        case BLOCK_WOOL_GRAY: return glm::vec3(0.35f, 0.35f, 0.35f);
+        case BLOCK_WOOL_LIGHT_GRAY: return glm::vec3(0.6f, 0.6f, 0.6f);
+        case BLOCK_WOOL_MAGENTA: return glm::vec3(0.7f, 0.2f, 0.55f);
+        case BLOCK_WOOL_LIME: return glm::vec3(0.5f, 0.8f, 0.1f);
+
+        // Full blocks
+        case BLOCK_BOOKSHELF: return glm::vec3(0.55f, 0.4f, 0.2f);
+        case BLOCK_SMOOTH_STONE: return glm::vec3(0.6f, 0.6f, 0.6f);
+        case BLOCK_TERRACOTTA: return glm::vec3(0.6f, 0.4f, 0.3f);
+
+        // Slabs (same color as their base material)
+        case BLOCK_SLAB_STONE: return glm::vec3(0.5f, 0.5f, 0.5f);
+        case BLOCK_SLAB_WOOD: return glm::vec3(0.6f, 0.45f, 0.25f);
+        case BLOCK_SLAB_SANDSTONE: return glm::vec3(0.85f, 0.8f, 0.6f);
+        case BLOCK_SLAB_BRICK: return glm::vec3(0.6f, 0.3f, 0.25f);
+
+        // Stairs
+        case BLOCK_STAIRS_STONE: return glm::vec3(0.5f, 0.5f, 0.5f);
+        case BLOCK_STAIRS_WOOD: return glm::vec3(0.6f, 0.45f, 0.25f);
+
+        // Carpets
+        case BLOCK_CARPET_WHITE: return glm::vec3(0.9f, 0.9f, 0.9f);
+        case BLOCK_CARPET_RED: return glm::vec3(0.7f, 0.2f, 0.2f);
+        case BLOCK_CARPET_BLUE: return glm::vec3(0.2f, 0.3f, 0.7f);
+
+        // Thin blocks
+        case BLOCK_GLASS_PANE: return glm::vec3(0.8f, 0.9f, 0.95f);
+        case BLOCK_IRON_BARS: return glm::vec3(0.6f, 0.6f, 0.6f);
+        case BLOCK_FENCE_WOOD: return glm::vec3(0.55f, 0.4f, 0.2f);
+
+        // Interactive
+        case BLOCK_DOOR_OAK: return glm::vec3(0.55f, 0.4f, 0.2f);
+        case BLOCK_DOOR_IRON: return glm::vec3(0.75f, 0.75f, 0.75f);
+        case BLOCK_TRAPDOOR_OAK: return glm::vec3(0.5f, 0.38f, 0.18f);
+        case BLOCK_FENCE_GATE: return glm::vec3(0.55f, 0.4f, 0.2f);
+        case BLOCK_LADDER: return glm::vec3(0.6f, 0.45f, 0.2f);
+
+        // Decorative
+        case BLOCK_LANTERN: return glm::vec3(0.9f, 0.7f, 0.2f);
+        case BLOCK_TORCH_BLOCK: return glm::vec3(1.0f, 0.6f, 0.1f);
+        case BLOCK_SIGN: return glm::vec3(0.6f, 0.45f, 0.25f);
+        case BLOCK_BANNER: return glm::vec3(0.9f, 0.9f, 0.9f);
+
         default: return glm::vec3(1, 0, 1); // magenta = error
     }
 }
@@ -136,45 +235,45 @@ glm::vec3 getBlockColor(int type) {
 // Biome system: 0=sand, 1=grass, 2=stone, 3=water
 // =====================================================
 int getBiome(int col, int row) {
-    float bx = col * 0.06f + 100.0f;
-    float by = row * 0.06f + 100.0f;
+    float bx = col * 0.025f + 100.0f;
+    float by = row * 0.025f + 100.0f;
     float n = fbmNoise(bx, by, 3);
 
-    if (n < -0.3f) return 3; // water
-    if (n < 0.0f)  return 0; // sand
-    if (n < 0.5f)  return 1; // grass
-    return 2;                 // stone
+    float temp = fbmNoise(col * 0.015f - 50.0f, row * 0.015f + 200.0f, 2);
+    if (temp < -0.3f && n >= -0.05f) return 4; // snow biome
+    if (n < -0.35f) return 3; // water
+    if (n < -0.05f) return 0; // sand
+    if (n < 0.45f)  return 1; // grass
+    return 2;                  // stone
 }
 
 int getTerrainHeightBiome(int col, int row, int biome) {
-    float nx = col * 0.08f;
-    float ny = row * 0.08f;
-    float n = fbmNoise(nx, ny, 4);
-    float detail = fbmNoise(col * 0.2f, row * 0.2f, 2) * 0.3f;
+    float nx = col * 0.04f;
+    float ny = row * 0.04f;
+    float n = fbmNoise(nx, ny, 5);
+    float detail = fbmNoise(col * 0.12f, row * 0.12f, 2) * 0.25f;
+    // Large-scale continental noise for mountains
+    float continental = fbmNoise(col * 0.012f + 50.0f, row * 0.012f + 50.0f, 3);
 
     switch (biome) {
-        case 0: { // sand: flat with gentle dunes
-            int h = (int)floorf((n + detail + 1.0f) * 0.6f);
+        case 0: { // sand: flat desert with gentle dunes
+            int h = (int)floorf((n + detail + 1.0f) * 1.5f);
             if (h < 0) h = 0;
-            if (h > 1) h = 1;
+            if (h > 3) h = 3;
             return h + UNDERGROUND_DEPTH;
         }
-        case 1: { // grass: rolling hills with stepped plateaus
-            int h = (int)floorf((n + detail + 1.0f) * 2.5f);
+        case 1: { // grass: rolling hills, some tall
+            float hillFactor = (continental > 0.2f) ? 2.0f : 1.0f;
+            int h = (int)floorf((n + detail + 1.0f) * 3.5f * hillFactor);
             if (h < 1) h = 1;
-            if (h > 6) h = 6;
-            // Stepped terrain: snap to even numbers for plateau look
-            h = (h / 2) * 2;
-            if (h < 1) h = 1;
+            if (h > 12) h = 12;
             return h + UNDERGROUND_DEPTH;
         }
-        case 2: { // stone: elevated plateaus with dramatic cliff edges
-            int h = (int)floorf((n + detail + 1.0f) * 2.0f) + 3;
-            if (h < 3) h = 3;
-            if (h > 8) h = 8;
-            // Stepped terrain: snap to nearest 3 for cliff faces
-            h = (h / 3) * 3;
-            if (h < 3) h = 3;
+        case 2: { // stone: mountains with dramatic peaks
+            float mountainBoost = (continental > 0.0f) ? continental * 6.0f : 0.0f;
+            int h = (int)floorf((n + detail + 1.0f) * 4.0f + mountainBoost) + 4;
+            if (h < 4) h = 4;
+            if (h > 20) h = 20;
             return h + UNDERGROUND_DEPTH;
         }
         case 3: return UNDERGROUND_DEPTH - 1; // water at underground depth level
@@ -482,8 +581,640 @@ std::vector<TreeInfo> treeLocations;
 struct TorchInfo { int col, row, height; };
 std::vector<TorchInfo> torchLocations;
 
+// =========================================================
+// MEDIEVAL CASTLE (Main Spawn Base) — matching reference images
+// Stone walls, battlements, corner towers with spires,
+// main keep with peaked wooden roof, front gate with arch
+// =========================================================
+void buildMedievalCastle(int c0, int r0) {
+    int W = 40, D = 36;
+    int c1 = c0 + W - 1;
+    int r1 = r0 + D - 1;
+    int G = UNDERGROUND_DEPTH; // ground level
+
+    auto fillRect = [&](int cx0, int cx1, int rx0, int rx1, int h0, int h1, int type) {
+        for (int c = cx0; c <= cx1; c++)
+            for (int r = rx0; r <= rx1; r++)
+                for (int h = h0; h <= h1; h++)
+                    setBlock(c, r, h, type);
+    };
+
+    // 1. Clear plot + foundation
+    for (int c = c0 - 2; c <= c1 + 2; c++) {
+        for (int r = r0 - 2; r <= r1 + 2; r++) {
+            for (int h = G + 1; h < GRID_H; h++) setBlock(c, r, h, BLOCK_AIR);
+            setBlock(c, r, 0, BLOCK_BEDROCK);
+            for (int h = 1; h <= G; h++) setBlock(c, r, h, BLOCK_STONE);
+        }
+    }
+    // Grass courtyard floor
+    for (int c = c0 + 1; c < c1; c++)
+        for (int r = r0 + 1; r < r1; r++)
+            setBlock(c, r, G, BLOCK_GRASS);
+    // Stone path in courtyard
+    for (int r = r1 - 8; r <= r1; r++) {
+        setBlock(c0 + W/2 - 1, r, G, BLOCK_STONE);
+        setBlock(c0 + W/2, r, G, BLOCK_STONE);
+        setBlock(c0 + W/2 + 1, r, G, BLOCK_STONE_LIGHT);
+    }
+
+    // Clear trees/torches in area
+    for (int i = (int)treeLocations.size() - 1; i >= 0; i--) {
+        if (treeLocations[i].col >= c0 - 2 && treeLocations[i].col <= c1 + 2 &&
+            treeLocations[i].row >= r0 - 2 && treeLocations[i].row <= r1 + 2) {
+            treeLocations.erase(treeLocations.begin() + i);
+        }
+    }
+    for (int i = (int)torchLocations.size() - 1; i >= 0; i--) {
+        if (torchLocations[i].col >= c0 - 2 && torchLocations[i].col <= c1 + 2 &&
+            torchLocations[i].row >= r0 - 2 && torchLocations[i].row <= r1 + 2) {
+            torchLocations.erase(torchLocations.begin() + i);
+        }
+    }
+
+    // ============================================
+    // 2. OUTER WALLS (stone, 7 blocks high)
+    // ============================================
+    int wallH = 7;
+    // Back wall (north)
+    fillRect(c0, c1, r0, r0, G+1, G+wallH, BLOCK_STONE);
+    // Front wall (south) — with gate gap
+    for (int c = c0; c <= c1; c++) {
+        if (c >= c0 + W/2 - 2 && c <= c0 + W/2 + 1) continue; // gate opening
+        fillRect(c, c, r1, r1, G+1, G+wallH, BLOCK_STONE);
+    }
+    // Left wall (west)
+    fillRect(c0, c0, r0, r1, G+1, G+wallH, BLOCK_STONE);
+    // Right wall (east)
+    fillRect(c1, c1, r0, r1, G+1, G+wallH, BLOCK_STONE);
+
+    // Battlements (crenellations) on all walls — every other block is 1 higher
+    for (int c = c0; c <= c1; c++) {
+        if (c % 2 == 0) {
+            if (!(c >= c0 + W/2 - 2 && c <= c0 + W/2 + 1)) // skip gate
+                setBlock(c, r1, G+wallH+1, BLOCK_STONE);
+            setBlock(c, r0, G+wallH+1, BLOCK_STONE);
+        }
+    }
+    for (int r = r0; r <= r1; r++) {
+        if (r % 2 == 0) {
+            setBlock(c0, r, G+wallH+1, BLOCK_STONE);
+            setBlock(c1, r, G+wallH+1, BLOCK_STONE);
+        }
+    }
+
+    // Wall walkway (wood plank path on top of walls, inside edge)
+    fillRect(c0+1, c1-1, r0+1, r0+1, G+wallH, G+wallH, BLOCK_WOOD);
+    fillRect(c0+1, c1-1, r1-1, r1-1, G+wallH, G+wallH, BLOCK_WOOD);
+    fillRect(c0+1, c0+1, r0+1, r1-1, G+wallH, G+wallH, BLOCK_WOOD);
+    fillRect(c1-1, c1-1, r0+1, r1-1, G+wallH, G+wallH, BLOCK_WOOD);
+
+    // Stone accent stripe at mid-height on walls (like cobblestone wall detail)
+    for (int c = c0; c <= c1; c++) {
+        setBlock(c, r0, G+4, BLOCK_STONE_LIGHT);
+        if (!(c >= c0 + W/2 - 2 && c <= c0 + W/2 + 1))
+            setBlock(c, r1, G+4, BLOCK_STONE_LIGHT);
+    }
+    for (int r = r0; r <= r1; r++) {
+        setBlock(c0, r, G+4, BLOCK_STONE_LIGHT);
+        setBlock(c1, r, G+4, BLOCK_STONE_LIGHT);
+    }
+
+    // ============================================
+    // 3. CORNER TOWERS (4 towers, 14 high + spire)
+    // ============================================
+    int twrH = 14;
+    int twrSize = 3; // 3x3 footprint
+    int towers[4][2] = {
+        {c0, r0},           // NW
+        {c1-2, r0},         // NE
+        {c0, r1-2},         // SW
+        {c1-2, r1-2}        // SE
+    };
+    for (int t = 0; t < 4; t++) {
+        int tc = towers[t][0], tr = towers[t][1];
+        // Tower body (stone walls, hollow inside)
+        fillRect(tc, tc+2, tr, tr+2, G+1, G+twrH, BLOCK_STONE);
+        fillRect(tc+1, tc+1, tr+1, tr+1, G+1, G+twrH-1, BLOCK_AIR); // hollow core
+
+        // Darker stone band at intervals
+        for (int h = G+3; h <= G+twrH; h += 4) {
+            fillRect(tc, tc+2, tr, tr+2, h, h, BLOCK_COAL_ORE);
+            setBlock(tc+1, tr+1, h, BLOCK_AIR); // keep hollow
+        }
+
+        // Tower battlements
+        setBlock(tc, tr, G+twrH+1, BLOCK_STONE);
+        setBlock(tc+2, tr, G+twrH+1, BLOCK_STONE);
+        setBlock(tc, tr+2, G+twrH+1, BLOCK_STONE);
+        setBlock(tc+2, tr+2, G+twrH+1, BLOCK_STONE);
+
+        // Pointed spire (wooden, pyramid shape)
+        // Layer 1: 3x3 wood base
+        fillRect(tc, tc+2, tr, tr+2, G+twrH+2, G+twrH+2, BLOCK_WOOD);
+        // Layer 2: cross shape
+        setBlock(tc+1, tr, G+twrH+3, BLOCK_WOOD);
+        setBlock(tc+1, tr+2, G+twrH+3, BLOCK_WOOD);
+        setBlock(tc, tr+1, G+twrH+3, BLOCK_WOOD);
+        setBlock(tc+2, tr+1, G+twrH+3, BLOCK_WOOD);
+        setBlock(tc+1, tr+1, G+twrH+3, BLOCK_WOOD);
+        // Layer 3: single peak
+        setBlock(tc+1, tr+1, G+twrH+4, BLOCK_WOOD);
+        setBlock(tc+1, tr+1, G+twrH+5, BLOCK_WOOD);
+
+        // Arrow slit windows on towers
+        for (int h = G+3; h <= G+twrH-2; h += 3) {
+            setBlock(tc+1, tr, h, BLOCK_GLASS);     // front
+            setBlock(tc+1, tr+2, h, BLOCK_GLASS);   // back
+            setBlock(tc, tr+1, h, BLOCK_GLASS);     // left
+            setBlock(tc+2, tr+1, h, BLOCK_GLASS);   // right
+        }
+    }
+
+    // ============================================
+    // 4. FRONT GATE with arch + flanking gate towers
+    // ============================================
+    int gateL = c0 + W/2 - 3; // left gate tower
+    int gateR = c0 + W/2 + 2; // right gate tower
+    int gateH = 10;
+
+    // Left gate pillar
+    fillRect(gateL, gateL+1, r1-1, r1, G+1, G+gateH, BLOCK_STONE);
+    // Right gate pillar
+    fillRect(gateR, gateR+1, r1-1, r1, G+1, G+gateH, BLOCK_STONE);
+
+    // Dark stone accent on gate pillars
+    fillRect(gateL, gateL+1, r1, r1, G+3, G+3, BLOCK_COAL_ORE);
+    fillRect(gateL, gateL+1, r1, r1, G+6, G+6, BLOCK_COAL_ORE);
+    fillRect(gateR, gateR+1, r1, r1, G+3, G+3, BLOCK_COAL_ORE);
+    fillRect(gateR, gateR+1, r1, r1, G+6, G+6, BLOCK_COAL_ORE);
+
+    // Arch over gate (stone bridge connecting the two pillars)
+    fillRect(gateL, gateR+1, r1, r1, G+wallH, G+wallH, BLOCK_STONE);
+    fillRect(gateL+1, gateR, r1, r1, G+wallH+1, G+wallH+1, BLOCK_STONE_LIGHT); // arch top detail
+
+    // Gate pillar caps (small wooden spire on each)
+    setBlock(gateL, r1, G+gateH+1, BLOCK_WOOD);
+    setBlock(gateL+1, r1, G+gateH+1, BLOCK_WOOD);
+    setBlock(gateR, r1, G+gateH+1, BLOCK_WOOD);
+    setBlock(gateR+1, r1, G+gateH+1, BLOCK_WOOD);
+    setBlock(gateL, r1, G+gateH+2, BLOCK_WOOD);
+    setBlock(gateR+1, r1, G+gateH+2, BLOCK_WOOD);
+
+    // Wooden portcullis frame (dark wood around gate opening)
+    int gOpen0 = c0 + W/2 - 2, gOpen1 = c0 + W/2 + 1;
+    fillRect(gOpen0, gOpen1, r1, r1, G+wallH-1, G+wallH-1, BLOCK_WOOD); // top beam
+    setBlock(gOpen0, r1, G+1, BLOCK_WOOD); // left post base
+    setBlock(gOpen1, r1, G+1, BLOCK_WOOD); // right post base
+
+    // ============================================
+    // 5. MAIN KEEP (large central building)
+    // ============================================
+    int keepC0 = c0 + 6, keepC1 = c1 - 6;   // keep cols
+    int keepR0 = r0 + 4, keepR1 = r0 + 18;   // keep rows (back portion)
+    int keepWallH = 10;
+    int keepW = keepC1 - keepC0 + 1;
+
+    // Keep walls (stone)
+    fillRect(keepC0, keepC1, keepR0, keepR0, G+1, G+keepWallH, BLOCK_STONE); // back
+    fillRect(keepC0, keepC1, keepR1, keepR1, G+1, G+keepWallH, BLOCK_STONE); // front
+    fillRect(keepC0, keepC0, keepR0, keepR1, G+1, G+keepWallH, BLOCK_STONE); // left
+    fillRect(keepC1, keepC1, keepR0, keepR1, G+1, G+keepWallH, BLOCK_STONE); // right
+    // Floor
+    fillRect(keepC0+1, keepC1-1, keepR0+1, keepR1-1, G, G, BLOCK_WOOD);
+    // Second floor
+    fillRect(keepC0+1, keepC1-1, keepR0+1, keepR1-1, G+5, G+5, BLOCK_WOOD);
+
+    // Keep interior hollow
+    fillRect(keepC0+1, keepC1-1, keepR0+1, keepR1-1, G+1, G+keepWallH-1, BLOCK_AIR);
+
+    // Dark stone accent bands on keep walls
+    fillRect(keepC0, keepC1, keepR0, keepR0, G+3, G+3, BLOCK_COAL_ORE);
+    fillRect(keepC0, keepC1, keepR1, keepR1, G+3, G+3, BLOCK_COAL_ORE);
+    fillRect(keepC0, keepC0, keepR0, keepR1, G+3, G+3, BLOCK_COAL_ORE);
+    fillRect(keepC1, keepC1, keepR0, keepR1, G+3, G+3, BLOCK_COAL_ORE);
+    fillRect(keepC0, keepC1, keepR0, keepR0, G+7, G+7, BLOCK_COAL_ORE);
+    fillRect(keepC0, keepC1, keepR1, keepR1, G+7, G+7, BLOCK_COAL_ORE);
+    fillRect(keepC0, keepC0, keepR0, keepR1, G+7, G+7, BLOCK_COAL_ORE);
+    fillRect(keepC1, keepC1, keepR0, keepR1, G+7, G+7, BLOCK_COAL_ORE);
+
+    // Windows on keep (glass panes at regular intervals)
+    for (int c = keepC0 + 2; c <= keepC1 - 2; c += 3) {
+        // Front and back wall windows
+        setBlock(c, keepR0, G+5, BLOCK_GLASS);
+        setBlock(c, keepR0, G+6, BLOCK_GLASS);
+        setBlock(c, keepR0, G+8, BLOCK_GLASS);
+        setBlock(c, keepR0, G+9, BLOCK_GLASS);
+        setBlock(c, keepR1, G+5, BLOCK_GLASS);
+        setBlock(c, keepR1, G+6, BLOCK_GLASS);
+        setBlock(c, keepR1, G+8, BLOCK_GLASS);
+        setBlock(c, keepR1, G+9, BLOCK_GLASS);
+    }
+    for (int r = keepR0 + 2; r <= keepR1 - 2; r += 3) {
+        // Side wall windows
+        setBlock(keepC0, r, G+5, BLOCK_GLASS);
+        setBlock(keepC0, r, G+6, BLOCK_GLASS);
+        setBlock(keepC0, r, G+8, BLOCK_GLASS);
+        setBlock(keepC0, r, G+9, BLOCK_GLASS);
+        setBlock(keepC1, r, G+5, BLOCK_GLASS);
+        setBlock(keepC1, r, G+6, BLOCK_GLASS);
+        setBlock(keepC1, r, G+8, BLOCK_GLASS);
+        setBlock(keepC1, r, G+9, BLOCK_GLASS);
+    }
+
+    // Keep entrance (front center door)
+    int keepMid = keepC0 + keepW / 2;
+    setBlock(keepMid, keepR1, G+1, BLOCK_AIR);
+    setBlock(keepMid, keepR1, G+2, BLOCK_AIR);
+    setBlock(keepMid, keepR1, G+3, BLOCK_AIR);
+    setBlock(keepMid-1, keepR1, G+1, BLOCK_AIR);
+    setBlock(keepMid-1, keepR1, G+2, BLOCK_AIR);
+    setBlock(keepMid-1, keepR1, G+3, BLOCK_AIR);
+    // Wood door frame
+    setBlock(keepMid-2, keepR1, G+1, BLOCK_WOOD);
+    setBlock(keepMid-2, keepR1, G+2, BLOCK_WOOD);
+    setBlock(keepMid-2, keepR1, G+3, BLOCK_WOOD);
+    setBlock(keepMid+1, keepR1, G+1, BLOCK_WOOD);
+    setBlock(keepMid+1, keepR1, G+2, BLOCK_WOOD);
+    setBlock(keepMid+1, keepR1, G+3, BLOCK_WOOD);
+    setBlock(keepMid-1, keepR1, G+4, BLOCK_WOOD); // arch
+    setBlock(keepMid, keepR1, G+4, BLOCK_WOOD);
+
+    // ============================================
+    // 5b. PEAKED WOODEN ROOF on main keep
+    // ============================================
+    // Ridge runs along the col axis (east-west)
+    // Roof slopes from front/back walls up to center ridge
+    int roofBase = G + keepWallH + 1;
+    int keepRmid = (keepR0 + keepR1) / 2;
+    int halfDepth = keepR1 - keepRmid;
+
+    for (int c = keepC0 - 1; c <= keepC1 + 1; c++) {
+        for (int r = keepR0 - 1; r <= keepR1 + 1; r++) {
+            int distFromCenter = abs(r - keepRmid);
+            int roofH = roofBase + (halfDepth + 1 - distFromCenter);
+            if (roofH > roofBase) {
+                setBlock(c, r, roofH, BLOCK_WOOD);
+                // Fill gable ends with stone
+                if (c == keepC0 - 1 || c == keepC1 + 1) {
+                    for (int h = roofBase; h < roofH; h++)
+                        setBlock(c, r, h, BLOCK_STONE);
+                }
+            }
+        }
+    }
+    // Ridge beam (dark wood along the peak)
+    for (int c = keepC0 - 1; c <= keepC1 + 1; c++) {
+        setBlock(c, keepRmid, roofBase + halfDepth + 1, BLOCK_COAL_ORE);
+    }
+
+    // Wooden cross-beams visible on gable ends
+    for (int h = roofBase; h <= roofBase + halfDepth; h += 2) {
+        setBlock(keepC0 - 1, keepRmid, h, BLOCK_WOOD);
+        setBlock(keepC1 + 1, keepRmid, h, BLOCK_WOOD);
+    }
+
+    // ============================================
+    // 6. SIDE BUILDING (smaller, right side)
+    // ============================================
+    int sideC0 = keepC1 + 1, sideC1 = c1 - 2;
+    int sideR0 = r0 + 8, sideR1 = r0 + 18;
+    int sideWallH = 7;
+
+    // Side building walls
+    fillRect(sideC0, sideC1, sideR0, sideR0, G+1, G+sideWallH, BLOCK_STONE); // back
+    fillRect(sideC0, sideC1, sideR1, sideR1, G+1, G+sideWallH, BLOCK_STONE); // front
+    fillRect(sideC1, sideC1, sideR0, sideR1, G+1, G+sideWallH, BLOCK_STONE); // right side
+    // Left side connects to keep (shared wall, make doorway)
+    fillRect(sideC0, sideC0, sideR0, sideR1, G+1, G+sideWallH, BLOCK_STONE);
+    // Interior hollow
+    fillRect(sideC0+1, sideC1-1, sideR0+1, sideR1-1, G+1, G+sideWallH-1, BLOCK_AIR);
+    // Floor
+    fillRect(sideC0+1, sideC1-1, sideR0+1, sideR1-1, G, G, BLOCK_WOOD);
+
+    // Doorway connecting keep to side building
+    int sideDoor = (sideR0 + sideR1) / 2;
+    setBlock(sideC0, sideDoor, G+1, BLOCK_AIR);
+    setBlock(sideC0, sideDoor, G+2, BLOCK_AIR);
+    setBlock(sideC0, sideDoor, G+3, BLOCK_AIR);
+
+    // Side building windows
+    for (int r = sideR0 + 2; r <= sideR1 - 2; r += 3) {
+        setBlock(sideC1, r, G+3, BLOCK_GLASS);
+        setBlock(sideC1, r, G+4, BLOCK_GLASS);
+        setBlock(sideC1, r, G+5, BLOCK_GLASS);
+    }
+    for (int c = sideC0 + 2; c <= sideC1 - 2; c += 3) {
+        setBlock(c, sideR0, G+3, BLOCK_GLASS);
+        setBlock(c, sideR0, G+4, BLOCK_GLASS);
+        setBlock(c, sideR1, G+3, BLOCK_GLASS);
+        setBlock(c, sideR1, G+4, BLOCK_GLASS);
+    }
+
+    // Dark accent band
+    fillRect(sideC0, sideC1, sideR0, sideR0, G+2, G+2, BLOCK_COAL_ORE);
+    fillRect(sideC0, sideC1, sideR1, sideR1, G+2, G+2, BLOCK_COAL_ORE);
+    fillRect(sideC1, sideC1, sideR0, sideR1, G+2, G+2, BLOCK_COAL_ORE);
+
+    // Side building peaked roof
+    int sideRoofBase = G + sideWallH + 1;
+    int sideRmid = (sideR0 + sideR1) / 2;
+    int sideHalfD = sideR1 - sideRmid;
+    for (int c = sideC0 - 1; c <= sideC1 + 1; c++) {
+        for (int r = sideR0 - 1; r <= sideR1 + 1; r++) {
+            int dist = abs(r - sideRmid);
+            int rh = sideRoofBase + (sideHalfD + 1 - dist);
+            if (rh > sideRoofBase) {
+                setBlock(c, r, rh, BLOCK_WOOD);
+                // Gable ends
+                if (c == sideC0 - 1 || c == sideC1 + 1) {
+                    for (int h = sideRoofBase; h < rh; h++)
+                        setBlock(c, r, h, BLOCK_STONE);
+                }
+            }
+        }
+    }
+
+    // ============================================
+    // 7. LEFT WING BUILDING (kitchen/armory)
+    // ============================================
+    int leftC0 = c0 + 2, leftC1 = keepC0 - 1;
+    int leftR0 = r0 + 8, leftR1 = r0 + 16;
+    int leftWallH = 6;
+
+    fillRect(leftC0, leftC1, leftR0, leftR0, G+1, G+leftWallH, BLOCK_STONE);
+    fillRect(leftC0, leftC1, leftR1, leftR1, G+1, G+leftWallH, BLOCK_STONE);
+    fillRect(leftC0, leftC0, leftR0, leftR1, G+1, G+leftWallH, BLOCK_STONE);
+    fillRect(leftC1, leftC1, leftR0, leftR1, G+1, G+leftWallH, BLOCK_STONE);
+    fillRect(leftC0+1, leftC1-1, leftR0+1, leftR1-1, G+1, G+leftWallH-1, BLOCK_AIR);
+    fillRect(leftC0+1, leftC1-1, leftR0+1, leftR1-1, G, G, BLOCK_WOOD);
+
+    // Doorway to courtyard
+    setBlock(leftC1, (leftR0+leftR1)/2, G+1, BLOCK_AIR);
+    setBlock(leftC1, (leftR0+leftR1)/2, G+2, BLOCK_AIR);
+    setBlock(leftC1, (leftR0+leftR1)/2, G+3, BLOCK_AIR);
+
+    // Windows
+    for (int r = leftR0 + 2; r <= leftR1 - 2; r += 3) {
+        setBlock(leftC0, r, G+3, BLOCK_GLASS);
+        setBlock(leftC0, r, G+4, BLOCK_GLASS);
+    }
+
+    // Flat roof with battlements
+    fillRect(leftC0, leftC1, leftR0, leftR1, G+leftWallH+1, G+leftWallH+1, BLOCK_STONE);
+    for (int c = leftC0; c <= leftC1; c += 2)
+        setBlock(c, leftR0, G+leftWallH+2, BLOCK_STONE);
+    for (int c = leftC0; c <= leftC1; c += 2)
+        setBlock(c, leftR1, G+leftWallH+2, BLOCK_STONE);
+
+    // ============================================
+    // 8. WOODEN BALCONY on keep front (like reference)
+    // ============================================
+    int balcC0 = keepC0 + 2, balcC1 = keepC1 - 2;
+    int balcR = keepR1 + 1;
+    int balcH = G + 6; // second floor level
+    // Wooden platform
+    fillRect(balcC0, balcC1, balcR, balcR+1, balcH, balcH, BLOCK_WOOD);
+    // Wooden fence railing
+    for (int c = balcC0; c <= balcC1; c += 2) {
+        setBlock(c, balcR+1, balcH+1, BLOCK_WOOD);
+    }
+    // Support brackets under balcony
+    for (int c = balcC0; c <= balcC1; c += 4) {
+        setBlock(c, keepR1, balcH-1, BLOCK_WOOD);
+        setBlock(c, balcR, balcH-1, BLOCK_WOOD);
+    }
+
+    // ============================================
+    // 9. INTERIOR DETAILS
+    // ============================================
+    // Great hall table (wood)
+    fillRect(keepMid-3, keepMid+2, keepR0+3, keepR0+5, G+1, G+1, BLOCK_WOOD);
+
+    // Throne at back of keep
+    setBlock(keepMid, keepR0+1, G+1, BLOCK_STONE_LIGHT);
+    setBlock(keepMid, keepR0+1, G+2, BLOCK_STONE_LIGHT);
+    setBlock(keepMid-1, keepR0+1, G+1, BLOCK_WOOD);
+    setBlock(keepMid+1, keepR0+1, G+1, BLOCK_WOOD);
+
+    // Stairs to second floor (along left wall inside keep)
+    for (int i = 0; i < 5; i++) {
+        setBlock(keepC0+1, keepR0+2+i, G+1+i, BLOCK_STONE);
+    }
+
+    // Interior torches in keep
+    torchLocations.push_back({keepC0+2, keepR0+2, G+4});
+    torchLocations.push_back({keepC1-2, keepR0+2, G+4});
+    torchLocations.push_back({keepC0+2, keepR1-2, G+4});
+    torchLocations.push_back({keepC1-2, keepR1-2, G+4});
+
+    // ============================================
+    // 10. EXTERIOR DETAILS
+    // ============================================
+    // Torches on outer walls (every 8 blocks)
+    for (int c = c0 + 4; c <= c1 - 4; c += 8) {
+        torchLocations.push_back({c, r1, G+wallH-1});
+        torchLocations.push_back({c, r0, G+wallH-1});
+    }
+    for (int r = r0 + 4; r <= r1 - 4; r += 8) {
+        torchLocations.push_back({c0, r, G+wallH-1});
+        torchLocations.push_back({c1, r, G+wallH-1});
+    }
+
+    // Gate torches (flanking the entrance)
+    torchLocations.push_back({gateL, r1+1, G+wallH});
+    torchLocations.push_back({gateR+1, r1+1, G+wallH});
+
+    // Flower boxes / bushes near gate (leaf blocks)
+    setBlock(gateL-1, r1+1, G+1, BLOCK_LEAF);
+    setBlock(gateR+2, r1+1, G+1, BLOCK_LEAF);
+    setBlock(gateL-1, r1+2, G+1, BLOCK_LEAF);
+    setBlock(gateR+2, r1+2, G+1, BLOCK_LEAF);
+
+    // Stone path leading from gate outward
+    for (int r = r1 + 1; r <= r1 + 8; r++) {
+        setBlock(c0 + W/2 - 1, r, G, BLOCK_STONE);
+        setBlock(c0 + W/2, r, G, BLOCK_STONE);
+        setBlock(c0 + W/2 + 1, r, G, BLOCK_STONE_LIGHT);
+    }
+
+    // Well in courtyard (stone ring + water)
+    int wellC = c0 + W/2 + 6, wellR = r1 - 8;
+    for (int dc = -1; dc <= 1; dc++) {
+        for (int dr = -1; dr <= 1; dr++) {
+            if (dc == 0 && dr == 0) {
+                setBlock(wellC, wellR, G+1, BLOCK_WATER);
+            } else {
+                setBlock(wellC+dc, wellR+dr, G+1, BLOCK_STONE);
+            }
+        }
+    }
+    // Well posts and roof
+    setBlock(wellC-1, wellR-1, G+2, BLOCK_WOOD);
+    setBlock(wellC-1, wellR-1, G+3, BLOCK_WOOD);
+    setBlock(wellC+1, wellR+1, G+2, BLOCK_WOOD);
+    setBlock(wellC+1, wellR+1, G+3, BLOCK_WOOD);
+    fillRect(wellC-1, wellC+1, wellR-1, wellR+1, G+4, G+4, BLOCK_WOOD);
+
+    // Courtyard trees (2 decorative trees)
+    treeLocations.push_back({c0+W/2 - 8, r1-10, glm::vec3(0.2f,0.65f,0.15f), false});
+    treeLocations.push_back({c0+W/2 + 8, r1-12, glm::vec3(0.15f,0.55f,0.12f), false});
+
+    printf("[Castle] Built Medieval Castle at col %d..%d, row %d..%d\n", c0, c1, r0, r1);
+}
+
+// =========================================================
+// PHASE 16: STRUCTURE GENERATORS
+// =========================================================
+
+void buildDungeon(int c0, int r0, int groundH) {
+    int W = 9, D = 9;
+    int c1 = c0 + W - 1;
+    int r1 = r0 + D - 1;
+    // Carve room
+    for (int c = c0; c <= c1; c++) {
+        for (int r = r0; r <= r1; r++) {
+            for (int h = groundH; h < groundH + 5; h++) {
+                if (c==c0 || c==c1 || r==r0 || r==r1 || h==groundH || h==groundH+4) {
+                    setBlock(c, r, h, BLOCK_STONE_LIGHT); // stone brick proxy
+                } else {
+                    setBlock(c, r, h, BLOCK_AIR);
+                }
+            }
+        }
+    }
+    // Mob spawner & chest
+    setBlock(c0 + 4, r0 + 4, groundH + 1, BLOCK_ORE_DIAMOND); // proxy for spawner
+    setBlock(c0 + 4, r0 + 4, groundH + 2, BLOCK_GLASS);
+    setBlock(c0 + 2, r0 + 2, groundH + 1, BLOCK_WOOD); // proxy for chest
+}
+
+void buildHut(int c0, int r0, int G) {
+    // 5x5 hut
+    for(int c=c0; c<=c0+4; c++){
+        for(int r=r0; r<=r0+4; r++){
+            for(int h=G; h<=G+3; h++){
+                if(c==c0||c==c0+4||r==r0||r==r0+4){
+                    setBlock(c, r, h, BLOCK_WOOD);
+                } else {
+                    setBlock(c, r, h, BLOCK_AIR);
+                }
+            }
+            setBlock(c, r, G+4, BLOCK_WOOD); // roof
+        }
+    }
+    setBlock(c0+2, r0+4, G+1, BLOCK_AIR); // door
+    setBlock(c0+2, r0+4, G+2, BLOCK_AIR);
+}
+
+void buildVillage(int c0, int r0) {
+    int G = UNDERGROUND_DEPTH;
+    // Central well
+    buildHut(c0, r0, G);
+    buildHut(c0+8, r0+2, G);
+    buildHut(c0-2, r0+8, G);
+    buildHut(c0+10, r0+10, G);
+    
+    // Well in center
+    setBlock(c0+5, r0+5, G+1, BLOCK_STONE);
+    setBlock(c0+5, r0+5, G, BLOCK_WATER);
+    setBlock(c0+4, r0+5, G+1, BLOCK_STONE);
+    setBlock(c0+6, r0+5, G+1, BLOCK_STONE);
+    setBlock(c0+5, r0+4, G+1, BLOCK_STONE);
+    setBlock(c0+5, r0+6, G+1, BLOCK_STONE);
+}
+
+void buildPyramid(int c0, int r0) {
+    int G = UNDERGROUND_DEPTH;
+    int size = 15; // must be odd
+    int maxH = size / 2;
+    for (int h = 0; h <= maxH; h++) {
+        for (int c = c0 + h; c < c0 + size - h; c++) {
+            for (int r = r0 + h; r < r0 + size - h; r++) {
+                setBlock(c, r, G + 1 + h, BLOCK_SAND);
+                // Hollow center
+                if (h == 0 && c > c0+1 && c < c0+size-2 && r > r0+1 && r < r0+size-2) {
+                    setBlock(c, r, G + 1, BLOCK_AIR);
+                }
+            }
+        }
+    }
+    setBlock(c0 + size/2, r0 + size - 1, G + 1, BLOCK_AIR);
+    setBlock(c0 + size/2, r0 + size - 1, G + 2, BLOCK_AIR);
+}
+
+void buildWatchtower(int c0, int r0) {
+    int G = UNDERGROUND_DEPTH;
+    for (int h = G; h < G + 15; h++) {
+        for (int c = c0; c <= c0+2; c++) {
+            for (int r = r0; r <= r0+2; r++) {
+                if (c==c0+1 && r==r0+1) setBlock(c, r, h, BLOCK_AIR); // hollow
+                else setBlock(c, r, h, BLOCK_STONE);
+            }
+        }
+    }
+    setBlock(c0+1, r0, G+1, BLOCK_AIR);
+    setBlock(c0+1, r0, G+2, BLOCK_AIR);
+    for (int c = c0-1; c <= c0+3; c++) {
+        for (int r = r0-1; r <= r0+3; r++) {
+            setBlock(c, r, G+15, BLOCK_WOOD); // viewing platform
+            if (c==c0-1||c==c0+3||r==r0-1||r==r0+3) setBlock(c, r, G+16, BLOCK_WOOD); // rail
+        }
+    }
+}
+// =====================================================
+// 16H: Cellular Automata Fluid Dynamics
+// =====================================================
+void updateFluids(float time) {
+    static float lastFluidUpdate = 0;
+    if (time - lastFluidUpdate < 0.2f) return; // 5 updates per second
+    lastFluidUpdate = time;
+
+    // Track original state to prevent cascading updates within same frame
+    static int origWater[GRID_W][GRID_D][GRID_H];
+    for (int col = 0; col < GRID_W; col++) {
+        for (int row = 0; row < GRID_D; row++) {
+            for (int h = 0; h < GRID_H; h++) {
+                if (blockGrid[col][row][h] == BLOCK_WATER) {
+                    origWater[col][row][h] = 1;
+                } else {
+                    origWater[col][row][h] = 0;
+                }
+            }
+        }
+    }
+
+    // Process fluids around the camera
+    int cCol = GRID_OFF_X - 20; // approximate center chunk
+    for (int col = 5; col < GRID_W - 5; col++) {
+        for (int row = 5; row < GRID_D - 5; row++) {
+            for (int h = 1; h < GRID_H; h++) {
+                if (origWater[col][row][h] == 1) {
+                    // Try flowing down first
+                    if (h > 1 && blockGrid[col][row][h-1] == BLOCK_AIR) {
+                        setBlock(col - GRID_OFF_X, row - GRID_OFF_Z, h-1, BLOCK_WATER);
+                    } 
+                    // Support below -> spread outward
+                    else if (h > 1 && blockGrid[col][row][h-1] != BLOCK_AIR && blockGrid[col][row][h-1] != BLOCK_WATER) {
+                        int dc[4] = {1, -1, 0, 0};
+                        int dr[4] = {0, 0, 1, -1};
+                        for (int i=0; i<4; i++) {
+                            if (blockGrid[col+dc[i]][row+dr[i]][h] == BLOCK_AIR) {
+                                // Simplified spread limit
+                                setBlock(col+dc[i] - GRID_OFF_X, row+dr[i] - GRID_OFF_Z, h, BLOCK_WATER);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void initBlockGrid() {
+
     memset(blockGrid, 0, sizeof(blockGrid));
+    memset(columnMaxH, 0, sizeof(columnMaxH));
     treeLocations.clear();
     torchLocations.clear();
 
@@ -494,124 +1225,234 @@ void initBlockGrid() {
             // Water ponds (expanded with beaches)
             int pondType = isWaterPond(col, row);
             if (pondType == 1) {
-                // Water: fill underground + water on top
                 setBlock(col, row, 0, BLOCK_BEDROCK);
                 for (int h = 1; h < UNDERGROUND_DEPTH; h++)
                     setBlock(col, row, h, BLOCK_STONE);
-                setBlock(col, row, UNDERGROUND_DEPTH - 1, BLOCK_SAND); // sandy bottom
+                // Sandy/clay bottom with gravel patches
+                setBlock(col, row, UNDERGROUND_DEPTH - 2, BLOCK_CLAY);
+                setBlock(col, row, UNDERGROUND_DEPTH - 1, (seed % 3 == 0) ? BLOCK_GRAVEL : BLOCK_SAND);
                 setBlock(col, row, UNDERGROUND_DEPTH, BLOCK_WATER);
-                setBlock(col, row, UNDERGROUND_DEPTH + 1, BLOCK_WATER); // 2 layers deep
+                setBlock(col, row, UNDERGROUND_DEPTH + 1, BLOCK_WATER);
                 continue;
             }
             if (pondType == 2) {
-                // Beach: sand border around ponds
                 setBlock(col, row, 0, BLOCK_BEDROCK);
                 for (int h = 1; h < UNDERGROUND_DEPTH; h++)
                     setBlock(col, row, h, BLOCK_STONE);
-                setBlock(col, row, UNDERGROUND_DEPTH, BLOCK_SAND);
+                // Beach: sand with gravel patches near water edge
+                int surfBlock = (seed % 5 == 0) ? BLOCK_GRAVEL : BLOCK_SAND;
+                setBlock(col, row, UNDERGROUND_DEPTH, surfBlock);
                 setBlock(col, row, UNDERGROUND_DEPTH + 1, BLOCK_SAND);
                 continue;
             }
 
+            // ======== BIOME BLENDING ========
+            // Sample this column's biome and neighbors to detect edges
             int biome = getBiome(col, row);
             int height = getTerrainHeightBiome(col, row, biome);
 
-            // ======== UNDERGROUND LAYERS (h=0 to UNDERGROUND_DEPTH-1) ========
-            // h=0: Bedrock (unbreakable)
-            setBlock(col, row, 0, BLOCK_BEDROCK);
+            // Check if we're at a biome edge (any neighbor has different biome)
+            bool atBiomeEdge = false;
+            int neighborBiome = biome;
+            for (int dc = -2; dc <= 2; dc += 2) {
+                for (int dr = -2; dr <= 2; dr += 2) {
+                    if (dc == 0 && dr == 0) continue;
+                    int nb = getBiome(col + dc, row + dr);
+                    if (nb != biome) {
+                        atBiomeEdge = true;
+                        neighborBiome = nb;
+                        break;
+                    }
+                }
+                if (atBiomeEdge) break;
+            }
 
-            // h=1 to UNDERGROUND_DEPTH-1: stone with ores and small caves
+            // Beach transition: sand strip where land meets water biome
+            bool isBeachTransition = false;
+            if (biome != 3) {
+                for (int dc = -3; dc <= 3; dc++) {
+                    for (int dr = -3; dr <= 3; dr++) {
+                        if (dc * dc + dr * dr > 10) continue;
+                        if (getBiome(col + dc, row + dr) == 3) {
+                            isBeachTransition = true;
+                            break;
+                        }
+                    }
+                    if (isBeachTransition) break;
+                }
+            }
+
+            // Blend height at biome edges for smooth transitions
+            if (atBiomeEdge) {
+                int neighborH = getTerrainHeightBiome(col, row, neighborBiome);
+                height = (height * 2 + neighborH) / 3; // weighted blend toward own biome
+            }
+
+            // Beach: flatten and use sand near water biomes
+            if (isBeachTransition) {
+                if (height > UNDERGROUND_DEPTH + 2) height = UNDERGROUND_DEPTH + 2;
+                biome = 0; // force sand surface
+            }
+
+            // ======== UNDERGROUND LAYERS ========
+            setBlock(col, row, 0, BLOCK_BEDROCK);
+            // Irregular bedrock layer (1-2 blocks thick)
+            if (seed % 3 == 0) setBlock(col, row, 1, BLOCK_BEDROCK);
+
             for (int h = 1; h < UNDERGROUND_DEPTH; h++) {
-                // Cave air pockets: use 3D noise to carve small chambers
-                float caveNoise = fbmNoise(col * 0.15f + h * 0.5f, row * 0.15f + h * 0.7f, 2);
-                if (h >= 3 && h <= 7 && caveNoise > 0.55f) {
-                    setBlock(col, row, h, BLOCK_AIR); // cave pocket
+                if (getBlock(col, row, h) == BLOCK_BEDROCK) continue; // skip if already bedrock
+
+                // 16G: Ravines cutting down to y=3
+                bool isRavine = abs(fbmNoise(col * 0.05f + 100.0f, row * 0.05f + 100.0f, 2)) < 0.03f;
+                if (isRavine && h >= 3 && h < UNDERGROUND_DEPTH) {
+                    setBlock(col, row, h, BLOCK_AIR);
                     continue;
                 }
 
-                int blockType;
-                unsigned int oreSeed = gridSeed(col + h * 7, row + h * 13);
+                // 16A: Cave networks
+                float caveN1 = fbmNoise(col * 0.12f + h * 0.4f, row * 0.12f + h * 0.6f, 2);
+                float caveN2 = fbmNoise(col * 0.08f + h * 0.3f + 50.0f, row * 0.08f + h * 0.5f + 50.0f, 2);
+                if (h >= 3 && h <= UNDERGROUND_DEPTH - 2 && caveN1 > 0.42f && caveN2 > 0.3f) {
+                    setBlock(col, row, h, BLOCK_AIR);
+                    continue;
+                }
 
-                if (h <= 2) {
-                    // Deep: diamond ore veins (~1 in 15)
-                    if (oreSeed % 15 == 0)
-                        blockType = BLOCK_ORE_DIAMOND;
-                    else
-                        blockType = BLOCK_STONE;
-                } else if (h <= 5) {
-                    // Mid: gold ore veins (~1 in 18)
-                    if (oreSeed % 18 == 0)
-                        blockType = BLOCK_ORE_GOLD;
-                    else if (oreSeed % 12 == 0)
-                        blockType = BLOCK_COAL_ORE;
-                    else
-                        blockType = BLOCK_STONE;
+                // 16B: Clustered Ore Veins
+                int blockType = BLOCK_STONE;
+                unsigned int oreSeed = gridSeed(col/2 + h*11, row/2 + h*13); 
+                if (h <= 3) {
+                    if (oreSeed % 18 == 0) blockType = BLOCK_ORE_DIAMOND;
+                } else if (h <= 6) {
+                    if (oreSeed % 15 == 0) blockType = BLOCK_ORE_GOLD;
+                    else if (oreSeed % 10 == 0) blockType = BLOCK_COAL_ORE;
                 } else {
-                    // Upper underground: coal ore (~1 in 10), some iron
-                    if (oreSeed % 10 == 0)
-                        blockType = BLOCK_COAL_ORE;
-                    else if (oreSeed % 25 == 0)
-                        blockType = BLOCK_ORE_GOLD;
-                    else
-                        blockType = BLOCK_STONE;
+                    if (oreSeed % 8 == 0) blockType = BLOCK_COAL_ORE;
+                    else if (oreSeed % 20 == 0) blockType = BLOCK_GRAVEL;
                 }
                 setBlock(col, row, h, blockType);
             }
 
-            // ======== SURFACE LAYERS (UNDERGROUND_DEPTH to topH) ========
+            // ======== SURFACE LAYERS ========
             int topH = height + 1;
+            if (topH >= GRID_H) topH = GRID_H - 1;
+
             for (int h = UNDERGROUND_DEPTH; h <= topH; h++) {
                 int blockType;
+                int depthFromTop = topH - h;
+
                 if (h == topH) {
-                    // Top surface block
+                    // ---- TOP SURFACE BLOCK ----
                     switch (biome) {
+                        case 4: blockType = BLOCK_SNOW; break;
                         case 0: blockType = BLOCK_SAND; break;
-                        case 1: blockType = BLOCK_GRASS; break;
-                        case 2: blockType = (seed % 2) ? BLOCK_STONE : BLOCK_STONE_LIGHT; break;
+                        case 1: {
+                            // Snow on very tall grass hills
+                            if (topH >= UNDERGROUND_DEPTH + 10)
+                                blockType = BLOCK_SNOW;
+                            else
+                                blockType = BLOCK_GRASS;
+                            break;
+                        }
+                        case 2: {
+                            // Snow on mountain peaks, stone/gravel mix lower
+                            if (topH >= UNDERGROUND_DEPTH + 16)
+                                blockType = BLOCK_SNOW;
+                            else if (topH >= UNDERGROUND_DEPTH + 12)
+                                blockType = (seed % 3 == 0) ? BLOCK_GRAVEL : BLOCK_STONE;
+                            else
+                                blockType = (seed % 2) ? BLOCK_STONE : BLOCK_STONE_LIGHT;
+                            break;
+                        }
                         default: blockType = BLOCK_SAND; break;
                     }
-                } else if (biome == 1 && h >= topH - 3 && h < topH) {
-                    // 3 layers of dirt below grass
-                    blockType = BLOCK_DIRT;
-                } else if (biome == 0 && h >= topH - 2 && h < topH) {
-                    // 2 layers of sand below surface
-                    blockType = BLOCK_SAND;
-                } else {
-                    // Transition stone between underground and surface
-                    unsigned int oreSeed = gridSeed(col + h * 7, row + h * 13);
-                    if (oreSeed % 40 == 0)
-                        blockType = BLOCK_ORE_DIAMOND;
-                    else if (oreSeed % 30 == 0)
-                        blockType = BLOCK_ORE_GOLD;
-                    else if (oreSeed % 15 == 0)
-                        blockType = BLOCK_COAL_ORE;
-                    else
+                } else if (biome == 1) {
+                    // ---- GRASS BIOME SUBSURFACE ----
+                    if (depthFromTop <= 1) {
+                        blockType = BLOCK_DIRT; // 1 block dirt right under grass
+                    } else if (depthFromTop <= 4) {
+                        blockType = BLOCK_DIRT; // 4 layers of dirt total (visible on cliffs!)
+                    } else if (depthFromTop <= 6) {
+                        // Transition: mixed dirt/stone/gravel
+                        unsigned int ts = gridSeed(col + h * 3, row + h * 5);
+                        if (ts % 4 == 0) blockType = BLOCK_GRAVEL;
+                        else if (ts % 3 == 0) blockType = BLOCK_DIRT;
+                        else blockType = BLOCK_STONE;
+                    } else {
+                        // Deep: stone with ores
+                        unsigned int oreSeed = gridSeed(col + h * 7, row + h * 13);
+                        if (oreSeed % 40 == 0) blockType = BLOCK_ORE_DIAMOND;
+                        else if (oreSeed % 30 == 0) blockType = BLOCK_ORE_GOLD;
+                        else if (oreSeed % 15 == 0) blockType = BLOCK_COAL_ORE;
+                        else blockType = BLOCK_STONE;
+                    }
+                } else if (biome == 0) {
+                    // ---- SAND BIOME SUBSURFACE ----
+                    if (depthFromTop <= 3) {
+                        blockType = BLOCK_SAND;
+                    } else if (depthFromTop <= 5) {
+                        // Sandstone-like layer (use stone_light)
+                        blockType = BLOCK_STONE_LIGHT;
+                    } else {
                         blockType = BLOCK_STONE;
+                    }
+                } else if (biome == 2) {
+                    // ---- STONE BIOME SUBSURFACE ----
+                    if (depthFromTop <= 2 && topH >= UNDERGROUND_DEPTH + 16) {
+                        // Snow layer on peaks
+                        blockType = BLOCK_SNOW;
+                    } else if (depthFromTop <= 1) {
+                        blockType = (seed % 3 == 0) ? BLOCK_GRAVEL : BLOCK_STONE;
+                    } else {
+                        unsigned int oreSeed = gridSeed(col + h * 7, row + h * 13);
+                        if (oreSeed % 35 == 0) blockType = BLOCK_ORE_DIAMOND;
+                        else if (oreSeed % 25 == 0) blockType = BLOCK_ORE_GOLD;
+                        else if (oreSeed % 12 == 0) blockType = BLOCK_COAL_ORE;
+                        else if (oreSeed % 20 == 0) blockType = BLOCK_GRAVEL;
+                        else blockType = BLOCK_STONE;
+                    }
+                } else {
+                    blockType = BLOCK_STONE;
                 }
                 setBlock(col, row, h, blockType);
             }
 
-            // Record tree locations — denser forest (1 in 3 instead of 1 in 4)
-            if (isForestZone(col, row) && biome == 1 && height >= UNDERGROUND_DEPTH + 1) {
-                if (seed % 3 == 0) {
+            // ======== CLAY DEPOSITS near rivers/ponds ========
+            if (isBeachTransition && seed % 6 == 0) {
+                setBlock(col, row, UNDERGROUND_DEPTH, BLOCK_CLAY);
+            }
+
+            // ======== TREES ========
+            int surfaceH = topH;
+            if (isForestZone(col, row) && biome == 1 && surfaceH >= UNDERGROUND_DEPTH + 1
+                && surfaceH < UNDERGROUND_DEPTH + 10) { // no trees on snowy peaks
+                if (seed % 20 == 0) {
                     TreeInfo ti;
                     ti.col = col; ti.row = row;
                     ti.leafColor = TREE_COLORS[seed % NUM_TREE_COLORS];
-                    ti.large = (seed % 9 == 0);
+                    ti.large = (seed % 3 == 0);
                     treeLocations.push_back(ti);
                 }
-            } else if (biome == 1 && height >= UNDERGROUND_DEPTH + 1 && (seed % 28 == 0)) {
-                // Scattered grass-biome trees outside forest
+            } else if (biome == 1 && surfaceH >= UNDERGROUND_DEPTH + 1
+                       && surfaceH < UNDERGROUND_DEPTH + 10 && (seed % 80 == 0)) {
                 TreeInfo ti;
                 ti.col = col; ti.row = row;
                 ti.leafColor = TREE_COLORS[seed % NUM_TREE_COLORS];
-                ti.large = (seed % 56 == 0);
+                ti.large = (seed % 3 == 0);
+                treeLocations.push_back(ti);
+            }
+            // Sparse trees on stone biome at mid-altitude
+            if (biome == 2 && surfaceH >= UNDERGROUND_DEPTH + 4
+                && surfaceH < UNDERGROUND_DEPTH + 12 && (seed % 120 == 0)) {
+                TreeInfo ti;
+                ti.col = col; ti.row = row;
+                ti.leafColor = glm::vec3(0.12f, 0.4f, 0.1f); // dark green pine
+                ti.large = false;
                 treeLocations.push_back(ti);
             }
 
-            // Record torch locations
-            if (biome == 1 && height >= UNDERGROUND_DEPTH + 1 && (seed % 61 == 0)) {
-                TorchInfo t; t.col = col; t.row = row; t.height = height + 2;
+            // ======== TORCHES ========
+            if (biome == 1 && surfaceH >= UNDERGROUND_DEPTH + 1 && (seed % 61 == 0)) {
+                TorchInfo t; t.col = col; t.row = row; t.height = surfaceH + 2;
                 torchLocations.push_back(t);
             }
         }
@@ -627,482 +1468,24 @@ void initBlockGrid() {
         }
     }
 
-    // =========================================================
-    // CASTLE — truly massive castle with courtyard and rooms
-    // Outer walls: col -5..40, row -20..25 (46 wide x 46 deep)
-    // Walls 12 blocks tall, towers 20 blocks tall
-    // Grand entrance, courtyard, great hall, bedroom, kitchen,
-    // library, throne room, armory, dungeon stairway
-    // =========================================================
-    {
-        // --- Castle outer bounds ---
-        const int C0 = -20, C1 = 25;   // col range (46 wide) — centered near spawn
-        const int R0 = 12, R1 = 57;    // row range (46 deep) — entrance faces spawn
-        const int wallH = 12;
-        const int twrH = 20;            // tower height
-        const int floorLevel = 1;
-        const int baseH = floorLevel + 2; // wall start (above floor)
-        const int fH = floorLevel + 2;    // furniture on top of floor
+    // ===========================================
+    // MAIN SPAWN — MEDIEVAL CASTLE
+    // ===========================================
+    buildMedievalCastle(-30, -5);
 
-        // --- Helper lambdas ---
-        auto foundation = [&](int rA, int rB, int cA, int cB) {
-            for (int r = rA; r <= rB; r++)
-                for (int c = cA; c <= cB; c++) {
-                    for (int h = 0; h <= floorLevel; h++)
-                        setBlock(c, r, h, BLOCK_STONE);
-                    setBlock(c, r, floorLevel + 1, BLOCK_WOOD);
-                    for (int h = floorLevel + 2; h < GRID_H; h++)
-                        setBlock(c, r, h, BLOCK_AIR);
-                }
-        };
-
-        auto walls = [&](int rA, int rB, int cA, int cB, int ht) {
-            for (int r = rA; r <= rB; r++)
-                for (int c = cA; c <= cB; c++) {
-                    if (r != rA && r != rB && c != cA && c != cB) continue;
-                    for (int h = baseH; h < baseH + ht && h < GRID_H; h++) {
-                        int bt = ((c + r + h) % 2 == 0) ? BLOCK_STONE : BLOCK_STONE_LIGHT;
-                        setBlock(c, r, h, bt);
-                    }
-                }
-        };
-
-        auto innerWall = [&](int fixedRow, int cA, int cB, int ht) {
-            for (int c = cA; c <= cB; c++)
-                for (int h = baseH; h < baseH + ht && h < GRID_H; h++)
-                    setBlock(c, fixedRow, h, BLOCK_STONE);
-        };
-
-        auto innerWallCol = [&](int fixedCol, int rA, int rB, int ht) {
-            for (int r = rA; r <= rB; r++)
-                for (int h = baseH; h < baseH + ht && h < GRID_H; h++)
-                    setBlock(fixedCol, r, h, BLOCK_STONE);
-        };
-
-        auto doorHole = [&](int cA, int cB, int row, int ht) {
-            for (int c = cA; c <= cB; c++)
-                for (int h = baseH; h < baseH + ht; h++)
-                    setBlock(c, row, h, BLOCK_AIR);
-        };
-
-        auto doorHoleCol = [&](int col, int rA, int rB, int ht) {
-            for (int r = rA; r <= rB; r++)
-                for (int h = baseH; h < baseH + ht; h++)
-                    setBlock(col, r, h, BLOCK_AIR);
-        };
-
-        auto win = [&](int c, int r) {
-            setBlock(c, r, baseH + 3, BLOCK_GLASS);
-            setBlock(c, r, baseH + 4, BLOCK_GLASS);
-            setBlock(c, r, baseH + 5, BLOCK_GLASS);
-        };
-
-        auto torch = [&](int c, int r, int h) {
-            TorchInfo t; t.col = c; t.row = r; t.height = h;
-            torchLocations.push_back(t);
-        };
-
-        // ============ FOUNDATION + FLOOR ============
-        foundation(R0, R1, C0, C1);
-
-        // ============ OUTER WALLS ============
-        walls(R0, R1, C0, C1, wallH);
-
-        // ============ BATTLEMENTS ============
-        {
-            int bH = baseH + wallH;
-            for (int c = C0; c <= C1; c += 2) {
-                if (bH < GRID_H) { setBlock(c, R0, bH, BLOCK_STONE); setBlock(c, R1, bH, BLOCK_STONE); }
-            }
-            for (int r = R0; r <= R1; r += 2) {
-                if (bH < GRID_H) { setBlock(C0, r, bH, BLOCK_STONE); setBlock(C1, r, bH, BLOCK_STONE); }
-            }
+    // 16C, 16D, 16E: Procedural Structures
+    for (int sc = -80; sc <= 80; sc += 30) {
+        for (int sr = -80; sr <= 80; sr += 30) {
+            if (sc > -40 && sc < 10 && sr > -20 && sr < 10) continue; // avoid castle
+            unsigned int ss = gridSeed(sc, sr);
+            int sb = getBiome(sc, sr);
+            int sh = getTerrainHeightBiome(sc, sr, sb);
+            
+            if (ss % 4 == 0) buildDungeon(sc, sr, 3 + (ss % 4));
+            if (sb == 2 && ss % 3 == 0) buildWatchtower(sc, sr);
+            if (sb == 0 && ss % 3 == 0) buildPyramid(sc, sr);
+            if (sb == 1 && ss % 5 == 0) buildVillage(sc, sr);
         }
-
-        // ============ 4 CORNER TOWERS (5x5 each, 20 blocks tall) ============
-        {
-            int tw = 4; // tower is 5x5 (0..4)
-            int tCorners[][2] = { {C0, R0}, {C1 - tw, R0}, {C0, R1 - tw}, {C1 - tw, R1 - tw} };
-            for (int t = 0; t < 4; t++) {
-                int tc = tCorners[t][0], tr = tCorners[t][1];
-                for (int r = tr; r <= tr + tw; r++)
-                    for (int c = tc; c <= tc + tw; c++) {
-                        for (int h = baseH; h < baseH + twrH && h < GRID_H; h++) {
-                            bool edge = (r == tr || r == tr + tw || c == tc || c == tc + tw);
-                            if (edge)
-                                setBlock(c, r, h, ((c + r + h) % 3 == 0) ? BLOCK_STONE_LIGHT : BLOCK_STONE);
-                            else
-                                setBlock(c, r, h, BLOCK_AIR);
-                        }
-                        // Tower cap
-                        int capH = baseH + twrH;
-                        if (capH < GRID_H) setBlock(c, r, capH, BLOCK_STONE);
-                    }
-                // Tower battlement
-                for (int c = tc; c <= tc + tw; c += 2)
-                    if (baseH + twrH + 1 < GRID_H) {
-                        setBlock(c, tr, baseH + twrH + 1, BLOCK_STONE);
-                        setBlock(c, tr + tw, baseH + twrH + 1, BLOCK_STONE);
-                    }
-                for (int r = tr; r <= tr + tw; r += 2)
-                    if (baseH + twrH + 1 < GRID_H) {
-                        setBlock(tc, r, baseH + twrH + 1, BLOCK_STONE);
-                        setBlock(tc + tw, r, baseH + twrH + 1, BLOCK_STONE);
-                    }
-                torch(tc + 2, tr + 2, baseH + twrH + 1);
-            }
-        }
-
-        // ============ GRAND ENTRANCE — south wall, 7 wide x 5 tall ============
-        {
-            int dm = (C0 + C1) / 2;
-            doorHole(dm - 3, dm + 3, R0, 5);
-            // Wood frame pillars
-            for (int h = baseH; h < baseH + 5; h++) {
-                setBlock(dm - 4, R0, h, BLOCK_WOOD);
-                setBlock(dm + 4, R0, h, BLOCK_WOOD);
-            }
-            // Arch lintel
-            for (int c = dm - 3; c <= dm + 3; c++)
-                setBlock(c, R0, baseH + 5, BLOCK_WOOD);
-            // Path outside — extends from castle entrance toward spawn
-            for (int r = R0 - 8; r <= R0 - 1; r++)
-                for (int c = dm - 2; c <= dm + 2; c++)
-                    setBlock(c, r, floorLevel + 1, BLOCK_SAND);
-        }
-
-        // ============ WINDOWS on all outer walls ============
-        {
-            int dm = (C0 + C1) / 2;
-            for (int c = C0 + 6; c <= C1 - 6; c += 4) {
-                if (c >= dm - 4 && c <= dm + 4) continue; // skip door
-                win(c, R0);
-            }
-            for (int c = C0 + 6; c <= C1 - 6; c += 4) win(c, R1);
-            for (int r = R0 + 6; r <= R1 - 6; r += 4) { win(C0, r); win(C1, r); }
-        }
-
-        // ============ ROOF over entire castle ============
-        {
-            int roofLvl = baseH + wallH;
-            for (int r = R0; r <= R1; r++)
-                for (int c = C0; c <= C1; c++)
-                    if (roofLvl < GRID_H)
-                        setBlock(c, r, roofLvl, BLOCK_WOOD);
-        }
-
-        // ============ INTERIOR LAYOUT ============
-        // Divide castle into rooms with internal walls:
-        //
-        //  Row R1 (north)
-        //  +-----------+-----------+
-        //  | LIBRARY   | BEDROOM   |
-        //  | (NW)      | (NE)      |
-        //  +-----+-----+-----------+
-        //  |ARMRY| THRONE ROOM     |
-        //  |(MW) | (center-east)   |
-        //  +-----+---------+-------+
-        //  |  GREAT HALL   |KITCHEN|
-        //  |  (south)      | (SE)  |
-        //  +-------[DOOR]--+-------+
-        //  Row R0 (south)
-
-        // Dividing rows
-        int divRow1 = R0 + 15;   // separates great hall / kitchen from throne room / armory
-        int divRow2 = R0 + 30;   // separates throne/armory from library/bedroom
-        // Dividing columns
-        int divCol1 = C0 + 12;   // left column split (armory width)
-        int divCol2 = C1 - 12;   // right column split (kitchen width)
-        int midCol = (C0 + C1) / 2;
-
-        // --- Horizontal walls ---
-        innerWall(divRow1, C0 + 1, C1 - 1, wallH);
-        innerWall(divRow2, C0 + 1, C1 - 1, wallH);
-
-        // --- Vertical walls ---
-        // Kitchen wall (south section, east side)
-        innerWallCol(divCol2, R0 + 1, divRow1 - 1, wallH);
-        // Armory wall (middle section, west side)
-        innerWallCol(divCol1, divRow1 + 1, divRow2 - 1, wallH);
-        // Bedroom/library divider (north section, center)
-        innerWallCol(midCol, divRow2 + 1, R1 - 1, wallH);
-
-        // --- Doorways between rooms (5 wide, 4 tall) ---
-        // Great hall -> throne room
-        doorHole(midCol - 2, midCol + 2, divRow1, 4);
-        // Throne room -> library
-        doorHole(midCol - 6, midCol - 2, divRow2, 4);
-        // Throne room -> bedroom
-        doorHole(midCol + 2, midCol + 6, divRow2, 4);
-        // Great hall -> kitchen
-        doorHoleCol(divCol2, R0 + 6, R0 + 10, 4);
-        // Throne room -> armory
-        doorHoleCol(divCol1, divRow1 + 5, divRow1 + 9, 4);
-        // Library <-> bedroom
-        doorHole(midCol - 1, midCol + 1, divRow2 + (R1 - divRow2) / 2, 4);
-
-        // ============ ROOM 1: GREAT HALL (south-west, R0+1 to divRow1-1) ============
-        {
-            int rA = R0 + 2, rB = divRow1 - 2;
-            int cA = C0 + 2, cB = divCol2 - 2;
-            int tMid = (cA + cB) / 2;
-
-            // Two long banquet tables
-            for (int tr = rA + 2; tr <= rB - 2; tr++) {
-                // Left table
-                for (int tc = tMid - 8; tc <= tMid - 4; tc++)
-                    setBlock(tc, tr, fH + 1, BLOCK_WOOD);
-                if ((tr - rA) % 4 == 0) { setBlock(tMid - 8, tr, fH, BLOCK_WOOD); setBlock(tMid - 4, tr, fH, BLOCK_WOOD); }
-                // Right table
-                for (int tc = tMid + 4; tc <= tMid + 8; tc++)
-                    setBlock(tc, tr, fH + 1, BLOCK_WOOD);
-                if ((tr - rA) % 4 == 0) { setBlock(tMid + 4, tr, fH, BLOCK_WOOD); setBlock(tMid + 8, tr, fH, BLOCK_WOOD); }
-            }
-
-            // Chairs
-            for (int tr = rA + 2; tr <= rB - 2; tr += 2) {
-                setBlock(tMid - 9, tr, fH, BLOCK_STONE_LIGHT);
-                setBlock(tMid - 3, tr, fH, BLOCK_STONE_LIGHT);
-                setBlock(tMid + 3, tr, fH, BLOCK_STONE_LIGHT);
-                setBlock(tMid + 9, tr, fH, BLOCK_STONE_LIGHT);
-            }
-
-            // Grand fireplace (west wall, center)
-            {
-                int fpR = (rA + rB) / 2;
-                for (int dr = -2; dr <= 2; dr++)
-                    for (int h = fH; h < fH + 6 && h < GRID_H; h++)
-                        setBlock(cA, fpR + dr, h, BLOCK_STONE);
-                setBlock(cA, fpR - 1, fH + 1, BLOCK_ORE_GOLD);
-                setBlock(cA, fpR, fH + 1, BLOCK_ORE_GOLD);
-                setBlock(cA, fpR + 1, fH + 1, BLOCK_ORE_GOLD);
-            }
-
-            // Carpet runner from entrance
-            for (int r = R0 + 1; r <= divRow1 - 1; r++)
-                for (int c = midCol - 2; c <= midCol + 2; c++)
-                    setBlock(c, r, floorLevel + 1, BLOCK_SAND);
-
-            // Torches
-            torch(cA + 2, rA + 1, fH + 4);
-            torch(cB - 2, rA + 1, fH + 4);
-            torch(cA + 2, rB - 1, fH + 4);
-            torch(cB - 2, rB - 1, fH + 4);
-            torch(tMid, (rA + rB) / 2, fH + 4);
-        }
-
-        // ============ ROOM 2: KITCHEN (south-east corner) ============
-        {
-            int rA = R0 + 2, rB = divRow1 - 2;
-            int cA = divCol2 + 2, cB = C1 - 2;
-
-            // Long countertop along east wall
-            for (int r = rA + 1; r <= rB - 1; r++) {
-                setBlock(cB, r, fH, BLOCK_STONE);
-                setBlock(cB, r, fH + 1, BLOCK_STONE_LIGHT);
-            }
-            // Furnaces (emissive)
-            setBlock(cB, rA + 3, fH + 1, BLOCK_ORE_GOLD);
-            setBlock(cB, rA + 7, fH + 1, BLOCK_ORE_GOLD);
-
-            // Center prep table
-            int kMid = (cA + cB) / 2;
-            int kMidR = (rA + rB) / 2;
-            for (int c = kMid - 2; c <= kMid + 2; c++)
-                setBlock(c, kMidR, fH + 1, BLOCK_WOOD);
-            setBlock(kMid - 2, kMidR, fH, BLOCK_WOOD);
-            setBlock(kMid + 2, kMidR, fH, BLOCK_WOOD);
-
-            // Barrels (wood)
-            for (int c = cA; c <= cA + 3; c++) {
-                setBlock(c, rB, fH, BLOCK_WOOD);
-                if (c % 2 == 0) setBlock(c, rB, fH + 1, BLOCK_WOOD);
-            }
-
-            torch(kMid, rA + 1, fH + 4);
-            torch(kMid, rB - 1, fH + 4);
-        }
-
-        // ============ ROOM 3: THRONE ROOM (center) ============
-        {
-            int rA = divRow1 + 2, rB = divRow2 - 2;
-            int cA = divCol1 + 2, cB = C1 - 2;
-            int tMid = (cA + cB) / 2;
-            int tMidR = (rA + rB) / 2;
-
-            // Throne (elevated platform with gold accents)
-            for (int c = tMid - 2; c <= tMid + 2; c++)
-                for (int r = rB - 3; r <= rB - 1; r++) {
-                    setBlock(c, r, fH, BLOCK_STONE);       // platform
-                    setBlock(c, r, fH + 1, BLOCK_STONE);   // raised
-                }
-            // Throne chair
-            setBlock(tMid, rB - 2, fH + 2, BLOCK_WOOD);
-            setBlock(tMid, rB - 2, fH + 3, BLOCK_WOOD);   // back
-            setBlock(tMid - 1, rB - 2, fH + 2, BLOCK_WOOD);
-            setBlock(tMid + 1, rB - 2, fH + 2, BLOCK_WOOD);
-            // Gold accents
-            setBlock(tMid - 1, rB - 2, fH + 3, BLOCK_ORE_GOLD);
-            setBlock(tMid + 1, rB - 2, fH + 3, BLOCK_ORE_GOLD);
-
-            // Red carpet to throne
-            for (int r = rA; r <= rB - 4; r++)
-                for (int c = tMid - 1; c <= tMid + 1; c++)
-                    setBlock(c, r, floorLevel + 1, BLOCK_SAND);
-
-            // Pillars (stone columns, 2x2 at regular intervals)
-            for (int r = rA + 3; r <= rB - 5; r += 6) {
-                for (int h = fH; h < baseH + wallH - 1 && h < GRID_H; h++) {
-                    setBlock(cA + 3, r, h, BLOCK_STONE);
-                    setBlock(cB - 3, r, h, BLOCK_STONE);
-                }
-            }
-
-            // Diamond ore display stands
-            setBlock(tMid - 5, rB - 2, fH, BLOCK_STONE);
-            setBlock(tMid - 5, rB - 2, fH + 1, BLOCK_ORE_DIAMOND);
-            setBlock(tMid + 5, rB - 2, fH, BLOCK_STONE);
-            setBlock(tMid + 5, rB - 2, fH + 1, BLOCK_ORE_DIAMOND);
-
-            torch(cA + 2, rA + 1, fH + 4);
-            torch(cB - 2, rA + 1, fH + 4);
-            torch(cA + 2, rB - 1, fH + 4);
-            torch(cB - 2, rB - 1, fH + 4);
-            torch(tMid, tMidR, fH + 4);
-        }
-
-        // ============ ROOM 4: ARMORY (middle-west) ============
-        {
-            int rA = divRow1 + 2, rB = divRow2 - 2;
-            int cA = C0 + 2, cB = divCol1 - 2;
-
-            // Weapon racks along walls (wood + stone)
-            for (int r = rA + 1; r <= rB - 1; r += 2) {
-                setBlock(cA, r, fH, BLOCK_WOOD);
-                setBlock(cA, r, fH + 1, BLOCK_STONE);
-                setBlock(cA, r, fH + 2, BLOCK_STONE_LIGHT);
-            }
-
-            // Armor stands (center)
-            int aMid = (cA + cB) / 2;
-            for (int r = rA + 3; r <= rB - 3; r += 4) {
-                setBlock(aMid, r, fH, BLOCK_STONE);
-                setBlock(aMid, r, fH + 1, BLOCK_STONE_LIGHT);
-                setBlock(aMid, r, fH + 2, BLOCK_STONE_LIGHT);
-            }
-
-            // Anvil (stone + ore)
-            setBlock(cB - 1, (rA + rB) / 2, fH, BLOCK_STONE);
-            setBlock(cB - 1, (rA + rB) / 2, fH + 1, BLOCK_ORE_GOLD);
-
-            torch(aMid, rA + 1, fH + 4);
-            torch(aMid, rB - 1, fH + 4);
-        }
-
-        // ============ ROOM 5: LIBRARY (north-west) ============
-        {
-            int rA = divRow2 + 2, rB = R1 - 2;
-            int cA = C0 + 2, cB = midCol - 2;
-
-            // Floor-to-ceiling bookshelves along north and west walls
-            for (int c = cA; c <= cB; c++) {
-                for (int h = fH; h <= fH + 4 && h < GRID_H; h++)
-                    setBlock(c, rB, h, BLOCK_WOOD);
-            }
-            for (int r = rA + 1; r <= rB - 1; r++) {
-                for (int h = fH; h <= fH + 4 && h < GRID_H; h++)
-                    setBlock(cA, r, h, BLOCK_WOOD);
-            }
-
-            // Reading tables (2 tables)
-            int lMid = (cA + cB) / 2;
-            int lMidR = (rA + rB) / 2;
-            for (int c = lMid - 3; c <= lMid + 3; c++) {
-                setBlock(c, lMidR - 2, fH + 1, BLOCK_WOOD);
-                setBlock(c, lMidR + 2, fH + 1, BLOCK_WOOD);
-            }
-            // Table legs
-            setBlock(lMid - 3, lMidR - 2, fH, BLOCK_WOOD); setBlock(lMid + 3, lMidR - 2, fH, BLOCK_WOOD);
-            setBlock(lMid - 3, lMidR + 2, fH, BLOCK_WOOD); setBlock(lMid + 3, lMidR + 2, fH, BLOCK_WOOD);
-
-            // Chairs
-            for (int c = lMid - 2; c <= lMid + 2; c += 2) {
-                setBlock(c, lMidR - 3, fH, BLOCK_STONE_LIGHT);
-                setBlock(c, lMidR + 3, fH, BLOCK_STONE_LIGHT);
-            }
-
-            // Globe (diamond ore on pedestal)
-            setBlock(cB - 1, rA + 2, fH, BLOCK_STONE);
-            setBlock(cB - 1, rA + 2, fH + 1, BLOCK_ORE_DIAMOND);
-
-            torch(lMid, rA + 1, fH + 4);
-            torch(lMid, rB - 1, fH + 4);
-            torch(cA + 2, lMidR, fH + 4);
-        }
-
-        // ============ ROOM 6: BEDROOM (north-east) ============
-        {
-            int rA = divRow2 + 2, rB = R1 - 2;
-            int cA = midCol + 2, cB = C1 - 2;
-            int bMid = (cA + cB) / 2;
-            int bMidR = (rA + rB) / 2;
-
-            // Large king bed (5x3, against north wall)
-            for (int c = bMid - 2; c <= bMid + 2; c++)
-                for (int r = rB - 3; r <= rB - 1; r++)
-                    setBlock(c, r, fH, BLOCK_LEAF);
-            // Headboard
-            for (int c = bMid - 2; c <= bMid + 2; c++) {
-                setBlock(c, rB - 1, fH + 1, BLOCK_WOOD);
-                setBlock(c, rB - 1, fH + 2, BLOCK_WOOD);
-            }
-
-            // Nightstands with lamps
-            setBlock(bMid - 3, rB - 2, fH, BLOCK_WOOD);
-            setBlock(bMid - 3, rB - 2, fH + 1, BLOCK_ORE_GOLD);
-            setBlock(bMid + 3, rB - 2, fH, BLOCK_WOOD);
-            setBlock(bMid + 3, rB - 2, fH + 1, BLOCK_ORE_GOLD);
-
-            // Wardrobe (east wall)
-            for (int r = bMidR - 2; r <= bMidR + 2; r++) {
-                setBlock(cB, r, fH, BLOCK_WOOD);
-                setBlock(cB, r, fH + 1, BLOCK_WOOD);
-                setBlock(cB, r, fH + 2, BLOCK_WOOD);
-            }
-
-            // Desk and chair
-            for (int c = cA + 1; c <= cA + 4; c++)
-                setBlock(c, rA + 2, fH + 1, BLOCK_WOOD);
-            setBlock(cA + 1, rA + 2, fH, BLOCK_WOOD);
-            setBlock(cA + 4, rA + 2, fH, BLOCK_WOOD);
-            setBlock(cA + 2, rA + 3, fH, BLOCK_STONE_LIGHT);
-
-            // Rug in center (sand floor)
-            for (int r = bMidR - 2; r <= bMidR + 2; r++)
-                for (int c = bMid - 3; c <= bMid + 3; c++)
-                    setBlock(c, r, floorLevel + 1, BLOCK_SAND);
-
-            torch(bMid, rA + 1, fH + 4);
-            torch(bMid, bMidR, fH + 4);
-            torch(cA + 2, rB - 1, fH + 4);
-        }
-
-        // Remove trees and torches that ended up inside the castle
-        for (int i = (int)treeLocations.size() - 1; i >= 0; i--) {
-            if (treeLocations[i].col >= C0 - 2 && treeLocations[i].col <= C1 + 2 &&
-                treeLocations[i].row >= R0 - 2 && treeLocations[i].row <= R1 + 2) {
-                treeLocations.erase(treeLocations.begin() + i);
-            }
-        }
-        for (int i = (int)torchLocations.size() - 1; i >= 0; i--) {
-            if (torchLocations[i].col >= C0 - 2 && torchLocations[i].col <= C1 + 2 &&
-                torchLocations[i].row >= R0 - 2 && torchLocations[i].row <= R1 + 2) {
-                torchLocations.erase(torchLocations.begin() + i);
-            }
-        }
-
-        printf("[Castle] Built at col %d..%d, row %d..%d (%dx%d), walls=%d, towers=%d\n",
-               C0, C1, R0, R1, C1 - C0 + 1, R1 - R0 + 1, wallH, twrH);
     }
 }
 
@@ -1183,6 +1566,76 @@ bool isInFrustum(const glm::vec3& pos, float radius = 1.0f) {
 // Global VP matrix for frustum culling (set before renderTerrain)
 glm::mat4 currentVP(1.0f);
 
+// Returns texture ID for a block type (0 = no texture, use color only)
+// textureMode to use: 1 = texture only, 2 = texture*color
+GLuint getBlockTexture(int type) {
+    switch (type) {
+        case BLOCK_STONE:         return texStoneFM;
+        case BLOCK_SMOOTH_STONE:  return texStoneFM;
+        case BLOCK_BEDROCK:       return texBedrock;
+        case BLOCK_COBBLESTONE:   return texCobblestone;
+        case BLOCK_MOSSY_COBBLESTONE: return texMossyCobble;
+        case BLOCK_BRICKS:        return texStoneBricks;
+        case BLOCK_MOSSY_BRICKS:  return texMossyStoneBricks;
+        case BLOCK_SLAB_STONE:    return texCobblestone;
+        case BLOCK_SLAB_BRICK:    return texStoneBricks;
+        case BLOCK_STAIRS_STONE:  return texCobblestone;
+        case BLOCK_PLANKS:        return texOakPlanks;
+        case BLOCK_SLAB_WOOD:     return texOakPlanks;
+        case BLOCK_STAIRS_WOOD:   return texOakPlanks;
+        case BLOCK_FENCE_WOOD:    return texOakPlanks;
+        case BLOCK_DOOR_OAK:      return texOakPlanks;
+        case BLOCK_TRAPDOOR_OAK:  return texOakPlanks;
+        case BLOCK_FENCE_GATE:    return texOakPlanks;
+        case BLOCK_LADDER:        return texLadder;
+        case BLOCK_DOOR_IRON:     return texIronDoorBot;
+        case BLOCK_IRON_BARS:     return texIronBars;
+        case BLOCK_GLASS:         return texGlassFM;
+        case BLOCK_GLASS_PANE:    return texGlassFM;
+        case BLOCK_BOOKSHELF:     return texBookshelf;
+        case BLOCK_CRAFTING_TABLE: return texCraftingTop;
+        case BLOCK_TORCH_BLOCK:   return texTorchBlock;
+        case BLOCK_LANTERN:       return texSeaLantern;
+        case BLOCK_COAL_ORE:      return texCoalOre;
+        case BLOCK_ORE_DIAMOND:   return texDiamondOre;
+        case BLOCK_ORE_GOLD:      return texGoldOre;
+        // All wool, carpets, terracotta, concrete — use color only (no FM texture)
+        default: return 0;
+    }
+}
+
+// Bind a texture for block rendering; returns textureMode to set
+// mode 1 = texture only (stone, cobble — self-colored)
+// mode 2 = texture*color (planks, wool blended)
+int bindBlockTexture(int type) {
+    GLuint tex = getBlockTexture(type);
+    if (!tex) {
+        setInt(shaderProgram, "textureMode", 0);
+        return 0;
+    }
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    setInt(shaderProgram, "tex", 0);
+    // Stone-type blocks: texture only (they have no tint)
+    switch (type) {
+        case BLOCK_STONE: case BLOCK_SMOOTH_STONE: case BLOCK_BEDROCK:
+        case BLOCK_COBBLESTONE: case BLOCK_MOSSY_COBBLESTONE:
+        case BLOCK_BRICKS: case BLOCK_MOSSY_BRICKS:
+        case BLOCK_SLAB_STONE: case BLOCK_SLAB_BRICK:
+        case BLOCK_STAIRS_STONE:
+        case BLOCK_COAL_ORE: case BLOCK_ORE_DIAMOND: case BLOCK_ORE_GOLD:
+        case BLOCK_IRON_BARS: case BLOCK_LADDER:
+        case BLOCK_TORCH_BLOCK: case BLOCK_LANTERN:
+        case BLOCK_CRAFTING_TABLE:
+            setInt(shaderProgram, "textureMode", 1);
+            return 1;
+        default:
+            // Wood, planks, glass — blend texture with color tint
+            setInt(shaderProgram, "textureMode", 2);
+            return 2;
+    }
+}
+
 // =====================================================
 // Render terrain from voxel grid (with occlusion + frustum culling)
 // =====================================================
@@ -1196,8 +1649,20 @@ void renderTerrain(float time = 0.0f) {
     const float RENDER_DIST = 75.0f;
     const float RENDER_DIST_SQ = RENDER_DIST * RENDER_DIST;
 
-    for (int row = TERRAIN_MIN; row <= TERRAIN_MAX; row++) {
-        for (int col = TERRAIN_MIN; col <= TERRAIN_MAX; col++) {
+    // Bound the loops to only check columns within a box of RENDER_DIST around camera
+    float zSp = HEX_RADIUS * 1.5f;
+    float xSp = HEX_RADIUS * 2.0f * 0.866025404f;
+    int camRow = (int)roundf(camPos.z / zSp);
+    float xOff = (camRow % 2) * (xSp * 0.5f);
+    int camCol = (int)roundf((camPos.x - xOff) / xSp);
+    int hexLimit = (int)(RENDER_DIST / HEX_RADIUS) + 2;
+    int minRow = std::max(TERRAIN_MIN, camRow - hexLimit);
+    int maxRow = std::min(TERRAIN_MAX, camRow + hexLimit);
+    int minCol = std::max(TERRAIN_MIN, camCol - hexLimit);
+    int maxCol = std::min(TERRAIN_MAX, camCol + hexLimit);
+
+    for (int row = minRow; row <= maxRow; row++) {
+        for (int col = minCol; col <= maxCol; col++) {
             glm::vec3 pos = hexGridPos(col, row, 0.0f);
 
             // Distance culling: skip entire column if too far from camera (XZ only)
@@ -1206,7 +1671,9 @@ void renderTerrain(float time = 0.0f) {
             float distSq = dx * dx + dz * dz;
             if (distSq > RENDER_DIST_SQ) continue;
 
-            for (int h = 0; h < GRID_H; h++) {
+            // Use columnMaxH to skip iterating through mostly empty sky
+            int maxH = columnMaxH[col + GRID_OFF_X][row + GRID_OFF_Z];
+            for (int h = 0; h <= maxH; h++) {
                 int bt = getBlock(col, row, h);
                 if (bt == BLOCK_AIR) continue;
 
@@ -1218,13 +1685,71 @@ void renderTerrain(float time = 0.0f) {
                 // Frustum culling
                 if (!isInFrustum(p)) continue;
 
+                glm::vec3 col3 = getBlockColor(bt);
+                BlockProperties props = getBlockProps(bt);
+                uint16_t state = getBlockState(col, row, h);
+                bool isOpen = (state >> 2) & 1;
+                int facing  = state & 3;
+
+                // Bind texture (or clear it)
+                bindBlockTexture(bt);
+
+                // Dispatch by shape
                 if (bt == BLOCK_WATER) {
-                    drawHexWater(p, getBlockColor(bt), time);
-                } else if (bt == BLOCK_ORE_DIAMOND || bt == BLOCK_ORE_GOLD) {
-                    drawHexEmissive(p, getBlockColor(bt));
+                    setInt(shaderProgram, "textureMode", 0);
+                    drawHexWater(p, col3, time);
+                } else if (props.isEmissive) {
+                    drawHexEmissive(p, col3);
+                } else if (props.shape == SHAPE_SLAB) {
+                    bool topHalf = (state >> 3) & 1;
+                    drawSlab(p, col3, topHalf);
+                } else if (props.shape == SHAPE_STAIR) {
+                    drawStair(p, col3, facing);
+                } else if (props.shape == SHAPE_CARPET) {
+                    drawHex(p + glm::vec3(0, -HEX_HEIGHT * 0.47f, 0), col3,
+                            glm::vec3(1.0f, 0.06f, 1.0f));
+                } else if (props.shape == SHAPE_FENCE) {
+                    // Thin vertical post
+                    drawHex(p, col3, glm::vec3(0.3f, 1.0f, 0.3f));
+                } else if (props.shape == SHAPE_SMALL_HEX) {
+                    drawHexEmissive(p, col3);
+                } else if (props.shape == SHAPE_DOOR) {
+                    // Door: 2 blocks tall, offset to cell edge, with slight thickness
+                    float baseAngle = facing * PI / 2.0f;
+                    float openAngle = isOpen ? PI / 2.0f : 0.0f;
+                    // Offset toward the face direction so door sits at edge of cell
+                    glm::vec3 faceDir(sinf(baseAngle), 0.0f, cosf(baseAngle));
+                    glm::vec3 doorPos = p + faceDir * (HEX_RADIUS * 0.45f);
+                    // Raise so door spans from bottom of this block to top of next block
+                    doorPos.y = p.y + HEX_HEIGHT * 0.5f;
+                    glm::mat4 m = glm::translate(glm::mat4(1.0f), doorPos);
+                    m = myRotate(m, baseAngle + openAngle, glm::vec3(0, 1, 0));
+                    // Draw front panel
+                    drawPanel(m, col3, HEX_RADIUS * 1.8f, HEX_HEIGHT * 2.0f);
+                    // Draw thin back panel slightly offset for thickness illusion
+                    glm::mat4 mBack = glm::translate(m, glm::vec3(0, 0, -0.06f));
+                    drawPanel(mBack, col3 * 0.75f, HEX_RADIUS * 1.8f, HEX_HEIGHT * 2.0f);
+                } else if (props.shape == SHAPE_PANE || props.shape == SHAPE_FLAT_PANEL) {
+                    // Thin flat panel for glass panes, iron bars, ladders, signs
+                    float baseAngle = facing * PI / 2.0f;
+                    glm::mat4 m = glm::translate(glm::mat4(1.0f), p);
+                    m = myRotate(m, baseAngle, glm::vec3(0, 1, 0));
+                    drawPanel(m, col3, HEX_RADIUS * 1.8f, HEX_HEIGHT);
+                } else if (props.shape == SHAPE_TRAPDOOR) {
+                    // Trapdoor: horizontal panel at top of block, flips vertical when open
+                    float baseAngle = facing * PI / 2.0f;
+                    glm::vec3 tdPos = p + glm::vec3(0, HEX_HEIGHT * 0.45f, 0);
+                    glm::mat4 m = glm::translate(glm::mat4(1.0f), tdPos);
+                    m = myRotate(m, baseAngle, glm::vec3(0, 1, 0));
+                    if (isOpen)
+                        m = myRotate(m, -PI / 2.0f, glm::vec3(1, 0, 0));
+                    drawPanel(m, col3, HEX_RADIUS * 1.8f, HEX_RADIUS * 1.8f);
+                    drawPanel(glm::translate(m, glm::vec3(0, 0, -0.06f)), col3 * 0.75f, HEX_RADIUS * 1.8f, HEX_RADIUS * 1.8f);
                 } else {
-                    drawHex(p, getBlockColor(bt));
+                    drawHex(p, col3);
                 }
+                // Reset texture mode after each block
+                setInt(shaderProgram, "textureMode", 0);
             }
         }
     }
@@ -1274,5 +1799,153 @@ void renderTerrain(float time = 0.0f) {
         }
         drawRuins(rp + glm::vec3(0, (topH + 1) * HEX_HEIGHT, 0));
     }
+}
+
+// =====================================================
+// Sky Rendering — sun, moon, stars, clouds
+// =====================================================
+
+// Deterministic star positions (generated once)
+struct StarInfo { float azimuth, elevation; float brightness; };
+const int NUM_STARS = 120;
+StarInfo starField[NUM_STARS];
+bool starsInitialized = false;
+
+void initStars() {
+    for (int i = 0; i < NUM_STARS; i++) {
+        unsigned int s = gridSeed(i * 37, i * 53 + 7);
+        starField[i].azimuth = (float)(s % 36000) / 100.0f; // 0-360 degrees
+        s = s * 1103515245 + 12345;
+        starField[i].elevation = 15.0f + (float)(s % 6000) / 100.0f; // 15-75 degrees above horizon
+        s = s * 1103515245 + 12345;
+        starField[i].brightness = 0.4f + (float)(s % 60) / 100.0f; // 0.4-1.0
+    }
+    starsInitialized = true;
+}
+
+void renderSky(float time, glm::vec3 sunDir) {
+    if (!starsInitialized) initStars();
+
+    // Disable depth write so sky is always behind everything
+    glDepthMask(GL_FALSE);
+    setBool(shaderProgram, "isEmissive", true);
+
+    float skyDist = 150.0f; // distance from camera to sky objects
+
+    // ============ SUN ============
+    if (dayFactor > 0.1f) {
+        // Sun position: opposite of light direction, far away
+        glm::vec3 sunPos = camPos - glm::normalize(sunDir) * skyDist;
+
+        // Sun glow color based on time of day
+        glm::vec3 sunColor;
+        if (dayMode == 1) // dawn
+            sunColor = glm::vec3(1.0f, 0.6f, 0.2f);
+        else if (dayMode == 3) // dusk
+            sunColor = glm::vec3(1.0f, 0.4f, 0.15f);
+        else // noon
+            sunColor = glm::vec3(1.0f, 0.95f, 0.7f);
+
+        // Sun disc (large emissive sphere made of hex)
+        setVec3(shaderProgram, "emissiveColor", sunColor);
+        drawHex(sunPos, sunColor, glm::vec3(6.0f, 6.0f, 6.0f));
+        // Sun corona (slightly larger, dimmer)
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        setFloat(shaderProgram, "alpha", 0.3f);
+        setVec3(shaderProgram, "emissiveColor", sunColor * 0.5f);
+        drawHex(sunPos, sunColor * 0.5f, glm::vec3(10.0f, 10.0f, 10.0f));
+        setFloat(shaderProgram, "alpha", 1.0f);
+        glDisable(GL_BLEND);
+    }
+
+    // ============ MOON ============
+    if (dayFactor < 0.5f) {
+        // Moon on opposite side from sun
+        glm::vec3 moonDir = glm::normalize(sunDir); // same direction as light = opposite side of sky
+        glm::vec3 moonPos = camPos + glm::vec3(moonDir.x, fabsf(moonDir.y) + 0.3f, moonDir.z) * skyDist;
+
+        float moonAlpha = (dayFactor < 0.2f) ? 1.0f : (0.5f - dayFactor) / 0.3f;
+        glm::vec3 moonColor(0.85f, 0.88f, 0.95f);
+
+        setVec3(shaderProgram, "emissiveColor", moonColor * moonAlpha);
+        drawHex(moonPos, moonColor * moonAlpha, glm::vec3(4.0f, 4.0f, 4.0f));
+    }
+
+    // ============ STARS ============
+    if (dayFactor < 0.3f) {
+        float starAlpha = (dayFactor < 0.1f) ? 1.0f : (0.3f - dayFactor) / 0.2f;
+        // Slowly rotate stars
+        float starRotation = time * 0.5f; // degrees per second
+
+        for (int i = 0; i < NUM_STARS; i++) {
+            float az = glm::radians(starField[i].azimuth + starRotation);
+            float el = glm::radians(starField[i].elevation);
+
+            glm::vec3 starPos = camPos + glm::vec3(
+                cosf(el) * cosf(az),
+                sinf(el),
+                cosf(el) * sinf(az)
+            ) * skyDist;
+
+            float twinkle = 0.7f + 0.3f * sinf(time * 3.0f + (float)i * 1.7f);
+            float b = starField[i].brightness * starAlpha * twinkle;
+            glm::vec3 sc(b, b, b * 0.95f);
+
+            setVec3(shaderProgram, "emissiveColor", sc);
+            drawHex(starPos, sc, glm::vec3(0.5f + b * 0.3f));
+        }
+    }
+
+    // ============ CLOUDS ============
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        float cloudAlpha = (dayFactor > 0.3f) ? 0.6f : 0.2f;
+        setFloat(shaderProgram, "alpha", cloudAlpha);
+
+        // Cloud color: white in day, dark blue-gray at night
+        glm::vec3 cloudDay(0.95f, 0.95f, 0.98f);
+        glm::vec3 cloudNight(0.15f, 0.15f, 0.25f);
+        glm::vec3 cloudColor = cloudNight + dayFactor * (cloudDay - cloudNight);
+
+        setBool(shaderProgram, "isEmissive", false);
+        float cloudY = camPos.y + 50.0f; // clouds always above camera
+        float cloudDrift = time * 0.8f; // slow drift
+
+        // Generate cloud clusters using noise
+        for (int cx = -3; cx <= 3; cx++) {
+            for (int cz = -3; cz <= 3; cz++) {
+                float worldX = camPos.x + cx * 20.0f + cloudDrift;
+                float worldZ = camPos.z + cz * 20.0f;
+                // Snap to grid for stable clouds
+                float snapX = floorf(worldX / 20.0f) * 20.0f;
+                float snapZ = floorf(worldZ / 20.0f) * 20.0f;
+
+                float n = fbmNoise(snapX * 0.02f, snapZ * 0.02f, 2);
+                if (n < 0.1f) continue; // skip if no cloud here
+
+                // Cloud cluster: several hex blobs
+                float cloudSize = 3.0f + n * 4.0f;
+                glm::vec3 base(snapX - cloudDrift + cloudDrift, cloudY, snapZ);
+
+                // Main cloud body
+                drawHex(base, cloudColor, glm::vec3(cloudSize, 1.5f, cloudSize * 0.8f));
+                // Puffs
+                if (n > 0.3f) {
+                    drawHex(base + glm::vec3(cloudSize * 0.5f, 0.5f, 0), cloudColor,
+                            glm::vec3(cloudSize * 0.6f, 1.0f, cloudSize * 0.5f));
+                    drawHex(base + glm::vec3(-cloudSize * 0.4f, 0.3f, cloudSize * 0.3f), cloudColor,
+                            glm::vec3(cloudSize * 0.5f, 0.8f, cloudSize * 0.4f));
+                }
+            }
+        }
+        setFloat(shaderProgram, "alpha", 1.0f);
+        glDisable(GL_BLEND);
+    }
+
+    setBool(shaderProgram, "isEmissive", false);
+    glDepthMask(GL_TRUE);
 }
 

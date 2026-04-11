@@ -1,0 +1,51 @@
+Ver. 3.3 - 5/20/2018
+======================
+Additions:
++3D Doors!
++3D Trapdoors
+
+Changes & Fixes:
+*Recolored clocks to match the "NewDefault" gold colors.
+*Fixed emerald ore culling partially, when it shouldn't.
+*Optimised 3D rail models to render better with "Faithful" texture packs.
+*Refactored item textures from the "blocks" folder to "items".
+*Optifine Only: Retextured diamond swords and tools enchanted with "Mending".
+
+
+Ver. 3.2 - 4/28/2018
+======================
+Additions:
++3D Rails!
++3D Iron Bars
++Dragon Fireball (matches new Fire Charge texture)
+
+Changes:
+*Refined ores, again.
+*Subtle shading to all tools and swords.
+
+
+Ver. 3.1 -- 4/15/2018
+======================
+Additions:
++New inventory model for signs.
++New world border texture.
++New 1.13 water textures.
+
+Changes:
+*Upscaled small blocks in the GUIs.
+*Fixed various model glitches, such as a white outline on all ores (due to transparent textures).
+*Glowing animations of gold, emerald, and diamond ore.
+*Changed the rotation of player and mob heads in the inventory.
+*Rain and Snow
+*Armor Stand and Tripwire Hook - Item Models
+*Made torches more yellow-orange.
+*Repeater and Comparator textures.
+*Made the vingarette screen overlay more subtle.
+
+
+Ver. 3.0 -- 4/7/2018
+=====================
+*Updated the pack description file.
+*Revamped water colors, again.
+
+- ForeverMaster

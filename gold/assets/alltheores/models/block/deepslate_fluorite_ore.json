@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/fluorite_ore",
+    "textures": {
+		"0": "alltheores:block/deepslate_fluorite_ore",
+		"particle": "alltheores:block/deepslate_fluorite_ore"
+    }
+}

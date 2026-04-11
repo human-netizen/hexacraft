@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/target" },
+            { "model": "block/target", "y": 90 },
+            { "model": "block/target", "y": 180 },
+            { "model": "block/target", "y": 270 }
+        ]
+    }
+}

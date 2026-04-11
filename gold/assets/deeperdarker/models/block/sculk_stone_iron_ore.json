@@ -1,0 +1,7 @@
+{
+	"parent": "block/iron_ore",
+    "textures": {
+		"particle": "deeperdarker:block/sculk_stone_iron_ore",
+        "0": "deeperdarker:block/sculk_stone_iron_ore"
+    }
+}

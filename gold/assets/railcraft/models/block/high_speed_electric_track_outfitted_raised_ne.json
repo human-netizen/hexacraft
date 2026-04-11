@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/electric_track_outfitted_raised_ne",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/high_speed_electric_track_outfitted"
+  }
+}

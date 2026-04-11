@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/stable/stable_door_bottom_left_open",
+	"textures": {
+		"bottom": "mcwdoors:block/stable/spruce_stable_door_lower",
+		"side": "mcwdoors:block/spruce_barn_door_lower",
+		"particle": "mcwdoors:block/spruce_barn_door_lower"
+	}
+}

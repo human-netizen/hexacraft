@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_bottom_right_open",
+	"textures": {
+		"bottom": "chipped:block/acacia_door/overgrown_acacia_door_bottom",
+		"side": "chipped:block/acacia_door/overgrown_acacia_door_side",
+		"particle": "chipped:block/acacia_door/overgrown_acacia_door_bottom"
+	}
+}

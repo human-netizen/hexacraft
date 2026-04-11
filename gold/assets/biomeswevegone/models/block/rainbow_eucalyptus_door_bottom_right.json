@@ -1,0 +1,104 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "biomeswevegone:block/rainbow_eucalyptus/door_bottom",
+		"bottom": "biomeswevegone:block/rainbow_eucalyptus/door_bottom",
+		"side": "biomeswevegone:block/rainbow_eucalyptus/door_side"
+	},
+	"elements": [
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 11],
+			"to": [3, 16, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 6.5, 8]},
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 5, 16], "texture": "#bottom"},
+				"south": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [5, 0, 0, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [9, 0, 6, 5], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 6],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 6.5, 8]},
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [10, 0, 16, 16], "texture": "#bottom"},
+				"south": {"uv": [3, 0, 0, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 10, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [9, 10, 6, 16], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 6],
+			"to": [3, 3, 11],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 6.5, 8]},
+			"faces": {
+				"east": {"uv": [5, 13, 10, 16], "texture": "#bottom"},
+				"west": {"uv": [10, 13, 5, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [3, 6, 0, 11], "rotation": 180, "texture": "#bottom"},
+				"down": {"uv": [9, 5, 6, 10], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottom2",
+			"from": [0, 3, 7],
+			"to": [3, 4, 9],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 6.5, 8]},
+			"faces": {
+				"east": {"uv": [7, 12, 9, 13], "texture": "#bottom"},
+				"south": {"uv": [0, 7, 3, 8], "texture": "#bottom"},
+				"west": {"uv": [9, 12, 7, 13], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [3, 7, 0, 9], "rotation": 180, "texture": "#bottom"}
+			}
+		},
+		{
+			"name": "Bottom3",
+			"from": [0, 3, 6],
+			"to": [3, 7, 7],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 6.5, 8]},
+			"faces": {
+				"east": {"uv": [9, 9, 10, 13], "texture": "#bottom"},
+				"south": {"uv": [0, 6, 3, 10], "texture": "#bottom"},
+				"west": {"uv": [10, 9, 9, 13], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [3, 7, 0, 8], "rotation": 180, "texture": "#bottom"}
+			}
+		},
+		{
+			"name": "Fencing1",
+			"from": [0.95, 4, 7],
+			"to": [2.05, 7, 11],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 6.5, 8]},
+			"faces": {
+				"east": {"uv": [5, 9, 9, 12], "texture": "#bottom"},
+				"west": {"uv": [9, 9, 5, 12], "texture": "#bottom", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Fencing2",
+			"from": [0.95, 7, 6],
+			"to": [2.05, 16, 11],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 6.5, 8]},
+			"faces": {
+				"east": {"uv": [5, 0, 10, 9], "texture": "#bottom"},
+				"west": {"uv": [10, 0, 5, 9], "texture": "#bottom", "cullface": "west"}
+			}
+		},
+		{
+			"name": "TopCorner",
+			"from": [0, 15, 5],
+			"to": [3, 16, 6],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 15, 5]},
+			"faces": {
+				"up": {"uv": [11, 0, 10, 1], "texture": "#bottom"}
+			}
+		}
+	]
+}

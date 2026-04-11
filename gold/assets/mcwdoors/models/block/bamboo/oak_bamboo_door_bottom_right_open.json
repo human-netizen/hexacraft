@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/door_bottom_right_open",
+	"textures": {
+		"bottom": "mcwdoors:block/oak_bamboo_door_lower",
+		"particle": "mcwdoors:block/oak_bamboo_door_lower",
+		"top": "mcwdoors:block/oak_bamboo_door_upper"
+	}
+}

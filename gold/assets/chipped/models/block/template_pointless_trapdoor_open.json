@@ -1,0 +1,68 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "#texture"
+	},
+	"elements": [
+		{
+			"name": "North",
+			"from": [0, 13, 13],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 3, 16, 0], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [13, 3, 16, 6], "rotation": 270, "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 3], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [16, 3, 13, 6], "rotation": 90, "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 3], "rotation": 180, "texture": "#side", "cullface": "up"},
+				"down": {"uv": [0, 3, 16, 6], "texture": "#side"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 13],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 16, 16, 13], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [0, 3, 3, 6], "rotation": 270, "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 13, 16, 16], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [3, 3, 0, 6], "rotation": 90, "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 3, 16, 6], "rotation": 180, "texture": "#side"},
+				"down": {"uv": [0, 0, 16, 3], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "West",
+			"from": [0, 3, 13],
+			"to": [3, 13, 16],
+			"faces": {
+				"north": {"uv": [0, 13, 3, 3], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [3, 3, 13, 6], "rotation": 270, "texture": "#side"},
+				"south": {"uv": [0, 3, 3, 13], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [13, 3, 3, 6], "rotation": 90, "texture": "#side", "cullface": "west"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [13, 3, 13],
+			"to": [16, 13, 16],
+			"faces": {
+				"north": {"uv": [13, 13, 16, 3], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [3, 3, 13, 6], "rotation": 270, "texture": "#side", "cullface": "east"},
+				"south": {"uv": [13, 3, 16, 13], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [3, 3, 13, 6], "rotation": 90, "texture": "#side"}
+			}
+		},
+		{
+			"name": "Window",
+			"from": [3, 3, 13],
+			"to": [13, 13, 16],
+			"faces": {
+				"north": {"uv": [3, 13, 13, 3], "rotation": 180, "texture": "#window"},
+				"south": {"uv": [3, 3, 13, 13], "texture": "#window", "cullface": "south"}
+			}
+		}
+	]
+}

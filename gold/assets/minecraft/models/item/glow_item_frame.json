@@ -1,0 +1,7 @@
+{
+    "parent": "item/item_frame",
+	    "textures": {
+			"background": "item/glow_item_frame",
+			"trim": "block/birch_planks"
+    }
+}

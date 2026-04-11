@@ -1,0 +1,7 @@
+{
+    "parent": "block/dragon_egg",
+    "textures": {
+        "particle": "block/original_dragon_egg",
+        "all": "block/original_dragon_egg"
+    }
+}

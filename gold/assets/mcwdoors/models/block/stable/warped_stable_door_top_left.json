@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/stable/stable_door_top_left",
+	"textures": {
+		"top": "mcwdoors:block/stable/warped_stable_door_upper",
+		"side": "mcwdoors:block/warped_barn_door_lower",
+		"particle": "mcwdoors:block/warped_barn_door_lower"
+	}
+}

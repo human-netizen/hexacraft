@@ -1,0 +1,7 @@
+{
+	"parent": "modern_industrialization:block/uranium_ore",
+    "textures": {
+		"particle": "modern_industrialization:block/deepslate_uranium_ore",
+        "0": "modern_industrialization:block/deepslate_uranium_ore"
+    }
+}

@@ -1,0 +1,10 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"parent": "chipped:block/template_pointless_trapdoor_top",
+	"textures": {
+		"texture": "chipped:block/birch_trapdoor/pointless_birch_trapdoor",
+		"side": "chipped:block/birch_trapdoor/pointless_birch_trapdoor_side",
+		"window": "chipped:block/empty"
+	}
+}

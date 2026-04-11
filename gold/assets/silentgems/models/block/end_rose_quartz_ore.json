@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/rose_quartz_ore",
+  "textures": {
+    "0": "silentgems:block/end_rose_quartz_ore",
+    "particle": "silentgems:block/end_rose_quartz_ore"
+  }
+}

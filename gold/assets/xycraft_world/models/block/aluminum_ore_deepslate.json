@@ -1,0 +1,7 @@
+{
+	"parent": "xycraft_world:block/aluminum_ore_stone",
+    "textures": {
+        "0": "xycraft_world:block/aluminum_ore_deepslate",
+		"particle": "xycraft_world:block/aluminum_ore_deepslate"
+    }
+}

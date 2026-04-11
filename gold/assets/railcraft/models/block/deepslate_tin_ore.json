@@ -1,0 +1,7 @@
+{
+	"parent": "railcraft:block/tin_ore",
+    "textures": {
+		"particle": "railcraft:block/deepslate_tin_ore",
+        "0": "railcraft:block/deepslate_tin_ore"
+    }
+}

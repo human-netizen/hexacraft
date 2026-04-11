@@ -1,0 +1,7 @@
+{
+	"parent": "block/emerald_ore",
+    "textures": {
+		"particle": "deeperdarker:block/gloomslate_emerald_ore",
+        "0": "deeperdarker:block/gloomslate_emerald_ore"
+    }
+}

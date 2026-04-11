@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/electric_junction_track",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/high_speed_electric_junction_track"
+  }
+}

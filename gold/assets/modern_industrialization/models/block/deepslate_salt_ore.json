@@ -1,0 +1,7 @@
+{
+	"parent": "modern_industrialization:block/salt_ore",
+    "textures": {
+		"particle": "modern_industrialization:block/deepslate_salt_ore",
+        "0": "modern_industrialization:block/deepslate_salt_ore"
+    }
+}

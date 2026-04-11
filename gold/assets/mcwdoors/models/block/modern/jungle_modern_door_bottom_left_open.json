@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/modern/modern_door_bottom_left_open",
+	"textures": {
+		"bottom": "mcwdoors:block/jungle_modern_door_lower",
+		"particle": "mcwdoors:block/jungle_modern_door_lower"
+	}
+}

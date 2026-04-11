@@ -111,6 +111,7 @@ int main() {
     if (!window) { printf("Window creation failed\n"); glfwTerminate(); return -1; }
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, keyCallback);
+    glfwSetCharCallback(window, charCallback);
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetScrollCallback(window, scrollCallback);
@@ -134,12 +135,43 @@ int main() {
     initSpline();
     initRuledSurface();
     initWineGlass();
+    initSlabMesh();
+    initPanelMesh();
     initHUD();
 
-    // Load textures
+    // Load textures — local
     texBrick = loadTexture("textures/brick.png");
     texGrass = loadTexture("textures/grass.png");
     texWood  = loadTexture("textures/wood.png");
+
+    // Load textures — FM Default pack
+    #define FM_BLOCK(f) "FM Default_v1.3.2[MC1.19.3+]/assets/minecraft/textures/block/" f
+    texStoneFM          = loadTexture(FM_BLOCK("stone.png"));
+    texCobblestone      = loadTexture(FM_BLOCK("cobblestone.png"));
+    texMossyCobble      = loadTexture(FM_BLOCK("mossy_cobblestone.png"));
+    texStoneBricks      = loadTexture(FM_BLOCK("stone_bricks.png"));
+    texMossyStoneBricks = loadTexture(FM_BLOCK("mossy_stone_bricks.png"));
+    texCrackedStoneBricks = loadTexture(FM_BLOCK("cracked_stone_bricks.png"));
+    texOakPlanks        = loadTexture(FM_BLOCK("oak_planks.png"));
+    texBookshelf        = loadTexture(FM_BLOCK("bookshelf.png"));
+    texIronBars         = loadTexture(FM_BLOCK("iron_bars.png"));
+    texGlassFM          = loadTexture(FM_BLOCK("glass.png"));
+    texGlassPaneTop     = loadTexture(FM_BLOCK("glass_pane_top.png"));
+    texLadder           = loadTexture(FM_BLOCK("ladder.png"));
+    texIronDoorBot      = loadTexture(FM_BLOCK("iron_door_bottom.png"));
+    texIronDoorTop      = loadTexture(FM_BLOCK("iron_door_top.png"));
+    #define FM_ITEM(f) "FM Default_v1.3.2[MC1.19.3+]/assets/minecraft/textures/item/" f
+    texItemOakDoor      = loadTexture(FM_ITEM("oak_door.png"));
+    texItemIronDoor     = loadTexture(FM_ITEM("iron_door.png"));
+    texTorchBlock       = loadTexture(FM_BLOCK("torch.png"));
+    texSeaLantern       = loadTexture(FM_BLOCK("sea_lantern.png"));
+    texCraftingTop      = loadTexture(FM_BLOCK("crafting_table_top.png"));
+    texCraftingFront    = loadTexture(FM_BLOCK("crafting_table_front.png"));
+    texBedrock          = loadTexture(FM_BLOCK("bedrock.png"));
+    texCoalOre          = loadTexture(FM_BLOCK("coal_ore.png"));
+    texDiamondOre       = loadTexture(FM_BLOCK("diamond_ore.png"));
+    texGoldOre          = loadTexture(FM_BLOCK("gold_ore.png"));
+    #undef FM_BLOCK
 
     printf("[World] Generating terrain...\n");
     initBlockGrid();
@@ -153,7 +185,28 @@ int main() {
     // Spawn initial mobs and birds
     spawnInitialMobs();
     initBirds();
-    memset(inventoryCounts, 0, sizeof(inventoryCounts));
+    // Initialize Inventory slots
+    for (int i=0; i<36; i++) { playerInventory[i].type = BLOCK_AIR; playerInventory[i].count = 0; }
+    // Hotbar (slots 0-8)
+    playerInventory[0].type = BLOCK_GRASS;        playerInventory[0].count = 64;
+    playerInventory[1].type = BLOCK_DIRT;         playerInventory[1].count = 64;
+    playerInventory[2].type = BLOCK_SAND;         playerInventory[2].count = 64;
+    playerInventory[3].type = BLOCK_STONE;        playerInventory[3].count = 64;
+    playerInventory[4].type = BLOCK_WOOD;         playerInventory[4].count = 64;
+    playerInventory[5].type = BLOCK_LEAF;         playerInventory[5].count = 64;
+    playerInventory[6].type = BLOCK_ORE_DIAMOND;  playerInventory[6].count = 64;
+    playerInventory[7].type = BLOCK_ORE_GOLD;     playerInventory[7].count = 64;
+    playerInventory[8].type = BLOCK_GLASS;        playerInventory[8].count = 64;
+    // Storage (slots 9+) — testing materials for new blocks
+    playerInventory[9].type  = BLOCK_PLANKS;      playerInventory[9].count  = 64; // door, ladder, stairs, slab
+    playerInventory[10].type = BLOCK_COBBLESTONE; playerInventory[10].count = 64; // fence, fence gate
+    playerInventory[11].type = BLOCK_IRON_BLOCK;  playerInventory[11].count = 64; // iron door, iron bars
+    playerInventory[12].type = BLOCK_WOOL_WHITE;  playerInventory[12].count = 64; // carpets, other wools
+    playerInventory[13].type = BLOCK_WOOL_RED;    playerInventory[13].count = 64;
+    playerInventory[14].type = BLOCK_WOOL_BLUE;   playerInventory[14].count = 64;
+    playerInventory[15].type = BLOCK_GLOWSTONE;   playerInventory[15].count = 64; // bookshelf, lantern
+    playerInventory[16].type = BLOCK_SANDSTONE;   playerInventory[16].count = 64; // sandstone slab
+    playerInventory[17].type = BLOCK_BRICKS;      playerInventory[17].count = 64; // brick slab
 
     // Set camera behind player initially
     camYaw = -90.0f;
@@ -168,6 +221,7 @@ int main() {
         processInput(window);
         updateBlockTarget();
         updateMobs(deltaTime, (float)glfwGetTime());
+        updateFluids((float)glfwGetTime());
 
         // Animate fan
         if (fanOn) fanAngle += 5.0f * deltaTime;
@@ -195,15 +249,23 @@ int main() {
         float curTime = (float)glfwGetTime();
         setFloat(shaderProgram, "time", curTime);
 
-        // Sky color based on day factor
-        glm::vec3 skyDay(0.45f, 0.65f, 0.95f);
-        glm::vec3 skyNight(0.02f, 0.02f, 0.06f);
-        glm::vec3 sky = skyNight + dayFactor * (skyDay - skyNight);
+        // Sky color based on day mode (with dawn/dusk orange)
+        glm::vec3 sky;
+        if (dayMode == 0) { // night
+            sky = glm::vec3(0.02f, 0.02f, 0.06f);
+        } else if (dayMode == 1) { // dawn
+            sky = glm::vec3(0.55f, 0.35f, 0.25f); // warm orange
+        } else if (dayMode == 2) { // noon
+            sky = glm::vec3(0.45f, 0.65f, 0.95f); // bright blue
+        } else { // dusk
+            sky = glm::vec3(0.5f, 0.3f, 0.2f); // orange-red
+        }
         glClearColor(sky.r, sky.g, sky.b, 1.0f);
 
         // Fog (blends to sky color — objects fade before render cutoff at 75 units)
         setVec3(shaderProgram, "fogColor", sky);
-        setFloat(shaderProgram, "fogDensity", 0.0007f);
+        float fogDens = (dayMode == 1 || dayMode == 3) ? 0.0004f : 0.0002f; // thicker fog at dawn/dusk
+        setFloat(shaderProgram, "fogDensity", fogDens);
 
         // Lighting toggles
         setBool(shaderProgram, "lightOn", lightOn);
@@ -214,6 +276,7 @@ int main() {
         setBool(shaderProgram, "diffuseOn", diffuseOn);
         setBool(shaderProgram, "specularOn", specularOn);
         setBool(shaderProgram, "isEmissive", false);
+        setBool(shaderProgram, "isHUD", false);
         setFloat(shaderProgram, "dayFactor", dayFactor);
 
         // Texture and shading defaults
@@ -270,6 +333,7 @@ int main() {
             setMat4(shaderProgram, "projection", pMat);
             setVec3(shaderProgram, "viewPos", eye);
             currentVP = pMat * vMat;
+            renderSky(curTime, sunDir);
             renderTerrain(curTime);
             renderObjects(curTime);
             drawBlockHighlight();
@@ -291,7 +355,7 @@ int main() {
                 } else {
                     v = glm::lookAt(camPos, camPos + camFront, camUp);
                 }
-                p = glm::perspective(glm::radians(50.0f), aspect, 0.1f, 200.0f);
+                p = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 200.0f);
                 glm::vec3 eye = birdsEye ? center + glm::vec3(0, 25, 0.01f) : camPos;
                 renderViewport(0, hh, hw, hh, v, p, eye);
             }
@@ -337,13 +401,14 @@ int main() {
             } else {
                 eye = camPos;
                 view = glm::lookAt(camPos, camPos + camFront, camUp);
-                proj = glm::perspective(glm::radians(50.0f), aspect, 0.1f, 200.0f);
+                proj = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 200.0f);
             }
 
             setMat4(shaderProgram, "view", view);
             setMat4(shaderProgram, "projection", proj);
             setVec3(shaderProgram, "viewPos", eye);
             currentVP = proj * view;
+            renderSky(curTime, sunDir);
             renderTerrain(curTime);
             renderObjects(curTime);
             drawBlockHighlight();

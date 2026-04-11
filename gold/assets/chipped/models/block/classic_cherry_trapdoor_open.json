@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:block/oak_trapdoor_open",
+	"textures": {
+		"0": "chipped:block/cherry_trapdoor/classic_cherry_trapdoor",
+		"side": "chipped:block/cherry_trapdoor/classic_cherry_trapdoor_side"
+	}
+}

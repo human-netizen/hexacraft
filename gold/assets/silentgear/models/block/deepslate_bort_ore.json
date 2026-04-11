@@ -1,0 +1,6 @@
+{
+  "parent": "silentgear:block/bort_ore",
+  "textures": {
+    "0": "silentgear:block/deepslate_bort_ore"
+  }
+}

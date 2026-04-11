@@ -1,0 +1,152 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"render_type": "minecraft:translucent",
+	"textures": {
+		"particle": "biomeswevegone:block/maple/trapdoor",
+		"texture": "biomeswevegone:block/maple/trapdoor",
+		"side": "biomeswevegone:block/maple/trapdoor_side"
+	},
+	"elements": [
+		{
+			"name": "North",
+			"from": [0, 13, 13],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 3, 16, 0], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [13, 3, 16, 0], "rotation": 270, "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 3], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [0, 3, 3, 0], "rotation": 90, "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 3, 16, 0], "rotation": 180, "texture": "#side", "cullface": "up"},
+				"down": {"uv": [0, 16, 16, 13], "texture": "#texture"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 13],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 16, 16, 13], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [0, 3, 3, 0], "rotation": 270, "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 13, 16, 16], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [13, 3, 16, 0], "rotation": 90, "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 16, 16, 13], "rotation": 180, "texture": "#texture"},
+				"down": {"uv": [0, 3, 16, 0], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "West",
+			"from": [0, 3, 13],
+			"to": [3, 13, 16],
+			"faces": {
+				"north": {"uv": [0, 13, 3, 3], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [3, 16, 13, 13], "rotation": 270, "texture": "#texture"},
+				"south": {"uv": [0, 3, 3, 13], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [3, 3, 13, 0], "rotation": 90, "texture": "#side", "cullface": "west"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [13, 3, 13],
+			"to": [16, 13, 16],
+			"faces": {
+				"north": {"uv": [13, 13, 16, 3], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [3, 3, 13, 0], "rotation": 270, "texture": "#side", "cullface": "east"},
+				"south": {"uv": [13, 3, 16, 13], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [3, 16, 13, 13], "rotation": 90, "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner1",
+			"from": [3, 11, 13],
+			"to": [6, 13, 16],
+			"faces": {
+				"east": {"uv": [0, 3, 3, 5], "texture": "#texture"},
+				"down": {"uv": [3, 0, 6, 3], "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner2",
+			"from": [3, 10, 13],
+			"to": [5, 11, 16],
+			"faces": {
+				"east": {"uv": [0, 5, 3, 6], "texture": "#texture"},
+				"down": {"uv": [3, 0, 5, 3], "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner3",
+			"from": [4, 9, 13],
+			"to": [5, 10, 16],
+			"faces": {
+				"east": {"uv": [0, 6, 3, 7], "texture": "#texture"},
+				"west": {"uv": [0, 6, 3, 7], "rotation": 180, "texture": "#texture"},
+				"down": {"uv": [4, 0, 5, 3], "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner4",
+			"from": [10, 11, 13],
+			"to": [13, 13, 16],
+			"faces": {
+				"west": {"uv": [13, 3, 16, 5], "rotation": 180, "texture": "#texture"},
+				"down": {"uv": [10, 0, 13, 3], "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner5",
+			"from": [11, 10, 13],
+			"to": [13, 11, 16],
+			"faces": {
+				"west": {"uv": [13, 5, 16, 6], "rotation": 180, "texture": "#texture"},
+				"down": {"uv": [11, 0, 13, 3], "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner6",
+			"from": [3, 3, 13],
+			"to": [6, 5, 16],
+			"faces": {
+				"east": {"uv": [0, 11, 3, 13], "texture": "#texture"},
+				"up": {"uv": [3, 13, 6, 16], "rotation": 180, "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner7",
+			"from": [3, 5, 13],
+			"to": [5, 6, 16],
+			"faces": {
+				"east": {"uv": [0, 10, 3, 11], "texture": "#texture"},
+				"up": {"uv": [3, 13, 5, 16], "rotation": 180, "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner8",
+			"from": [10, 3, 13],
+			"to": [13, 5, 16],
+			"faces": {
+				"west": {"uv": [13, 11, 16, 13], "rotation": 180, "texture": "#texture"},
+				"up": {"uv": [10, 13, 13, 16], "rotation": 180, "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Corner9",
+			"from": [11, 5, 13],
+			"to": [13, 6, 16],
+			"faces": {
+				"west": {"uv": [13, 10, 16, 11], "rotation": 180, "texture": "#texture"},
+				"up": {"uv": [11, 13, 13, 16], "rotation": 180, "texture": "#texture"}
+			}
+		},
+		{
+			"name": "TintedGlass",
+			"from": [3, 3, 13],
+			"to": [13, 13, 16],
+			"faces": {
+				"north": {"uv": [3, 3, 13, 13], "rotation": 180, "texture": "#texture"},
+				"south": {"uv": [3, 3, 13, 13], "texture": "#texture", "cullface": "south"}
+			}
+		}
+	]
+}

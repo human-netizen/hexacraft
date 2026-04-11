@@ -1,0 +1,7 @@
+{
+	"parent": "block/coal_ore",
+    "textures": {
+		"particle": "block/deepslate_coal_ore",
+        "0": "block/deepslate_coal_ore"
+    }
+}

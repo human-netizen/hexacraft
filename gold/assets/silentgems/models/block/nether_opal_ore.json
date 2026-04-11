@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/opal_ore",
+  "textures": {
+    "0": "silentgems:block/nether_opal_ore",
+	"particle": "silentgems:block/nether_opal_ore"
+  }
+}

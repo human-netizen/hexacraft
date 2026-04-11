@@ -1,0 +1,7 @@
+{
+	"parent": "block/coal_ore",
+    "textures": {
+		"particle": "deeperdarker:block/gloomslate_coal_ore",
+        "0": "deeperdarker:block/gloomslate_coal_ore"
+    }
+}

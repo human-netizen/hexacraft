@@ -1,0 +1,12 @@
+{
+    "parent": "block/cube",
+    "textures": {
+        "particle": "block/empire_carver_jack_o_lantern",
+        "down": "block/empire_carver_jack_o_lantern_bottom",
+        "up": "block/empire_carver_jack_o_lantern_top",
+        "north": "block/empire_carver_jack_o_lantern",
+        "east": "block/empire_carver_jack_o_lantern_side",
+        "south": "block/empire_carver_jack_o_lantern_side",
+        "west": "block/empire_carver_jack_o_lantern_side"
+    }
+}

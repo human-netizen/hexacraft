@@ -1,0 +1,70 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "biomeswevegone:block/blue_enchanted/trapdoor",
+		"texture": "biomeswevegone:block/blue_enchanted/trapdoor",
+		"side": "biomeswevegone:block/blue_enchanted/trapdoor_side"
+	},
+	"elements": [
+		{
+			"name": "North",
+			"from": [0, 0, 0],
+			"to": [16, 3, 5],
+			"faces": {
+				"north": {"uv": [0, 3, 16, 0], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [11, 3, 16, 0], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 3, 16, 0], "texture": "#side"},
+				"west": {"uv": [0, 3, 5, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 5], "texture": "#texture"},
+				"down": {"uv": [0, 5, 16, 0], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 11],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 3, 16, 0], "texture": "#side"},
+				"east": {"uv": [0, 3, 5, 0], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 3, 16, 0], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [11, 3, 16, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 11, 16, 16], "texture": "#texture"},
+				"down": {"uv": [0, 16, 16, 11], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "West",
+			"from": [0, 0, 5],
+			"to": [5, 3, 11],
+			"faces": {
+				"east": {"uv": [5, 3, 11, 0], "texture": "#side"},
+				"west": {"uv": [5, 3, 11, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 5, 5, 11], "texture": "#texture"},
+				"down": {"uv": [0, 11, 5, 5], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [11, 0, 5],
+			"to": [16, 3, 11],
+			"faces": {
+				"east": {"uv": [5, 3, 11, 0], "texture": "#side", "cullface": "east"},
+				"west": {"uv": [5, 3, 11, 0], "texture": "#side"},
+				"up": {"uv": [11, 5, 16, 11], "texture": "#texture"},
+				"down": {"uv": [11, 11, 16, 5], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Glass",
+			"from": [5, 1, 5],
+			"to": [11, 2, 11],
+			"faces": {
+				"up": {"uv": [5, 5, 11, 11], "texture": "#texture"},
+				"down": {"uv": [5, 11, 11, 5], "texture": "#texture", "cullface": "down"}
+			}
+		}
+	]
+}

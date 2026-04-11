@@ -1,0 +1,33 @@
+{
+    "parent": "block/end_rod",
+    "textures": {
+        "layer0": "block/end_rod"
+},
+    "display": {
+        "thirdperson_righthand": {
+            "rotation": [ 0, 0, 0 ],
+            "translation": [ 0, -0.65, 0.6 ],
+            "scale": [ 0.5, 0.5, 0.5 ]
+        },
+        "thirdperson_lefthand": {
+            "rotation": [ 0, 0, 0 ],
+            "translation": [ 0, -0.65, 0.6 ],
+            "scale": [ 0.5, 0.5, 0.5 ]
+        },
+        "firstperson_righthand": {
+            "rotation": [ -25, 0, 0 ],
+            "translation": [ 0.8, 1, 0 ],
+            "scale": [ 0.5, 0.5, 0.5 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ -25, 0, 0 ],
+            "translation": [ 0.8, 1, 0 ],
+            "scale": [ 0.5, 0.5, 0.5 ]
+        },
+        "gui": {
+            "rotation": [ 30, 45, 0 ],
+            "translation": [ 0, 0, 0 ],
+            "scale": [ 0.9, 0.9, 0.9 ]
+        }
+    }
+}

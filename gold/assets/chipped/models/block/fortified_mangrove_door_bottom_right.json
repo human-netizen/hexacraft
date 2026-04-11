@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_bottom_right",
+	"textures": {
+		"bottom": "chipped:block/mangrove_door/fortified_mangrove_door_bottom",
+		"side": "chipped:block/mangrove_door/chipped_mangrove_door_side",
+		"particle": "chipped:block/mangrove_door/fortified_mangrove_door_bottom"
+	}
+}

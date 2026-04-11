@@ -1,0 +1,70 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:translucent",
+	"textures": {
+		"particle": "biomeswevegone:block/spirit/door_bottom",
+		"bottom": "biomeswevegone:block/spirit/door_bottom",
+		"side": "biomeswevegone:block/spirit/door_side"
+	},
+	"elements": [
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 5],
+			"faces": {
+				"north": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [5, 0, 0, 16], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"west": {"uv": [0, 0, 5, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 0, 9, 5], "rotation": 180, "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 10],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [9, 0, 6, 16], "texture": "#side"},
+				"east": {"uv": [16, 0, 10, 16], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [10, 0, 16, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 10, 9, 16], "rotation": 180, "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 5],
+			"to": [3, 11, 10],
+			"faces": {
+				"east": {"uv": [10, 5, 5, 16], "texture": "#bottom"},
+				"west": {"uv": [5, 5, 10, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 5, 15, 10], "texture": "#side"},
+				"down": {"uv": [6, 5, 9, 10], "rotation": 180, "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bar1",
+			"from": [0, 11, 6],
+			"to": [3, 16, 7],
+			"faces": {
+				"north": {"uv": [6, 0, 9, 5], "texture": "#side"},
+				"east": {"uv": [7, 0, 6, 5], "texture": "#bottom"},
+				"south": {"uv": [0, 0, 3, 5], "texture": "#side"},
+				"west": {"uv": [6, 0, 7, 5], "texture": "#bottom", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Bar2",
+			"from": [0, 11, 8],
+			"to": [3, 16, 9],
+			"faces": {
+				"north": {"uv": [12, 3, 15, 8], "texture": "#bottom"},
+				"east": {"uv": [9, 0, 8, 5], "texture": "#bottom"},
+				"south": {"uv": [0, 0, 3, 5], "texture": "#side"},
+				"west": {"uv": [8, 0, 9, 5], "texture": "#bottom", "cullface": "west"}
+			}
+		}
+	]
+}

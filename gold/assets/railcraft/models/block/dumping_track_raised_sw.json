@@ -1,0 +1,25 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"rail": "railcraft:block/dumping_track",
+		"particle": "railcraft:block/dumping_track"
+	},
+	"elements": [
+		{
+			"name": "Base",
+			"from": [4, -0.209, 3.5],
+			"to": [12, 0.501, 13.5],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8, 0, 0], "rescale": true},
+			"faces": {
+				"north": {"uv": [4, 3, 12, 4], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [11, 3, 12, 13], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [4, 12, 12, 13], "texture": "#rail"},
+				"west": {"uv": [4, 3, 5, 13], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [4, 3, 12, 13], "texture": "#rail"},
+				"down": {"uv": [4, 13, 12, 3], "texture": "#rail"}
+			}
+		}
+	]
+}

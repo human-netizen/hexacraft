@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/acacia_door_top_left",
+	"textures": {
+		"0": "mcwdoors:block/oak_tropical_door_upper",
+		"particle": "mcwdoors:block/oak_tropical_door_upper"
+	}
+}

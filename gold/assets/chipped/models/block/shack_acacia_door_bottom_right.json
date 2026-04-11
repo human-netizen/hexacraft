@@ -1,0 +1,70 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "chipped:block/acacia_door/shack_acacia_door_bottom",
+		"bottom": "chipped:block/acacia_door/shack_acacia_door_bottom",
+		"side": "chipped:block/acacia_door/chipped_acacia_door_side"
+	},
+	"elements": [
+		{
+			"name": "Top",
+			"from": [0, 14, 4],
+			"to": [3, 16, 12],
+			"faces": {
+				"east": {"uv": [4, 0, 12, 2], "texture": "#bottom"},
+				"west": {"uv": [12, 0, 4, 2], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 3, 9, 13], "texture": "#side"}
+			}
+		},
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 12],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 4, 16], "texture": "#bottom"},
+				"south": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [4, 0, 0, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 0, 9, 4], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 4],
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [12, 0, 16, 16], "texture": "#bottom"},
+				"south": {"uv": [9, 0, 6, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 12, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 12, 15, 16], "rotation": 180, "texture": "#side", "cullface": "up"},
+				"down": {"uv": [6, 12, 9, 16], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 4],
+			"to": [3, 6, 12],
+			"faces": {
+				"east": {"uv": [4, 10, 12, 16], "texture": "#bottom"},
+				"west": {"uv": [12, 10, 4, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 4, 15, 12], "rotation": 180, "texture": "#side"},
+				"down": {"uv": [6, 4, 9, 12], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Inside",
+			"from": [0, 6, 6],
+			"to": [3, 14, 10],
+			"faces": {
+				"north": {"uv": [6, 2, 9, 10], "texture": "#side"},
+				"east": {"uv": [6, 2, 10, 10], "texture": "#bottom"},
+				"south": {"uv": [6, 2, 9, 10], "texture": "#side"},
+				"west": {"uv": [10, 2, 6, 10], "texture": "#bottom", "cullface": "west"}
+			}
+		}
+	]
+}

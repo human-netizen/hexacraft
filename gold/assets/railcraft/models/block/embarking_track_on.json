@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/embarking_track",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/embarking_track_on"
+  }
+}

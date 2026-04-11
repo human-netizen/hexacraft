@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "normal": [
+            { "model": "block/diorite" },
+            { "model": "block/diorite", "x": 180 },
+            { "model": "block/diorite", "y": 180 },
+            { "model": "block/diorite", "y": 180, "x": 180 }
+        ]
+    }
+}

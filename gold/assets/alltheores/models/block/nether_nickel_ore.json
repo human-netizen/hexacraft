@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/nickel_ore",
+    "textures": {
+		"0": "alltheores:block/nether_nickel_ore",
+		"particle": "alltheores:block/nether_nickel_ore"
+    }
+}

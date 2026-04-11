@@ -1,0 +1,11 @@
+#Overlay Rules for Resource Pack
+#===============================
+#Thicker/Packed materials generally dominante over more loose materials.
+
+#Overlay Layers:
+
+#L5: Leaves
+#L4: Snow
+#L3: Grass, Mycelium, Podzol
+#L2: Dirt, Coarse Dirt
+#L1: Sand, Red Sand, Gravel

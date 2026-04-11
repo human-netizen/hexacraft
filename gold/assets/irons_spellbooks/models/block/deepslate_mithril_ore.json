@@ -1,0 +1,7 @@
+{
+	"parent": "irons_spellbooks:block/mithril_ore",
+	"textures": {
+		"0": "irons_spellbooks:block/deepslate_mithril_ore",
+		"particle": "irons_spellbooks:block/deepslate_mithril_ore"
+	}
+}

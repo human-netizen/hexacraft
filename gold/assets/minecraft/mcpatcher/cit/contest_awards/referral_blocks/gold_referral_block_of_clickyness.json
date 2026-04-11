@@ -1,0 +1,6 @@
+{
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "block/gold_referral_block_of_clickyness"
+    }
+}

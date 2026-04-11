@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/iolite_ore",
+  "textures": {
+    "0": "silentgems:block/end_iolite_ore",
+    "particle": "silentgems:block/end_iolite_ore"
+  }
+}

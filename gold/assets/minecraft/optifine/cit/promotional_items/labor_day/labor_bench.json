@@ -1,0 +1,12 @@
+{
+    "parent": "block/cube",
+    "textures": {
+        "particle": "block/labor_bench",
+        "down": "block/labor_bench_bottom",
+        "up": "block/labor_bench_top",
+        "north": "block/labor_bench",
+        "east": "block/labor_bench_side",
+        "south": "block/labor_bench_side",
+        "west": "block/labor_bench"
+    }
+}

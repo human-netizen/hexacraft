@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/stable_head/stable_head_door_top_left",
+	"textures": {
+		"top": "mcwdoors:block/stable_head/jungle_stable_head_door_lower",
+		"side": "mcwdoors:block/jungle_barn_door_lower",
+		"particle": "mcwdoors:block/jungle_barn_door_lower"
+	}
+}

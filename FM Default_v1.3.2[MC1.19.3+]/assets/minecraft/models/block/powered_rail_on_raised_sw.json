@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/powered_rail_raised_sw",
+  "textures": {
+		"0": "block/powered_rail_on",
+		"particle": "block/powered_rail_on"
+  }
+}

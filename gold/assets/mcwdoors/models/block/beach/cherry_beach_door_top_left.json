@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/jungle_door_top_left",
+	"textures": {
+		"0": "mcwdoors:block/cherry_beach_door_upper",
+		"particle": "mcwdoors:block/cherry_beach_door_upper"
+	}
+}

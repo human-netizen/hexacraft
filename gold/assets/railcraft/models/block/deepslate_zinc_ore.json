@@ -1,0 +1,7 @@
+{
+	"parent": "railcraft:block/zinc_ore",
+    "textures": {
+		"particle": "railcraft:block/deepslate_zinc_ore",
+        "0": "railcraft:block/deepslate_zinc_ore"
+    }
+}

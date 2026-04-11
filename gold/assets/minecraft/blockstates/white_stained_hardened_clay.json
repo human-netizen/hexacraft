@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "normal": [
+            { "model": "hardened_clay_white" },
+            { "model": "hardened_clay_white", "x": 180 },
+            { "model": "hardened_clay_white", "y": 180 },
+            { "model": "hardened_clay_white", "y": 180, "x": 180 }
+        ]
+    }
+}

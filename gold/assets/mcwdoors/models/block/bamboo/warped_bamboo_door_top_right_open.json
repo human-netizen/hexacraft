@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/bamboo_door_top_right_open",
+	"textures": {
+		"0": "mcwdoors:block/warped_bamboo_door_upper",
+		"particle": "mcwdoors:block/warped_bamboo_door_upper"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/uranium_ore",
+    "textures": {
+		"0": "alltheores:block/other_uranium_ore",
+		"particle": "alltheores:block/other_uranium_ore"
+    }
+}

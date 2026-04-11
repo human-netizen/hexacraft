@@ -1,0 +1,6 @@
+{
+	"parent": "undergarden:block/depthrock_coal_ore",
+    "textures": {
+        "0": "undergarden:block/shiverstone_coal_ore"
+    }
+}

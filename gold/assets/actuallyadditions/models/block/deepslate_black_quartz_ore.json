@@ -1,0 +1,7 @@
+{
+	"parent": "actuallyadditions:block/black_quartz_ore_deepslate",
+    "textures": {
+		"0": "actuallyadditions:block/black_quartz_ore_deepslate",
+		"particle": "actuallyadditions:block/black_quartz_ore_deepslate"
+    }
+}

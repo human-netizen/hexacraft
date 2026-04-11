@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "snowy=false": [
+            { "model": "mycelium" },
+            { "model": "mycelium", "y": 90 },
+            { "model": "mycelium", "y": 180 },
+            { "model": "mycelium", "y": 270 }
+        ]
+    }
+}

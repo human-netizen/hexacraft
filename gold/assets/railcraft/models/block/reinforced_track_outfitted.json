@@ -1,0 +1,8 @@
+{
+  "parent": "railcraft:block/rail_outfitted",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/reinforced_track_outfitted",
+    "particle": "railcraft:block/reinforced_track_outfitted"
+  }
+}

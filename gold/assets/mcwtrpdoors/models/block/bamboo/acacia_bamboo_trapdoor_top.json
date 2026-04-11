@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/bamboo_trapdoor_top",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/bamboo/acacia_bamboo_trapdoor",
+        "0": "mcwtrpdoors:block/bamboo/acacia_bamboo_trapdoor"
+    }
+}

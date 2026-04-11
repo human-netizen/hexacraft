@@ -1,0 +1,6 @@
+{
+	"parent": "xycraft_world:block/xychorium_ore_stone_light",
+    "textures": {
+        "0": "xycraft_world:block/xychorium_ore_kivi"
+    }
+}

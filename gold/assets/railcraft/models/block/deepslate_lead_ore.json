@@ -1,0 +1,7 @@
+{
+	"parent": "railcraft:block/lead_ore",
+    "textures": {
+		"particle": "railcraft:block/deepslate_lead_ore",
+        "0": "railcraft:block/deepslate_lead_ore"
+    }
+}

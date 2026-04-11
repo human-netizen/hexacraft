@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/oak_door_top_left",
+	"textures": {
+		"0": "mcwdoors:block/dark_oak_classic_door_upper",
+		"particle": "mcwdoors:block/dark_oak_classic_door_upper"
+	}
+}

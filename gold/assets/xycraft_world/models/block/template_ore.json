@@ -1,0 +1,60 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"parent": "block/block",
+	"textures": {
+		"0": "xycraft_world:block/aluminum_ore_stone",
+		"particle": "xycraft_world:block/aluminum_ore_stone"
+	},
+	"elements": [
+		{
+			"name": "Stone Base",
+			"from": [0, 0, 0],
+			"to": [16, 16, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#0", "cullface": "north"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#0", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#0", "cullface": "south"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#0", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#0", "cullface": "up"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#0", "cullface": "down"}
+			}
+		},
+		{
+			"name": "n1",
+			"from": [11.9999, 10.9999, -0.499],
+			"to": [14.0001, 12.0001, 0],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [2, 4, 4, 5], "texture": "#0", "cullface": "north"},
+				"east": {"uv": [2, 4, 3, 5], "texture": "#0", "cullface": "north"},
+				"west": {"uv": [3, 4, 4, 5], "texture": "#0", "cullface": "north"},
+				"up": {"uv": [2, 4, 4, 5], "rotation": 180, "texture": "#0", "cullface": "north"},
+				"down": {"uv": [2, 4, 4, 5], "rotation": 180, "texture": "#0", "cullface": "north"}
+			}
+		},
+		{
+			"name": "n2",
+			"from": [7.9999, 9.9999, -0.499],
+			"to": [10.0001, 13.0001, 0],
+			"rotation": {"angle": 0, "axis": "y", "origin": [4, 7, 8]},
+			"faces": {
+				"north": {"uv": [6, 3, 8, 6], "texture": "#0", "cullface": "north"},
+				"east": {"uv": [6, 3, 7, 6], "texture": "#0", "cullface": "north"},
+				"west": {"uv": [7, 3, 8, 6], "texture": "#0", "cullface": "north"},
+				"up": {"uv": [6, 3, 8, 4], "rotation": 180, "texture": "#0", "cullface": "north"},
+				"down": {"uv": [6, 5, 8, 6], "rotation": 180, "texture": "#0", "cullface": "north"}
+			}
+		}
+	],
+	"groups": [
+		0,
+		{
+			"name": "group1",
+			"origin": [0, 0, 0],
+			"color": 0,
+			"children": [1, 2]
+		}
+	]
+}

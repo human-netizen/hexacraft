@@ -1,0 +1,57 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "chipped:block/crimson_door/glass_crimson_door_top",
+		"top": "chipped:block/crimson_door/glass_crimson_door_top",
+		"side": "chipped:block/crimson_door/chipped_crimson_door_side"
+	},
+	"elements": [
+		{
+			"name": "Top",
+			"from": [0, 14, 2],
+			"to": [3, 16, 14],
+			"faces": {
+				"east": {"uv": [14, 0, 2, 2], "texture": "#top"},
+				"west": {"uv": [2, 0, 14, 2], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 2, 15, 14], "texture": "#side", "cullface": "up"},
+				"down": {"uv": [9, 2, 12, 14], "texture": "#side"}
+			}
+		},
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 2],
+			"faces": {
+				"north": {"uv": [6, 0, 3, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [2, 0, 0, 16], "texture": "#top"},
+				"south": {"uv": [9, 0, 12, 16], "texture": "#side"},
+				"west": {"uv": [0, 0, 2, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 0, 15, 2], "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 14],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [15, 0, 12, 16], "texture": "#side"},
+				"east": {"uv": [16, 0, 14, 16], "texture": "#top"},
+				"south": {"uv": [9, 0, 12, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [14, 0, 16, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 14, 15, 16], "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "Glass",
+			"from": [1, 0, 2],
+			"to": [2, 14, 14],
+			"faces": {
+				"east": {"uv": [14, 2, 2, 16], "texture": "#top"},
+				"west": {"uv": [2, 2, 14, 16], "texture": "#top", "cullface": "west"}
+			}
+		}
+	]
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/topaz_ore",
+  "textures": {
+    "0": "silentgems:block/nether_topaz_ore",
+    "particle": "silentgems:block/nether_topaz_ore"
+  }
+}

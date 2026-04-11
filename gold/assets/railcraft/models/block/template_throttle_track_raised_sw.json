@@ -1,0 +1,37 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "#rail"
+	},
+	"elements": [
+		{
+			"name": "Cube1",
+			"from": [5.999, 0.014, 0],
+			"to": [10.001, 1.014, 5.65685],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8, 1, 0]},
+			"faces": {
+				"north": {"uv": [6, 0, 10, 1], "rotation": 180, "texture": "#rail", "cullface": "north"},
+				"east": {"uv": [9, 0, 10, 4], "rotation": 90, "texture": "#rail"},
+				"west": {"uv": [6, 0, 7, 4], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 0, 10, 4], "texture": "#rail"},
+				"down": {"uv": [6, 4, 10, 0], "texture": "#rail"}
+			}
+		},
+		{
+			"name": "Cube2",
+			"from": [4.999, 0.014, 5.65544],
+			"to": [11.001, 1.014, 22.62742],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8, 1, 0]},
+			"faces": {
+				"north": {"uv": [5, 4, 11, 5], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 4, 11, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 15, 11, 16], "texture": "#rail"},
+				"west": {"uv": [5, 4, 6, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 4, 11, 16], "texture": "#rail"},
+				"down": {"uv": [5, 16, 11, 4], "texture": "#rail"}
+			}
+		}
+	]
+}

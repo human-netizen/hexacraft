@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/glass/glass_door_top_left_open",
+	"textures": {
+		"top": "mcwdoors:block/glass/jungle_glass_door_upper",
+		"side": "mcwdoors:block/jungle_barn_door_lower",
+		"particle": "mcwdoors:block/jungle_barn_door_lower"
+	}
+}

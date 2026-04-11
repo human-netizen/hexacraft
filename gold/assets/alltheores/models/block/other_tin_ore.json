@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/tin_ore",
+    "textures": {
+		"0": "alltheores:block/other_tin_ore",
+		"particle": "alltheores:block/other_tin_ore"
+    }
+}

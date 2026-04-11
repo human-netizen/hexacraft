@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/stone_inf" },
+            { "model": "block/stone_inf_mirrored" },
+            { "model": "block/stone_inf", "y": 180 },
+            { "model": "block/stone_inf_mirrored", "y": 180 }
+        ]
+    }
+}

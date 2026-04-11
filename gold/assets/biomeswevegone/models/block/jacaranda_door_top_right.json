@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_top_right",
+	"textures": {
+		"top": "biomeswevegone:block/jacaranda/door_top",
+		"side": "biomeswevegone:block/jacaranda/door_side",
+		"particle": "biomeswevegone:block/jacaranda/door_top"
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"parent": "minecraft:block/warped_trapdoor_bottom",
+	"textures": {
+		"0": "chipped:block/acacia_trapdoor/distorted_acacia_trapdoor",
+		"texture": "chipped:block/acacia_trapdoor/distorted_acacia_trapdoor",		
+		"particle": "chipped:block/acacia_trapdoor/distorted_acacia_trapdoor"
+	}
+}

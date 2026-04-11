@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/crimson_trapdoor_open",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/barred/warped_barred_trapdoor",
+        "0": "mcwtrpdoors:block/barred/warped_barred_trapdoor"
+    }
+}

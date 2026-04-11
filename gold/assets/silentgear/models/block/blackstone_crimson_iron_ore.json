@@ -1,0 +1,6 @@
+{
+  "parent": "silentgear:block/crimson_iron_ore",
+  "textures": {
+    "0": "silentgear:block/blackstone_crimson_iron_ore"
+  }
+}

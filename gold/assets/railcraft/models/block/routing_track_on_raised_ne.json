@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/routing_track_raised_ne",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/routing_track_on"
+  }
+}

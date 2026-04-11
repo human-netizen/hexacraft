@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_top_right",
+	"textures": {
+		"top": "chipped:block/oak_door/tiled_oak_door_top",
+		"side": "chipped:block/oak_door/chipped_oak_door_side",
+		"particle": "chipped:block/oak_door/tiled_oak_door_top"
+	}
+}

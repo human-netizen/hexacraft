@@ -1,0 +1,75 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:translucent",
+	"textures": {
+		"particle": "biomeswevegone:block/spirit/door_bottom",
+		"bottom": "biomeswevegone:block/spirit/door_bottom",
+		"side": "biomeswevegone:block/spirit/door_side"
+	},
+	"elements": [
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 11],
+			"to": [3, 16, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 9.5, 8]},
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 5, 16], "texture": "#bottom"},
+				"south": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [5, 0, 0, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [9, 0, 6, 5], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 6],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 9.5, 8]},
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [10, 0, 16, 16], "texture": "#bottom"},
+				"south": {"uv": [9, 0, 6, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 10, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [9, 10, 6, 16], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 6],
+			"to": [3, 11, 11],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 9.5, 8]},
+			"faces": {
+				"east": {"uv": [5, 5, 10, 16], "texture": "#bottom"},
+				"west": {"uv": [10, 5, 5, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [15, 5, 12, 10], "rotation": 180, "texture": "#side"},
+				"down": {"uv": [9, 5, 6, 10], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bar1",
+			"from": [0, 11, 9],
+			"to": [3, 16, 10],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 9.5, 8]},
+			"faces": {
+				"north": {"uv": [0, 0, 3, 5], "texture": "#side"},
+				"east": {"uv": [6, 0, 7, 5], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 5], "texture": "#side"},
+				"west": {"uv": [7, 0, 6, 5], "texture": "#bottom", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Bar2",
+			"from": [0, 11, 7],
+			"to": [3, 16, 8],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 9.5, 8]},
+			"faces": {
+				"north": {"uv": [0, 0, 3, 5], "texture": "#side"},
+				"east": {"uv": [8, 0, 9, 5], "texture": "#bottom"},
+				"south": {"uv": [12, 3, 15, 8], "texture": "#bottom"},
+				"west": {"uv": [9, 0, 8, 5], "texture": "#bottom", "cullface": "west"}
+			}
+		}
+	]
+}

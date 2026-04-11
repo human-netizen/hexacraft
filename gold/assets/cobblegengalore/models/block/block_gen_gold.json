@@ -1,0 +1,9 @@
+{
+  "parent": "cobblegengalore:block/template_block_gen",
+  "textures": {
+    "0": "cobblegengalore:block/gold_side",
+    "1": "cobblegengalore:block/gold_top",
+    "2": "cobblegengalore:block/gold_bottom",
+    "particle": "cobblegengalore:block/gold_side"
+  }
+}

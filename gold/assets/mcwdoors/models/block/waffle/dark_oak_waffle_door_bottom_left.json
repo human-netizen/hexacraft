@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/cherry_door_bottom_left",
+	"textures": {
+		"0": "mcwdoors:block/dark_oak_waffle_door_lower",
+		"particle": "mcwdoors:block/dark_oak_waffle_door_lower"
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"parent": "minecraft:block/warped_trapdoor_top",
+	"textures": {
+		"0": "chipped:block/spruce_trapdoor/distorted_spruce_trapdoor",
+		"texture": "chipped:block/spruce_trapdoor/distorted_spruce_trapdoor",		
+		"particle": "chipped:block/spruce_trapdoor/distorted_spruce_trapdoor"
+	}
+}

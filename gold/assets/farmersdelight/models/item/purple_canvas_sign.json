@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/sign",
+  "textures": {
+    "0": "farmersdelight:block/purple_canvas_sign"
+  }
+}

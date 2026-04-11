@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/white_diamond_ore",
+  "textures": {
+    "0": "silentgems:block/end_white_diamond_ore",
+    "particle": "silentgems:block/end_white_diamond_ore"
+  }
+}

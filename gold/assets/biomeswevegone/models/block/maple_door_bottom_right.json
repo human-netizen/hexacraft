@@ -1,0 +1,57 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:translucent",
+	"textures": {
+		"particle": "biomeswevegone:block/maple/door_bottom",
+		"bottom": "biomeswevegone:block/maple/door_bottom",
+		"side": "biomeswevegone:block/maple/door_side"
+	},
+	"elements": [
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 10],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 6, 16], "texture": "#bottom"},
+				"south": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [6, 0, 0, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [9, 0, 6, 6], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 6],
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [10, 0, 16, 16], "texture": "#bottom"},
+				"south": {"uv": [3, 0, 0, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 10, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [9, 10, 6, 16], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 6],
+			"to": [3, 9, 10],
+			"faces": {
+				"east": {"uv": [6, 7, 10, 16], "texture": "#bottom"},
+				"west": {"uv": [10, 7, 6, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [15, 6, 12, 10], "rotation": 180, "texture": "#side"},
+				"down": {"uv": [9, 6, 6, 10], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "TintedGlass",
+			"from": [0, 9, 6],
+			"to": [3, 16, 10],
+			"faces": {
+				"east": {"uv": [6, 0, 10, 7], "texture": "#bottom"},
+				"west": {"uv": [6, 0, 10, 7], "texture": "#bottom", "cullface": "west"}
+			}
+		}
+	]
+}

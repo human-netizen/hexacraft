@@ -1,0 +1,8 @@
+{
+	"parent": "block/redstone_ore",
+    "textures": {
+		"particle": "block/deepslate_redstone_ore_off",
+        "0": "block/deepslate_redstone_ore_off",
+        "1": "block/redstone_ore_off_overlay"
+    }
+}

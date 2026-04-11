@@ -34,22 +34,22 @@ Based on `req.md` (full Minecraft-style feature set) and `gfx_req.md` (course as
 
 ---
 
-## REMAINING COURSE REQUIREMENTS (MUST DO)
+## COURSE REQUIREMENTS STATUS
 
-These items from `gfx_req.md` are **not yet implemented** and must be completed:
+All items from `gfx_req.md` are now implemented:
 
-| Requirement | Status | Planned Phase |
-|-------------|--------|---------------|
-| Textures: Simple texture without surface color | NOT DONE | Phase 10 |
-| Textures: Blended texture with surface color | NOT DONE | Phase 10 |
-| Textured curvy objects (sphere + cone) | NOT DONE | Phase 10 |
-| Wine glass from "wine glass making program" | NOT DONE | Phase 10 |
-| Fractal tree leaves | NOT DONE | Phase 10 |
-| Random motion for birds (spline path) | NOT DONE | Phase 10 |
-| Windows that open/close | NOT DONE | Phase 10 |
-| Collision detection (Masud sir emphasis) | NOT DONE | Phase 10 |
-| Gouraud vs Phong shading toggle | NOT DONE | Phase 10 |
-| Light source motion (tied to sun position) | PARTIAL (day-night exists, need sun object driving light dir) | Phase 11 |
+| Requirement | Status | Phase |
+|-------------|--------|-------|
+| Textures: Simple texture without surface color | DONE | 10 |
+| Textures: Blended texture with surface color | DONE | 10 |
+| Textured curvy objects (sphere + cone) | DONE | 10 |
+| Wine glass from "wine glass making program" | DONE | 10 |
+| Fractal tree leaves | DONE | 10 |
+| Random motion for birds (spline path) | DONE | 10 |
+| Windows that open/close | DONE | 10 |
+| Collision detection (Masud sir emphasis) | DONE | 10 |
+| Gouraud vs Phong shading toggle | DONE | 10 |
+| Light source motion (tied to sun position) | DONE | 11 |
 
 ---
 

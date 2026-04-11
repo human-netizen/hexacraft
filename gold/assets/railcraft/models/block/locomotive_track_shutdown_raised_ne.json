@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/template_locomotive_track_raised_ne",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/locomotive_track_shutdown"
+  }
+}

@@ -1,0 +1,25 @@
+{
+	"texture": "textures/entity/sheep/wooloo_fur",
+	"textureSize": [64, 32],
+	"credit": "Made with Blockbench",
+	"boxes": [
+		{
+			"coordinates": [2.9, -2, -5, 2, 10, 2],
+			"uvNorth": [22, 20, 24, 32],
+			"uvEast": [20, 20, 22, 32],
+			"uvSouth": [18, 20, 20, 32],
+			"uvWest": [16, 20, 18, 32],
+			"uvUp": [18, 18, 20, 20],
+			"uvDown": [20, 18, 22, 20]
+		},
+		{
+			"coordinates": [-4.9, -2, -5, 2, 10, 2],
+			"uvNorth": [22, 20, 24, 32],
+			"uvEast": [20, 20, 22, 32],
+			"uvSouth": [18, 20, 20, 32],
+			"uvWest": [16, 20, 18, 32],
+			"uvUp": [18, 18, 20, 20],
+			"uvDown": [20, 18, 22, 20]
+		}
+	]
+}

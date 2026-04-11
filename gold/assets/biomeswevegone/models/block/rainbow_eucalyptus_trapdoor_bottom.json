@@ -1,0 +1,103 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "biomeswevegone:block/rainbow_eucalyptus/trapdoor",
+		"texture": "biomeswevegone:block/rainbow_eucalyptus/trapdoor",
+		"side": "biomeswevegone:block/rainbow_eucalyptus/trapdoor_side"
+	},
+	"elements": [
+		{
+			"name": "North",
+			"from": [0, 0, 0],
+			"to": [16, 3, 4],
+			"faces": {
+				"north": {"uv": [0, 3, 16, 0], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [12, 3, 16, 0], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 3], "texture": "#texture"},
+				"west": {"uv": [0, 3, 4, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 4], "texture": "#texture"},
+				"down": {"uv": [0, 4, 16, 0], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 12],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [16, 13, 0, 16], "texture": "#texture"},
+				"east": {"uv": [0, 3, 4, 0], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 3, 16, 0], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [12, 3, 16, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 12, 16, 16], "texture": "#texture"},
+				"down": {"uv": [0, 16, 16, 12], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "West",
+			"from": [0, 0, 4],
+			"to": [4, 3, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 1]},
+			"faces": {
+				"east": {"uv": [0, 4, 3, 12], "rotation": 90, "texture": "#texture"},
+				"west": {"uv": [4, 3, 12, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 4, 4, 12], "texture": "#texture"},
+				"down": {"uv": [0, 12, 4, 4], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [12, 0, 4],
+			"to": [16, 3, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 1]},
+			"faces": {
+				"east": {"uv": [4, 3, 12, 0], "texture": "#side", "cullface": "east"},
+				"west": {"uv": [13, 12, 16, 4], "rotation": 90, "texture": "#texture"},
+				"up": {"uv": [12, 4, 16, 12], "texture": "#texture"},
+				"down": {"uv": [12, 12, 16, 4], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Glass",
+			"from": [4, 0, 4],
+			"to": [12, 3, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [4, 0, 4]},
+			"faces": {
+				"up": {"uv": [4, 4, 12, 12], "texture": "#texture"},
+				"down": {"uv": [4, 12, 12, 4], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bar1",
+			"from": [5, 0, 4],
+			"to": [6, 3, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [5, 0, 9]},
+			"faces": {
+				"east": {"uv": [7, 3, 10, 11], "rotation": 90, "texture": "#side"},
+				"west": {"uv": [7, 3, 10, 11], "rotation": 270, "texture": "#side"}
+			}
+		},
+		{
+			"name": "Bar2",
+			"from": [7, 0, 4],
+			"to": [9, 3, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [7, 0, 9]},
+			"faces": {
+				"east": {"uv": [10, 3, 13, 11], "rotation": 90, "texture": "#side"},
+				"west": {"uv": [10, 3, 13, 11], "rotation": 270, "texture": "#side"}
+			}
+		},
+		{
+			"name": "Bar3",
+			"from": [10, 0, 4],
+			"to": [11, 3, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [10, 0, 9]},
+			"faces": {
+				"east": {"uv": [13, 3, 16, 11], "rotation": 90, "texture": "#side"},
+				"west": {"uv": [13, 3, 16, 11], "rotation": 270, "texture": "#side"}
+			}
+		}
+	]
+}

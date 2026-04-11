@@ -1,0 +1,271 @@
+
+language.name=English
+language.region=New Zealand
+language.code=en_nz
+
+gui.done=Done
+gui.cancel=Cancel
+gui.back=Back
+gui.up=Up
+gui.down=Down
+gui.yes=Yes
+gui.no=§7No
+gui.none=§8None
+gui.all=All
+
+gui.recipebook.moreRecipes=§7Right Click for more
+
+addServer.resourcePack.enabled=Enabled
+addServer.resourcePack.disabled=§7Disabled
+lanServer.scanning=§8Scanning for servers on your local network...
+
+disconnect.kicked=Was kicked from the server
+
+soundCategory.hostile=Hostile Creatures
+soundCategory.neutral=Friendly Creatures
+soundCategory.ambient=Ambience
+
+options.off=§7OFF
+options.on=ON
+options.visible=Shown
+options.hidden=§7Hidden
+options.ao.off=§7OFF
+options.guiScale.small=1
+options.guiScale.normal=2
+options.guiScale.large=3
+options.particles.all=▒ All
+options.particles.decreased=░ Decreased
+options.particles.minimal=§7· Minimal
+options.chat.visibility=Chat
+options.chat.visibility.full=Shown
+options.chat.visibility.system=Commands Only
+options.chat.visibility.hidden=§7Hidden
+options.chat.opacity=░ Opacity
+options.mainHand=Main Hand
+options.mainHand.left=« Left
+options.mainHand.right=» Right
+options.narrator=Narrator
+options.narrator.off=§7Off
+options.narrator.notavailable=§7Not available
+
+resourcePack.available.title=Available
+resourcePack.selected.title=Selected
+  
+tile.log.name=Log
+tile.log.oak.name=Oak Log
+tile.log.spruce.name=Spruce Log
+tile.log.birch.name=Birch Log
+tile.log.jungle.name=Jungle Log
+tile.log.acacia.name=Acacia Log
+tile.log.big_oak.name=Dark Oak Log
+tile.wood.name=Wooden Planks
+tile.wood.oak.name=Oak Planks
+tile.wood.spruce.name=Spruce Planks
+tile.wood.birch.name=Birch Planks
+tile.wood.jungle.name=Jungle Planks
+tile.wood.acacia.name=Acacia Planks
+tile.wood.big_oak.name=Dark Oak Planks
+
+tile.stoneSlab.wood.name=Petrified Oak Slab
+tile.woodSlab.name=Wood Slab
+tile.woodSlab.oak.name=Oak Slab
+tile.woodSlab.spruce.name=Spruce Slab
+tile.woodSlab.birch.name=Birch Slab
+tile.woodSlab.jungle.name=Jungle Slab
+tile.woodSlab.acacia.name=Acacia Slab
+tile.woodSlab.big_oak.name=Dark Oak Slab
+tile.stairsWood.name=Oak Stairs
+tile.stairsWoodSpruce.name=Spruce Stairs
+tile.stairsWoodBirch.name=Birch Stairs
+tile.stairsWoodJungle.name=Jungle Stairs
+tile.stairsWoodAcacia.name=Acacia Stairs
+tile.stairsWoodDarkOak.name=Dark Oak Stairs
+
+tile.sandStone.name=Sandstone
+tile.sandStone.default.name=Sandstone
+tile.sandStone.chiseled.name=Chiseled Sandstone
+tile.sandStone.smooth.name=Cut Sandstone
+tile.redSandStone.name=Red Sandstone
+tile.redSandStone.default.name=Red Sandstone
+tile.redSandStone.chiseled.name=Chiseled Red Sandstone
+tile.redSandStone.smooth.name=Cut Red Sandstone
+
+tile.stoneMoss.name=Mossy Cobblestone
+tile.clay.name=Clay
+
+tile.glass.name=Glass
+tile.stainedGlass.name=Stained Glass
+tile.stainedGlass.black.name=Black Glass
+tile.stainedGlass.red.name=Red Glass
+tile.stainedGlass.green.name=Green Glass
+tile.stainedGlass.brown.name=Brown Glass
+tile.stainedGlass.blue.name=Blue Glass
+tile.stainedGlass.purple.name=Purple Glass
+tile.stainedGlass.cyan.name=Cyan Glass
+tile.stainedGlass.silver.name=Light Gray Glass
+tile.stainedGlass.gray.name=Gray Glass
+tile.stainedGlass.pink.name=Pink Glass
+tile.stainedGlass.lime.name=Lime Glass
+tile.stainedGlass.yellow.name=Yellow Glass
+tile.stainedGlass.lightBlue.name=Light Blue Glass
+tile.stainedGlass.magenta.name=Magenta Glass
+tile.stainedGlass.orange.name=Orange Glass
+tile.stainedGlass.white.name=White Glass
+tile.thinStainedGlass.name=Stained Pane
+tile.thinStainedGlass.black.name=Black Pane
+tile.thinStainedGlass.red.name=Red Pane
+tile.thinStainedGlass.green.name=Green Pane
+tile.thinStainedGlass.brown.name=Brown Pane
+tile.thinStainedGlass.blue.name=Blue Pane
+tile.thinStainedGlass.purple.name=Purple Pane
+tile.thinStainedGlass.cyan.name=Cyan Pane
+tile.thinStainedGlass.silver.name=Light Gray Pane
+tile.thinStainedGlass.gray.name=Gray Pane
+tile.thinStainedGlass.pink.name=Pink Pane
+tile.thinStainedGlass.lime.name=Lime Pane
+tile.thinStainedGlass.yellow.name=Yellow Pane
+tile.thinStainedGlass.lightBlue.name=Light Blue Pane
+tile.thinStainedGlass.magenta.name=Magenta Pane
+tile.thinStainedGlass.orange.name=Orange Pane
+tile.thinStainedGlass.white.name=White Pane
+tile.thinGlass.name=Glass Pane
+
+tile.doublePlant.grass.name=Tallgrass
+tile.stoneSlab.brick.name=Brick Slab
+tile.stoneSlab.smoothStoneBrick.name=Stone Brick Slab
+tile.stoneSlab.netherBrick.name=Nether Brick Slab
+tile.mobSpawner.name=Mob Spawner
+
+tile.blockCoal.name=Coal Block
+tile.blockIron.name=Iron Block
+tile.blockGold.name=Gold Block
+tile.blockDiamond.name=Diamond Block
+tile.blockRedstone.name=Redstone Block
+tile.blockEmerald.name=Emerald Block
+tile.quartzBlock.name=Quartz Block
+tile.quartzBlock.default.name=Quartz Block
+tile.quartzBlock.chiseled.name=Chiseled Quartz
+tile.quartzBlock.lines.name=Quartz Pillar
+
+tile.weightedPlate_light.name=Light Weighted Pressure Plate
+tile.weightedPlate_heavy.name=Heavy Weighted Pressure Plate
+tile.reeds.name=Sugar Cane
+
+tile.stairsBrick.name=Brick Stairs
+tile.stairsStoneBrickSmooth.name=Stone Brick Stairs
+tile.netherBrick.name=Nether Bricks
+tile.netherFence.name=Nether Brick Fence
+tile.stairsNetherBrick.name=Nether Brick Stairs
+tile.redNetherBrick.name=Red Nether Bricks
+
+tile.monsterStoneEgg.name=Infested Stone
+tile.monsterStoneEgg.stone.name=Infested Stone
+tile.monsterStoneEgg.cobble.name=Infested Cobblestone
+tile.monsterStoneEgg.brick.name=Infested Stone Bricks
+tile.monsterStoneEgg.mossybrick.name=Infested Mossy Stone Bricks
+tile.monsterStoneEgg.crackedbrick.name=InfestedCracked Stone Bricks
+tile.monsterStoneEgg.chiseledbrick.name=Infested Chiseled Stone Bricks
+
+tile.enchantmentTable.name=Enchanting Table
+tile.anvil.name=Anvil
+tile.anvil.intact.name=Anvil
+tile.anvil.slightlyDamaged.name=Chipped Anvil
+tile.anvil.veryDamaged.name=Damaged Anvil
+
+tile.beacon.primary=§7Primary Power
+tile.beacon.secondary=§7Secondary Power
+
+item.seeds.name=Wheat Seeds
+item.melon.name=Melon Slice
+item.speckledMelon.name=Glistering Melon Slice
+item.porkchopRaw.name=Raw Pork
+item.porkchopCooked.name=Cooked Pork
+item.fish.cod.raw.name=Raw Cod
+item.fish.cod.cooked.name=Cooked Cod
+item.rabbitFoot.name=Rabbit Foot
+item.milk.name=Milk Bucket
+item.clay.name=Clay Ball
+
+item.helmetChain.name=Chainmail Helmet
+item.chestplateChain.name=Chainmail Chestplate
+item.leggingsChain.name=Chainmail Leggings
+item.bootsChain.name=Chainmail Boots
+item.minecartChest.name=Storage Minecart
+item.minecartFurnace.name=Furnace Minecart
+item.minecartTnt.name=TNT Minecart
+item.minecartHopper.name=Hopper Minecart
+item.minecartCommandBlock.name=Command Block Minecart
+item.diode.name=Repeater
+item.comparator.name=Comparator
+
+container.hopper=Hopper
+container.enchant=Enchant
+container.enchant.level.one=1 Level
+container.enchant.level.many=%s Levels
+container.repair.cost=Forge Cost: %1$s
+container.brewing=Brewing
+container.chest=Chest
+container.chestDouble=Double Chest
+container.beacon=Beacon
+container.shulkerBox=Shulker Box
+container.shulkerBox.more=§l§d+%s §r§7more...
+
+item.durability=Durability: §l%s §r§7/ %s
+
+entity.generic.name=unknown
+entity.Minecart.name=Minecart
+entity.MinecartHopper.name=Hopper Minecart 
+entity.MinecartChest.name=Storage Minecart
+
+potion.potency.0=
+potion.potency.1=II
+potion.potency.2=III
+potion.potency.3=IV
+potion.potency.4=V
+potion.potency.5=VI
+potion.potency.6=VII
+potion.potency.7=VIII
+potion.potency.8=IX
+potion.potency.9=X
+
+enchantment.oxygen=§3Respiration
+enchantment.waterWorker=§3Aqua Affinity
+enchantment.waterWalker=§3Depth Strider
+enchantment.frostWalker=§6Frost Walker
+enchantment.untouching=§dSilk Touch
+enchantment.lootBonus=§2Looting
+enchantment.lootBonusDigger=§2Fortune
+enchantment.lootBonusFishing=§2Luck of the Sea
+enchantment.arrowInfinite=§dInfinity
+enchantment.thorns=§dThorns
+enchantment.mending=§6Mending
+
+inventory.hotbarSaved=Item toolbar saved (restore with %1$s+%2$s)
+inventory.hotbarInfo=Save with %1$s+%2$s
+mount.onboard=%1$s: ↑ dismount
+build.tooHigh=Build limit is %s blocks
+
+item.modifiers.mainhand=In main hand:
+item.modifiers.offhand=In off hand:
+item.modifiers.feet=On feet:
+item.modifiers.legs=On legs:
+item.modifiers.chest=On body:
+item.modifiers.head=On head:
+attribute.name.generic.armor=Armor
+attribute.name.generic.armorToughness=Toughness
+
+advancements.end.elytra.title=Sky's the Limit
+advancements.end.elytra.description=Find Elytra
+advancements.end.levitate.title=Great View From Up Here
+advancements.end.levitate.description=Levitate up 50 blocks from the bullets of a Shulker
+advancements.story.form_obsidian.title=Ice Bucket Challenge
+advancements.story.form_obsidian.description=Form and mine obsidian
+advancements.story.obtain_armor.title=Suit Up
+advancements.story.obtain_armor.description=Protect yourself with iron armor
+advancements.story.smelt_iron.title=Acquire Hardware
+advancements.story.smelt_iron.description=Smelt iron ore
+advancements.story.upgrade_tools.title=Getting an Upgrade
+advancements.story.upgrade_tools.description=Construct a stone pickaxe
+
+recipe.toast.title=New Recipes Unlocked!
+recipe.toast.description=In your Recipe Book

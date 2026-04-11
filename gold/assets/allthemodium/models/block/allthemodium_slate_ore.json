@@ -1,0 +1,7 @@
+{
+	"parent": "allthemodium:block/allthemodium_ore",
+    "textures": {
+		"0": "allthemodium:block/allthemodium_slate_ore",
+		"particle": "allthemodium:block/allthemodium_slate_ore"
+    }
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/osmium_ore",
+    "textures": {
+		"0": "alltheores:block/deepslate_osmium_ore",
+		"particle": "alltheores:block/deepslate_osmium_ore"
+    }
+}

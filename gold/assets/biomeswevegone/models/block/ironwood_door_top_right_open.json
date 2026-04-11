@@ -1,0 +1,73 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "biomeswevegone:block/ironwood/door_top",
+		"top": "biomeswevegone:block/ironwood/door_top",
+		"side": "biomeswevegone:block/ironwood/door_side"
+	},
+	"elements": [
+		{
+			"name": "Top",
+			"from": [0, 15, 4],
+			"to": [3, 16, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, -1]},
+			"faces": {
+				"east": {"uv": [12, 0, 4, 1], "texture": "#top"},
+				"west": {"uv": [4, 0, 12, 1], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [15, 4, 12, 12], "texture": "#side", "cullface": "up"},
+				"down": {"uv": [15, 4, 12, 12], "texture": "#side"}
+			}
+		},
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 4],
+			"faces": {
+				"north": {"uv": [6, 0, 3, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [4, 0, 0, 16], "texture": "#top"},
+				"south": {"uv": [9, 0, 12, 16], "texture": "#side"},
+				"west": {"uv": [0, 0, 4, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [15, 0, 12, 4], "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 12],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [6, 0, 3, 16], "texture": "#side"},
+				"east": {"uv": [16, 0, 12, 16], "texture": "#top"},
+				"south": {"uv": [9, 0, 12, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [12, 0, 16, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [15, 12, 12, 16], "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "MiddleColumn",
+			"from": [0, 0, 6],
+			"to": [3, 15, 10],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, -1]},
+			"faces": {
+				"north": {"uv": [3, 1, 6, 16], "texture": "#side"},
+				"east": {"uv": [10, 1, 6, 16], "texture": "#top"},
+				"south": {"uv": [9, 1, 12, 16], "texture": "#side"},
+				"west": {"uv": [6, 1, 10, 16], "texture": "#top", "cullface": "west"}
+			}
+		},
+		{
+			"name": "MiddleBar",
+			"from": [0.01, 5, 4],
+			"to": [2.99, 6, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, -2, -3]},
+			"faces": {
+				"east": {"uv": [12, 10, 4, 11], "texture": "#top"},
+				"west": {"uv": [4, 10, 12, 11], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [15, 4, 12, 12], "texture": "#side"},
+				"down": {"uv": [15, 4, 12, 12], "texture": "#side"}
+			}
+		}
+	]
+}

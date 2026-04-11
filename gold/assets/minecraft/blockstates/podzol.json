@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "snowy=false": [
+            { "model": "podzol" },
+            { "model": "podzol", "y": 90 },
+            { "model": "podzol", "y": 180 },
+            { "model": "podzol", "y": 270 }
+        ]
+    }
+}

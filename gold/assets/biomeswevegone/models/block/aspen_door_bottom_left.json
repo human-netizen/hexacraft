@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_bottom_left",
+	"textures": {
+		"bottom": "biomeswevegone:block/aspen/door_bottom",
+		"side": "biomeswevegone:block/aspen/door_side",
+		"particle": "biomeswevegone:block/aspen/door_bottom"
+	}
+}

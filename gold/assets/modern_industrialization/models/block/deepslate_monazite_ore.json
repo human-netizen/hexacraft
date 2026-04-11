@@ -1,0 +1,7 @@
+{
+	"parent": "modern_industrialization:block/monazite_ore",
+    "textures": {
+		"particle": "modern_industrialization:block/deepslate_monazite_ore",
+        "0": "modern_industrialization:block/deepslate_monazite_ore"
+    }
+}

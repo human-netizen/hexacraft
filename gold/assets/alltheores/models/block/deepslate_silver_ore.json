@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/silver_ore",
+    "textures": {
+		"0": "alltheores:block/deepslate_silver_ore",
+		"particle": "alltheores:block/deepslate_silver_ore"
+    }
+}

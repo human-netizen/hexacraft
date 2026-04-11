@@ -1,0 +1,14 @@
+{
+    "variants": {
+        "normal": [
+            { "model": "gravel" },
+            { "model": "gravel", "x": 180 },
+            { "model": "gravel", "y": 90 },
+            { "model": "gravel", "y": 90, "x": 180 },
+            { "model": "gravel", "y": 180 },
+            { "model": "gravel", "y": 180, "x": 180 },
+            { "model": "gravel", "y": 270 },
+            { "model": "gravel", "y": 270, "x": 180 }
+        ]
+    }
+}

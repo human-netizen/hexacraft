@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/garnet_ore",
+  "textures": {
+    "0": "silentgems:block/end_garnet_ore",
+    "particle": "silentgems:block/end_garnet_ore"
+  }
+}

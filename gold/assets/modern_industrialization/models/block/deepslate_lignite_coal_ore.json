@@ -1,0 +1,7 @@
+{
+	"parent": "modern_industrialization:block/lignite_coal_ore",
+    "textures": {
+		"particle": "modern_industrialization:block/deepslate_lignite_coal_ore",
+        "0": "modern_industrialization:block/deepslate_lignite_coal_ore"
+    }
+}

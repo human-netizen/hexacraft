@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/cinnabar_ore",
+    "textures": {
+		"0": "alltheores:block/deepslate_cinnabar_ore",
+		"particle": "alltheores:block/deepslate_cinnabar_ore"
+    }
+}

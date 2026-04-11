@@ -1,0 +1,7 @@
+{
+  "parent": "eternal_starlight:block/grimstone_redstone_ore",
+  "textures": {
+    "0": "eternal_starlight:block/voidstone_redstone_ore",
+	"particle": "eternal_starlight:block/voidstone_redstone_ore"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/locking_track_lockdown",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/locking_track_lockdown_on"
+  }
+}

@@ -1,0 +1,6 @@
+{
+	"parent": "xycraft_world:block/xychorium_ore_stone_dark",
+    "textures": {
+        "0": "xycraft_world:block/xychorium_ore_deepslate"
+    }
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:block/template_flat_sided_trapdoor_open",
+	"textures": {
+		"texture": "chipped:block/crimson_trapdoor/solid_crimson_trapdoor",		
+		"side": "chipped:block/crimson_trapdoor/pointless_crimson_trapdoor_side"
+	}
+}

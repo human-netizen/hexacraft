@@ -1,0 +1,7 @@
+{
+  "parent": "theurgy:block/sal_ammoniac_ore",
+  "textures": {
+    "0": "theurgy:block/deepslate_sal_ammoniac_ore",
+	"particle": "theurgy:block/deepslate_sal_ammoniac_ore"
+  }
+}

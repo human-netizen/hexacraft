@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_top_right",
+	"textures": {
+		"top": "chipped:block/spruce_door/heavy_spruce_door_top",
+		"side": "chipped:block/spruce_door/chipped_spruce_door_side",
+		"particle": "chipped:block/spruce_door/heavy_spruce_door_top"
+	}
+}

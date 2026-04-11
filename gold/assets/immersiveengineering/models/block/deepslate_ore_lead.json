@@ -1,0 +1,7 @@
+{
+  "parent": "immersiveengineering:block/ore_lead",
+  "textures": {
+		"0": "immersiveengineering:block/metal/deepslate_ore_lead",
+		"particle": "immersiveengineering:block/metal/deepslate_ore_lead"
+  }
+}

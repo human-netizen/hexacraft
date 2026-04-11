@@ -1,0 +1,48 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "chipped:block/cherry_door/dual_paneled_cherry_door_bottom",
+		"bottom": "chipped:block/cherry_door/dual_paneled_cherry_door_bottom",
+		"side": "chipped:block/cherry_door/chipped_cherry_door_side"
+	},
+	"elements": [
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 11],
+			"faces": {
+				"north": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [11, 0, 0, 16], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"west": {"uv": [0, 0, 11, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 0, 9, 11], "rotation": 180, "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 11],
+			"to": [3, 15, 16],
+			"faces": {
+				"east": {"uv": [16, 1, 11, 16], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [11, 1, 16, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 11, 15, 16], "texture": "#side"},
+				"down": {"uv": [6, 11, 9, 16], "rotation": 180, "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd_2",
+			"from": [0, 15, 13],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [15, 0, 12, 1], "texture": "#side"},
+				"east": {"uv": [16, 0, 13, 1], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 1], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [13, 0, 16, 1], "texture": "#bottom", "cullface": "west"}
+			}
+		}
+	]
+}

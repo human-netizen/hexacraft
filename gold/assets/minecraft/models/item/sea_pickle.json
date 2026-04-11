@@ -1,0 +1,43 @@
+{
+    "parent": "block/sea_pickle_item",
+    "textures": {
+        "pickle": "item/sea_pickle"
+    },
+	    "display": {
+        "gui": {
+            "rotation": [ 30, -135, 0 ],
+            "translation": [ -1.1, 4.5, 0],
+            "scale":[ 1.5, 1.5, 1.5 ]
+        },
+        "ground": {
+            "rotation": [ 0, 0, 0 ],
+            "translation": [ 0, 0, 0],
+            "scale":[ 0.5, 0.5, 0.5 ]
+        },
+        "fixed": {
+            "rotation": [ 0, 0, 0 ],
+            "translation": [ 0.33, 0, 0],
+            "scale":[ 0.7, 0.7, 0.7 ]
+        },
+        "thirdperson_righthand": {
+            "rotation": [ 0, 0, 0 ],
+            "translation": [ 0.3, 3.5, 1.5 ],
+            "scale": [ 0.6, 0.6, 0.6 ]
+        },
+        "thirdperson_lefthand": {
+            "rotation": [ 0, 0, 0 ],
+            "translation": [ 0.3, 3.5, 1.5 ],
+            "scale": [ 0.6, 0.6, 0.6 ]
+        },
+        "firstperson_righthand": {
+            "rotation": [ -25, 0, 0 ],
+            "translation": [ 0, 4, 0 ],
+            "scale": [ 0.5, 0.5, 0.5 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ -25, 0, 0 ],
+            "translation": [ 0, 4, 0 ],
+            "scale": [ 0.5, 0.5, 0.5 ]
+        }
+    }
+}

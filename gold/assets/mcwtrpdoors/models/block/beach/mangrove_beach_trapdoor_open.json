@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/jungle_trapdoor_open",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/beach/mangrove_beach_trapdoor",
+        "0": "mcwtrpdoors:block/beach/mangrove_beach_trapdoor"
+    }
+}

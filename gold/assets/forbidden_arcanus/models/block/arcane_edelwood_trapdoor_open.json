@@ -1,0 +1,70 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"textures": {
+		"particle": "forbidden_arcanus:block/arcane_edelwood_trapdoor",
+		"texture": "forbidden_arcanus:block/arcane_edelwood_trapdoor"
+	},
+	"elements": [
+		{
+			"name": "North",
+			"from": [0, 12, 13],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 12, 16, 16], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [12, 16, 16, 13], "rotation": 270, "texture": "#texture", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 4], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [0, 16, 4, 13], "rotation": 90, "texture": "#texture", "cullface": "west"},
+				"up": {"uv": [0, 16, 16, 13], "rotation": 180, "texture": "#texture", "cullface": "up"},
+				"down": {"uv": [0, 4, 16, 1], "texture": "#texture"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 13],
+			"to": [16, 4, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 4], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [0, 16, 4, 13], "rotation": 270, "texture": "#texture", "cullface": "east"},
+				"south": {"uv": [0, 12, 16, 16], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [12, 16, 16, 13], "rotation": 90, "texture": "#texture", "cullface": "west"},
+				"up": {"uv": [0, 12, 16, 15], "rotation": 180, "texture": "#texture"},
+				"down": {"uv": [0, 16, 16, 13], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "West",
+			"from": [0, 4, 13],
+			"to": [4, 12, 16],
+			"faces": {
+				"north": {"uv": [0, 4, 4, 12], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [4, 4, 1, 12], "texture": "#texture"},
+				"south": {"uv": [0, 4, 4, 12], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [4, 0, 12, 3], "rotation": 90, "texture": "#texture", "cullface": "west"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [12, 4, 13],
+			"to": [16, 12, 16],
+			"faces": {
+				"north": {"uv": [12, 4, 16, 12], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [4, 0, 12, 3], "rotation": 270, "texture": "#texture", "cullface": "east"},
+				"south": {"uv": [12, 4, 16, 12], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [12, 4, 15, 12], "rotation": 180, "texture": "#texture"}
+			}
+		},
+		{
+			"name": "Middle",
+			"from": [5, 4, 13],
+			"to": [11, 12, 16],
+			"faces": {
+				"north": {"uv": [5, 4, 11, 12], "rotation": 180, "texture": "#texture"},
+				"east": {"uv": [15, 4, 12, 12], "texture": "#texture"},
+				"south": {"uv": [5, 4, 11, 12], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [1, 4, 4, 12], "rotation": 180, "texture": "#texture"}
+			}
+		}
+	]
+}

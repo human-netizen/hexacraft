@@ -1,0 +1,40 @@
+{
+    "variants": {
+        "wet=false": [
+            { "model": "sponge" },
+            { "model": "sponge", "x": 90 },
+            { "model": "sponge", "x": 180 },
+            { "model": "sponge", "x": 270 },
+            { "model": "sponge", "y": 90 },
+            { "model": "sponge", "y": 90, "x": 90 },
+            { "model": "sponge", "y": 90, "x": 180 },
+            { "model": "sponge", "y": 90, "x": 270 },
+            { "model": "sponge", "y": 180 },
+            { "model": "sponge", "y": 180, "x": 90 },
+            { "model": "sponge", "y": 180, "x": 180 },
+            { "model": "sponge", "y": 180, "x": 270 },
+            { "model": "sponge", "y": 270 },
+            { "model": "sponge", "y": 270, "x": 90 },
+            { "model": "sponge", "y": 270, "x": 180 },
+            { "model": "sponge", "y": 270, "x": 270 }
+        ],
+        "wet=true": [
+            { "model": "sponge_wet" },
+            { "model": "sponge_wet", "x": 90 },
+            { "model": "sponge_wet", "x": 180 },
+            { "model": "sponge_wet", "x": 270 },
+            { "model": "sponge_wet", "y": 90 },
+            { "model": "sponge_wet", "y": 90, "x": 90 },
+            { "model": "sponge_wet", "y": 90, "x": 180 },
+            { "model": "sponge_wet", "y": 90, "x": 270 },
+            { "model": "sponge_wet", "y": 180 },
+            { "model": "sponge_wet", "y": 180, "x": 90 },
+            { "model": "sponge_wet", "y": 180, "x": 180 },
+            { "model": "sponge_wet", "y": 180, "x": 270 },
+            { "model": "sponge_wet", "y": 270 },
+            { "model": "sponge_wet", "y": 270, "x": 90 },
+            { "model": "sponge_wet", "y": 270, "x": 180 },
+            { "model": "sponge_wet", "y": 270, "x": 270 }
+        ]
+    }
+}

@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/mangrove_trapdoor_bottom",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/swamp/warped_swamp_trapdoor",
+        "0": "mcwtrpdoors:block/swamp/warped_swamp_trapdoor"
+    }
+}

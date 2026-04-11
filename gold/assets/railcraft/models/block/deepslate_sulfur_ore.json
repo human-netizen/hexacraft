@@ -1,0 +1,7 @@
+{
+	"parent": "railcraft:block/sulfur_ore",
+    "textures": {
+		"particle": "railcraft:block/deepslate_sulfur_ore",
+        "0": "railcraft:block/deepslate_sulfur_ore"
+    }
+}

@@ -1,0 +1,87 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"textures": {
+		"particle": "supplementaries:block/netherite_trapdoor",
+		"texture": "supplementaries:block/netherite_trapdoor"
+	},
+	"elements": [
+		{
+			"name": "North",
+			"from": [0, 0, 0],
+			"to": [16, 3, 5],
+			"faces": {
+				"north": {"uv": [0, 16, 16, 13], "texture": "#texture", "cullface": "north"},
+				"east": {"uv": [11, 16, 16, 13], "texture": "#texture", "cullface": "east"},
+				"south": {"uv": [0, 16, 16, 13], "texture": "#texture"},
+				"west": {"uv": [0, 16, 5, 13], "texture": "#texture", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 5], "texture": "#texture"},
+				"down": {"uv": [0, 11, 16, 16], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "West",
+			"from": [0, 0, 5],
+			"to": [5, 3, 11],
+			"faces": {
+				"north": {"uv": [0, 16, 16, 13], "texture": "#texture"},
+				"east": {"uv": [5, 16, 11, 13], "texture": "#texture"},
+				"south": {"uv": [0, 16, 16, 13], "texture": "#texture"},
+				"west": {"uv": [5, 16, 11, 13], "texture": "#texture", "cullface": "west"},
+				"up": {"uv": [0, 5, 5, 11], "texture": "#texture"},
+				"down": {"uv": [0, 5, 5, 11], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [11, 0, 5],
+			"to": [16, 3, 11],
+			"faces": {
+				"north": {"uv": [0, 16, 16, 13], "texture": "#texture"},
+				"east": {"uv": [5, 16, 11, 13], "texture": "#texture", "cullface": "east"},
+				"south": {"uv": [0, 16, 16, 13], "texture": "#texture"},
+				"west": {"uv": [5, 16, 11, 13], "texture": "#texture"},
+				"up": {"uv": [11, 5, 16, 11], "texture": "#texture"},
+				"down": {"uv": [11, 5, 16, 11], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 11],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 16, 16, 13], "texture": "#texture"},
+				"east": {"uv": [0, 16, 5, 13], "texture": "#texture", "cullface": "east"},
+				"south": {"uv": [0, 16, 16, 13], "texture": "#texture", "cullface": "south"},
+				"west": {"uv": [11, 16, 16, 13], "texture": "#texture", "cullface": "west"},
+				"up": {"uv": [0, 11, 16, 16], "texture": "#texture"},
+				"down": {"uv": [0, 0, 16, 5], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bar1",
+			"from": [6, 1, 5],
+			"to": [7, 2, 11],
+			"rotation": {"angle": 0, "axis": "y", "origin": [6, 0, 5]},
+			"faces": {
+				"east": {"uv": [6, 5, 7, 11], "rotation": 90, "texture": "#texture"},
+				"west": {"uv": [6, 5, 7, 11], "rotation": 90, "texture": "#texture"},
+				"up": {"uv": [6, 5, 7, 11], "texture": "#texture"},
+				"down": {"uv": [6, 5, 7, 11], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bar2",
+			"from": [9, 1, 5],
+			"to": [10, 2, 11],
+			"rotation": {"angle": 0, "axis": "y", "origin": [9, 0, 5]},
+			"faces": {
+				"east": {"uv": [9, 5, 10, 11], "rotation": 90, "texture": "#texture"},
+				"west": {"uv": [9, 5, 10, 11], "rotation": 90, "texture": "#texture"},
+				"up": {"uv": [9, 5, 10, 11], "texture": "#texture"},
+				"down": {"uv": [9, 5, 10, 11], "texture": "#texture", "cullface": "down"}
+			}
+		}
+	]
+}

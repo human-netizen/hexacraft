@@ -1,0 +1,176 @@
+Forever's Default
+
+Ver. 1.3.2 - 1/9/2022
+=====================
+*Updated pack version to 12 for Minecraft 1.19.3.
+*Changed block/item texture references to the "entity" folder to the "item" folder instead.
+
+Ver. 1.3.1 - 7/16/2022
+======================
+*Updated Optifine colormaps to account for the 2 newest biomes.
+
+Ver. 1.3 - 6/25/2022
+=========================
+The first public release for Minecraft 1.19+
+
+	Blocks
+	======
+	+3D model for mangrove trapdoors.
+
+	Items
+	=====
+	+3D item models for mangrove signs and all chest boats.
+	*Updated 3D item models for mangrove buttons.
+
+	Language File Changes
+	=====================
+	+Added support for Australian, Canadian, British and New Zealand English.
+	*Bucket of Tadpole -> "Tadpole Bucket"
+
+Ver. 1.2.1 - 4/3/2022
+=========================
+
+	Items
+	=====
+	+Animated campfire and soul campfire items.
+	+Netherite tool textures.
+	*Fixed shield and trident item models rendering darker than normal.
+	*Fixed missing particle texture for when a shield breaks.
+
+Ver. 1.2 - 12/22/2021
+======================
+The first public release for Minecraft 1.18
+
+	Blocks
+	======
+	+Printed piglin banner pattern item texture.
+	+3D models for copper ore, all deepslate ores and crimson/warped trapdoors.
+	*New models for pre-existing Overworld ores to account for the official texture changes and to fix Z-fighting issues with other block models.
+	*Small color palette change to soul fire.
+	*Crying obsidian texture randomly rotates 180°, the same as normal obsidian.
+	*Crimson and warped nylium and the target block randomly rotate in 90°-intervals about the Y-axis, identical to the grass block.
+
+	Items
+	=====
+	+3D item models for crimson/warped signs, soul torch, soul lantern, candles and glow item frame.
+	*Updated 3D item models for crimson, warped and polished blackstone buttons and lightning rod.
+	*Axolotl and powdered snow buckets match the pre-established shape.
+	*Changed crimson and warped doors to match pre-existing doors.
+	*Waxed copper blocks have a honey trim, in item form only.
+
+	GUI
+	===
+	*Updated smithing table UI.
+
+	Particles
+	=========
+	*Small color palette change to soul fire flame.
+	*Slimes use the slime block texture for their landing particles, instead of the slime ball sprite.
+
+	Language File Changes
+	=====================
+	*"Block/Bucket of X" -> "X Block/Bucket" (ex: Block of Copper -> Copper Block)
+
+	Optfine Only
+	============
+	-Removed all overlay textures.
+	>> "These may return in a seperate pack, as having so many connected textures fundamentally changes the way players build. They enable builders to pack in more detail with less creative effort."
+	>> "Plus, adding connecting textures for almost everything in Vanilla Minecraft alone is an insurmountable task."
+	>> "Terraria inspired me to implement overlay textures in the first place. But come to think of it now, connected textures in that game fit better because the worlds are 2D, as opposed to 3D."
+	*Reworked biome-dependent colormaps for water, skies and fog since numerical biome IDs were changed.
+
+
+Ver. 1.1 - 4/17/2020
+=======================
+The first public release for Minecraft 1.15+
++Printed banner pattern item textures.
++3D lily pad block model.
+*Changed accessibility button and checkbox textures.
+*Relocated generic Optifine assets to "FM Default."
+*Fixed minecart with chest item model having the wrong top face for the chest's lid (1.15+ only).
++Many new and changed textures and models from "NewDefault+" by SeaOfPickels; listed below.
+
+	Blocks
+	======
+	*Beacon
+	*Conduit
+	*Enchanting Table
+	*Dragon Egg
+	*Dried Kelp Block
+	*Furnace (Front)
+	*Infested Stone Blocks
+	*Jukebox
+	*Mob Spawner
+	
+	Items
+	=====
+	*All Tools
+	*All Swords
+	*All Armor Sets
+	*Books
+	*Bow
+	*Clock
+	*Compass
+	*Crossbow
+	*Dried Kelp
+	*Shulker Shell
+	*Stick
+	*Trident
+	*Turtle Shell
+	
+	Entities
+	========
+	*Beacon Beam
+	*Beds (Pillow)
+	*Conduit
+	*End Crystal (Bedrock Base)
+	*End Gateway Beam
+	*Enderman
+	*Endermite
+	*Dragon Fireball
+	*Lead Knot
+	*Player (Default Skins)
+	*Trident
+	*Trident (Riptide)
+	*Wither (Boss)
+	
+	GUI
+	===
+	*
+
+	Mob Effects
+	===========
+	*Regeneration
+	*Saturation
+
+	Particles
+	=========
+	*Angry Mob
+	*Love/Breeding Heart
+	*Fishing Hook
+	
+	Optfine Only
+	============
+	*Enchanted Books
+	*Extra Container GUIs
+	*Custom Lightmaps
+	*Magma Blocks (in Ocean Ravines)
+	*Name Tag (Renamed or Not)
+	*Tropical Fish Buckets
+	*Custom Elytra
+	*Sugar Cane (Tops)
+-
+
+Ver. 1.0.1 - 5/11/2019
+=======================
++Updated sign textures and models.
+*Tweaked the top of spruce logs.
+
+Ver. 1.0 - 5/9/2019
+====================
+The First release of FM Default 1.14.
+
+-Removed many of the unedited "NewDefault" MC textures from **this** pack.
++Added GUI textures for the villagers' workstations (loom, cartography table, stonecutter, etc.)
+
+- ForeverMaster

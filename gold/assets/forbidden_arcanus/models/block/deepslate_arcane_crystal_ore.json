@@ -1,0 +1,8 @@
+{
+  "parent": "forbidden_arcanus:block/arcane_crystal_ore",
+  "textures": {
+    "0": "forbidden_arcanus:block/arcane_crystal_ore/deepslate_arcane_crystal_ore_layer",
+	"1": "forbidden_arcanus:block/arcane_crystal_ore/deepslate_arcane_crystal_ore",
+	"particle": "forbidden_arcanus:block/arcane_crystal_ore/deepslate_arcane_crystal_ore_layer"
+  }
+}

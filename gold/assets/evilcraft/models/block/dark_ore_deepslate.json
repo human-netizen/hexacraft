@@ -1,0 +1,7 @@
+{
+	"parent": "evilcraft:block/dark_ore",
+    "textures": {
+		"0": "evilcraft:block/dark_ore_deepslate",
+		"particle": "evilcraft:block/dark_ore_deepslate"
+    }
+}

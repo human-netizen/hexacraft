@@ -1,0 +1,7 @@
+{
+	"parent": "railcraft:block/silver_ore",
+    "textures": {
+		"particle": "railcraft:block/deepslate_silver_ore",
+        "0": "railcraft:block/deepslate_silver_ore"
+    }
+}

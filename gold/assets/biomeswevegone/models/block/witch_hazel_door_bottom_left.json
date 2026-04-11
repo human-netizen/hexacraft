@@ -1,0 +1,92 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "biomeswevegone:block/witch_hazel/door_bottom",
+		"bottom": "biomeswevegone:block/witch_hazel/door_bottom",
+		"side": "biomeswevegone:block/witch_hazel/door_side"
+	},
+	"elements": [
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 4],
+			"faces": {
+				"north": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [4, 0, 0, 16], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"west": {"uv": [0, 0, 4, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 0, 9, 4], "rotation": 180, "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 12],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [3, 0, 0, 16], "texture": "#side"},
+				"east": {"uv": [16, 0, 12, 16], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [12, 0, 16, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 12, 9, 16], "rotation": 180, "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 4],
+			"to": [3, 7, 12],
+			"faces": {
+				"east": {"uv": [12, 9, 4, 16], "texture": "#bottom"},
+				"west": {"uv": [4, 9, 12, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 4, 15, 12], "texture": "#side"},
+				"down": {"uv": [6, 4, 9, 12], "rotation": 180, "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bar1",
+			"from": [0, 7, 6],
+			"to": [3, 16, 7],
+			"faces": {
+				"north": {"uv": [0, 0, 3, 9], "texture": "#side"},
+				"east": {"uv": [7, 0, 6, 9], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 9], "texture": "#side"},
+				"west": {"uv": [6, 0, 7, 9], "texture": "#bottom", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Bar2",
+			"from": [0, 7, 9],
+			"to": [3, 16, 10],
+			"faces": {
+				"north": {"uv": [0, 0, 3, 9], "texture": "#side"},
+				"east": {"uv": [10, 0, 9, 9], "texture": "#bottom"},
+				"south": {"uv": [6, 0, 9, 9], "texture": "#side"},
+				"west": {"uv": [9, 0, 10, 9], "texture": "#bottom", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Corner1",
+			"from": [0, 7, 4],
+			"to": [3, 9, 5],
+			"faces": {
+				"east": {"uv": [5, 7, 4, 9], "texture": "#bottom"},
+				"south": {"uv": [12, 4, 15, 6], "texture": "#side"},
+				"west": {"uv": [4, 7, 5, 9], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 4, 15, 5], "texture": "#side"}
+			}
+		},
+		{
+			"name": "Corner2",
+			"from": [0, 7, 11],
+			"to": [3, 9, 12],
+			"faces": {
+				"north": {"uv": [12, 11, 15, 13], "texture": "#side"},
+				"east": {"uv": [12, 7, 11, 9], "texture": "#bottom"},
+				"west": {"uv": [11, 7, 12, 9], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 11, 15, 12], "texture": "#side"}
+			}
+		}
+	]
+}

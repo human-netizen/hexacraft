@@ -1,0 +1,6 @@
+{
+  "parent": "allthemodium:block/unobtainium_ore",
+  "textures": {
+    "all": "allthemodium:block/unobtainium_ore"
+  }
+}

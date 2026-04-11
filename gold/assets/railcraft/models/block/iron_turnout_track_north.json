@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/template_turnout_track_north",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/iron_turnout_track_north"
+  }
+}

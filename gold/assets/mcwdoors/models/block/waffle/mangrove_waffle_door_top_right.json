@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/cherry_door_top_right",
+	"textures": {
+		"0": "mcwdoors:block/mangrove_waffle_door_upper",
+		"particle": "mcwdoors:block/mangrove_waffle_door_upper"
+	}
+}

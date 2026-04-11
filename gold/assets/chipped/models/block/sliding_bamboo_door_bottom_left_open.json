@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_bottom_left_open",
+	"textures": {
+		"bottom": "chipped:block/bamboo_door/sliding_bamboo_door_bottom",
+		"side": "chipped:block/bamboo_door/chipped_bamboo_door_side",
+		"particle": "chipped:block/bamboo_door/sliding_bamboo_door_bottom"
+	}
+}

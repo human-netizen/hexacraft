@@ -1,0 +1,78 @@
+{
+	"credit": "Model generated using MrCrayfish's Model Creator (http://mrcrayfish.com/modelcreator/)",
+	"textures": {
+		"0": "block/cherry_door_bottom",
+		"particle": "block/cherry_door_bottom"
+	},
+	"elements": [
+		{
+			"name": "Door Base",
+			"from": [0, 0, 4],
+			"to": [3, 15, 12],
+			"faces": {
+				"east": {"uv": [4, 1, 12, 16], "texture": "#0", "cullface": "west"},
+				"west": {"uv": [12, 1, 4, 16], "texture": "#0"},
+				"up": {"uv": [4, 1, 12, 4], "rotation": 270, "texture": "#0"},
+				"down": {"uv": [4, 13, 12, 16], "rotation": 90, "texture": "#0", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Door Left_Base",
+			"from": [0, 0, 12],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [1, 0, 4, 16], "texture": "#0"},
+				"east": {"uv": [0, 0, 4, 16], "texture": "#0", "cullface": "west"},
+				"south": {"uv": [0, 0, 3, 16], "texture": "#0", "cullface": "north"},
+				"west": {"uv": [4, 0, 0, 16], "texture": "#0"},
+				"down": {"uv": [0, 14, 4, 16], "rotation": 90, "texture": "#0", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Door Right_Base",
+			"from": [0, 0, 0],
+			"to": [3, 16, 4],
+			"faces": {
+				"north": {"uv": [3, 0, 0, 16], "texture": "#0"},
+				"east": {"uv": [12, 0, 16, 16], "texture": "#0", "cullface": "west"},
+				"south": {"uv": [12, 0, 15, 16], "texture": "#0", "cullface": "north"},
+				"west": {"uv": [16, 0, 12, 16], "texture": "#0"},
+				"down": {"uv": [12, 13, 16, 16], "rotation": 90, "texture": "#0", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Left Indent",
+			"from": [0.5, 15, 11],
+			"to": [2.5, 16, 12],
+			"faces": {
+				"north": {"uv": [4, 0, 5, 1], "texture": "#0"},
+				"east": {"uv": [4, 0, 5, 1], "texture": "#0"},
+				"west": {"uv": [4, 0, 5, 1], "texture": "#0"},
+				"up": {"uv": [4, 0, 5, 1], "rotation": 180, "texture": "#0"}
+			}
+		},
+		{
+			"name": "Right Indent",
+			"from": [0.5, 15, 4],
+			"to": [2.5, 16, 5],
+			"faces": {
+				"east": {"uv": [11, 0, 12, 1], "texture": "#0", "cullface": "west"},
+				"south": {"uv": [11, 0, 12, 1], "texture": "#0", "cullface": "west"},
+				"west": {"uv": [11, 0, 12, 1], "texture": "#0", "cullface": "west"},
+				"up": {"uv": [11, 0, 12, 1], "rotation": 180, "texture": "#0", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Middle Indent",
+			"from": [0.5, 15, 6],
+			"to": [2.5, 16, 10],
+			"faces": {
+				"north": {"uv": [9, 0, 10, 1], "texture": "#0"},
+				"east": {"uv": [6, 0, 10, 1], "texture": "#0", "cullface": "west"},
+				"south": {"uv": [6, 0, 7, 1], "texture": "#0"},
+				"west": {"uv": [10, 0, 6, 1], "texture": "#0"},
+				"up": {"uv": [6, 0, 10, 1], "rotation": 270, "texture": "#0"}
+			}
+		}
+	]
+}

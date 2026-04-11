@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:block/template_flat_sided_trapdoor_open",
+	"textures": {
+		"texture": "biomeswevegone:block/aspen/trapdoor",		
+		"side": "biomeswevegone:block/aspen/trapdoor_side"
+	}
+}

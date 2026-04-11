@@ -1,0 +1,38 @@
+{
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "blocks/glass"
+    },
+	"display": {
+		"thirdperson_righthand": {
+			"rotation":  [ 0, 90, 0 ],
+			"translation":  [ 0, 1.5, 1 ],
+			"scale":  [ 0.375, 0.375, 0.375 ]
+		},
+		"thirdperson_lefthand": {
+			"rotation":  [ 0, 90, 0 ],
+			"translation":  [ 0, 1.5, 1 ],
+			"scale":  [ 0.375, 0.375, 0.375 ]
+		},
+		"firstperson_righthand": {
+			"rotation":  [ 0, -45, 0 ],
+			"translation":  [ 0, 0, 0 ],
+			"scale":  [ 0.375, 0.375, 0.375 ]
+		},
+		"firstperson_lefthand": {
+			"rotation":  [ 0, -45, 0 ],
+			"translation":  [ 0, 0, 0 ],
+			"scale":  [ 0.375, 0.375, 0.375 ]
+		},
+        	"gui": {
+            		"rotation": [ 30, 45, 0 ],
+            		"translation": [ 0, 0, 0 ],
+            		"scale": [ 0.75, 0.75, 0.75 ]
+        	},
+        	"ground": {
+            		"rotation": [ 0, 0, 0 ],
+            		"translation": [ 0, 3, 0 ],
+            		"scale": [ 0.25, 0.25, 0.25 ]
+        }
+    }
+}

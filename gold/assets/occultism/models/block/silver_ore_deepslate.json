@@ -1,0 +1,7 @@
+{
+  "parent": "occultism:block/silver_ore",
+  "textures": {
+		"0": "occultism:block/silver_ore_deepslate",
+		"particle": "occultism:block/silver_ore_deepslate"
+  }
+}

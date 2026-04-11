@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/warped_trapdoor_bottom",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/mystic/acacia_mystic_trapdoor",
+        "0": "mcwtrpdoors:block/mystic/acacia_mystic_trapdoor"
+    }
+}

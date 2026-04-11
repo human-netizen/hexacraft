@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/crying_obsidian" },
+            { "model": "block/crying_obsidian", "x": 180 },
+            { "model": "block/crying_obsidian", "y": 180 },
+            { "model": "block/crying_obsidian", "y": 180, "x": 180 }
+        ]
+    }
+}

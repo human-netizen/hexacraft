@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/stable_head/stable_head_door_top_right_open",
+	"textures": {
+		"top": "mcwdoors:block/stable_head/cherry_stable_head_door_lower",
+		"side": "mcwdoors:block/cherry_barn_door_lower",
+		"particle": "mcwdoors:block/cherry_barn_door_lower"
+	}
+}

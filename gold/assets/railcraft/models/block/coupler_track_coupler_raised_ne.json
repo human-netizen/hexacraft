@@ -1,0 +1,39 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "railcraft:block/coupler_track_coupler",
+		"rail": "railcraft:block/coupler_track_coupler"
+	},
+	"elements": [
+		{
+			"name": "Base",
+			"from": [6.999, 0.01, -5.21462],
+			"to": [9.001, 1.01, 14.5872],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [7, 1, 9, 2], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [8, 1, 9, 15], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [7, 14, 9, 15], "texture": "#rail"},
+				"west": {"uv": [7, 1, 8, 15], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [7, 1, 9, 15], "texture": "#rail"},
+				"down": {"uv": [7, 15, 9, 1], "texture": "#rail"}
+			}
+		},
+		{
+			"name": "Square",
+			"from": [5.999, 0.015, 1.85645],
+			"to": [10.001, 1.015, 7.51613],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [6, 6, 10, 7], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 6, 10, 10], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 9, 10, 10], "texture": "#rail"},
+				"west": {"uv": [6, 6, 7, 10], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 6, 10, 10], "texture": "#rail"},
+				"down": {"uv": [6, 10, 10, 6], "texture": "#rail"}
+			}
+		}
+	]
+}

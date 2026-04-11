@@ -1,0 +1,6 @@
+{
+    "variants": {
+        "normal": { "model": "petrified_oak_slab" },
+        "all":    { "model": "petrified_oak_slab" }
+    }
+}

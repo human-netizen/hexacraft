@@ -1,0 +1,6 @@
+{
+    "parent": "mcwtrpdoors:block/glass/glass_trapdoor_top",
+    "textures": {
+        "0": "mcwtrpdoors:block/glass/acacia_glass_trapdoor"
+    }
+}

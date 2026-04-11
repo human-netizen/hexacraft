@@ -1,0 +1,71 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "#texture"
+	},
+	"elements": [
+		{
+			"name": "North",
+			"from": [0, 0, 0],
+			"to": [16, 3, 3],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 3], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [13, 3, 16, 6], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 3, 16, 6], "texture": "#side"},
+				"west": {"uv": [16, 3, 13, 6], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 3], "texture": "#texture"},
+				"down": {"uv": [0, 3, 16, 0], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 13],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 3, 16, 6], "texture": "#side"},
+				"east": {"uv": [0, 3, 3, 6], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 3], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [3, 3, 0, 6], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 13, 16, 16], "texture": "#texture"},
+				"down": {"uv": [0, 16, 16, 13], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "West",
+			"from": [0, 0, 3],
+			"to": [3, 3, 13],
+			"faces": {
+				"east": {"uv": [3, 3, 13, 6], "texture": "#side"},
+				"west": {"uv": [13, 3, 3, 6], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 3, 3, 13], "texture": "#texture"},
+				"down": {"uv": [0, 13, 3, 3], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [13, 0, 3],
+			"to": [16, 3, 13],
+			"faces": {
+				"east": {"uv": [3, 3, 13, 6], "texture": "#side", "cullface": "east"},
+				"west": {"uv": [3, 3, 13, 6], "texture": "#side"},
+				"up": {"uv": [13, 3, 16, 13], "texture": "#texture"},
+				"down": {"uv": [13, 13, 16, 3], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Divider",
+			"from": [3, 0, 6],
+			"to": [13, 3, 10],
+			"rotation": {"angle": 0, "axis": "y", "origin": [3, 0, 6]},
+			"faces": {
+				"north": {"uv": [3, 3, 13, 6], "texture": "#side"},
+				"south": {"uv": [3, 3, 13, 6], "texture": "#side"},
+				"up": {"uv": [3, 6, 13, 10], "texture": "#texture"},
+				"down": {"uv": [3, 10, 13, 6], "texture": "#texture", "cullface": "down"}
+			}
+		}
+	]
+}

@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 // =====================================================
 // Constants
@@ -44,6 +45,58 @@ enum BlockType {
     BLOCK_STONE_LIGHT,
     BLOCK_BEDROCK,
     BLOCK_COAL_ORE,
+    BLOCK_GRAVEL,
+    BLOCK_CLAY,
+    BLOCK_SNOW,
+    BLOCK_ICE,
+    BLOCK_PLANKS,
+    BLOCK_CRAFTING_TABLE,
+    BLOCK_SANDSTONE,
+    BLOCK_BRICKS,
+    BLOCK_WOOL_WHITE,
+    BLOCK_WOOL_RED,
+    BLOCK_WOOL_BLUE,
+    BLOCK_COBBLESTONE,
+    BLOCK_MOSSY_COBBLESTONE,
+    BLOCK_GLOWSTONE,
+    BLOCK_POLISHED_DIORITE,
+    BLOCK_POLISHED_GRANITE,
+    BLOCK_POLISHED_ANDESITE,
+    BLOCK_QUARTZ_BLOCK,
+    BLOCK_IRON_BLOCK,
+    BLOCK_DIAMOND_BLOCK,
+    BLOCK_GOLD_BLOCK,
+    BLOCK_CUT_SANDSTONE,
+    BLOCK_MOSSY_BRICKS,
+    BLOCK_OBSIDIAN,
+
+    // --- Building & Decoration Blocks ---
+    // Wool colors
+    BLOCK_WOOL_GREEN, BLOCK_WOOL_YELLOW, BLOCK_WOOL_BLACK, BLOCK_WOOL_ORANGE,
+    BLOCK_WOOL_PINK, BLOCK_WOOL_PURPLE, BLOCK_WOOL_CYAN, BLOCK_WOOL_BROWN,
+    BLOCK_WOOL_GRAY, BLOCK_WOOL_LIGHT_GRAY, BLOCK_WOOL_MAGENTA, BLOCK_WOOL_LIME,
+
+    // Full blocks
+    BLOCK_BOOKSHELF, BLOCK_SMOOTH_STONE, BLOCK_TERRACOTTA,
+
+    // Slabs (half-height)
+    BLOCK_SLAB_STONE, BLOCK_SLAB_WOOD, BLOCK_SLAB_SANDSTONE, BLOCK_SLAB_BRICK,
+
+    // Stairs (two-step)
+    BLOCK_STAIRS_STONE, BLOCK_STAIRS_WOOD,
+
+    // Carpets (paper-thin)
+    BLOCK_CARPET_WHITE, BLOCK_CARPET_RED, BLOCK_CARPET_BLUE,
+
+    // Thin blocks
+    BLOCK_GLASS_PANE, BLOCK_IRON_BARS, BLOCK_FENCE_WOOD,
+
+    // Interactive blocks
+    BLOCK_DOOR_OAK, BLOCK_DOOR_IRON, BLOCK_TRAPDOOR_OAK, BLOCK_FENCE_GATE, BLOCK_LADDER,
+
+    // Decorative
+    BLOCK_LANTERN, BLOCK_TORCH_BLOCK, BLOCK_SIGN, BLOCK_BANNER,
+
     BLOCK_COUNT
 };
 
@@ -55,12 +108,451 @@ int blockGrid[GRID_W][GRID_D][GRID_H];
 // Cache: highest non-air block per column (avoids iterating empty air in render)
 int columnMaxH[GRID_W][GRID_D];
 
-// Hotbar
-int hotbarSlot = 0; // 0-8
-const BlockType hotbarBlocks[] = {
-    BLOCK_GRASS, BLOCK_DIRT, BLOCK_SAND, BLOCK_STONE, BLOCK_WOOD,
-    BLOCK_LEAF, BLOCK_ORE_DIAMOND, BLOCK_ORE_GOLD, BLOCK_GLASS
+// =====================================================
+// Block State (for interactive/special blocks)
+// Stores extra per-block data: facing, open/closed, etc.
+// Bits 0-1: facing direction (0=N, 1=E, 2=S, 3=W)
+// Bit 2: open/closed (doors, trapdoors, fence gates)
+// Bit 3: top/bottom (slabs, trapdoors)
+// =====================================================
+inline uint32_t blockStateKey(int col, int row, int h) {
+    return ((uint32_t)(col + GRID_OFF_X) << 14) |
+           ((uint32_t)(row + GRID_OFF_Z) << 6) |
+           ((uint32_t)h);
+}
+std::unordered_map<uint32_t, uint16_t> blockState;
+
+// =====================================================
+// Block Shape & Properties
+// =====================================================
+enum BlockShape {
+    SHAPE_FULL_HEX, SHAPE_SLAB, SHAPE_STAIR, SHAPE_CARPET,
+    SHAPE_PANE, SHAPE_FENCE, SHAPE_DOOR, SHAPE_TRAPDOOR,
+    SHAPE_SMALL_HEX, SHAPE_FLAT_PANEL
 };
+
+struct BlockProperties {
+    BlockShape shape;
+    bool isSolid;
+    bool isInteractive;  // right-click toggles state
+    bool isTransparent;  // needs alpha blending
+    bool isEmissive;     // glows
+    bool isClimbable;    // ladders
+};
+
+BlockProperties getBlockProps(int type) {
+    //                          shape            solid  interact transp emiss  climb
+    switch (type) {
+        // Slabs
+        case BLOCK_SLAB_STONE:
+        case BLOCK_SLAB_WOOD:
+        case BLOCK_SLAB_SANDSTONE:
+        case BLOCK_SLAB_BRICK:
+            return {SHAPE_SLAB,      true,  false, false, false, false};
+
+        // Stairs
+        case BLOCK_STAIRS_STONE:
+        case BLOCK_STAIRS_WOOD:
+            return {SHAPE_STAIR,     true,  false, false, false, false};
+
+        // Carpets
+        case BLOCK_CARPET_WHITE:
+        case BLOCK_CARPET_RED:
+        case BLOCK_CARPET_BLUE:
+            return {SHAPE_CARPET,    false, false, false, false, false};
+
+        // Thin blocks
+        case BLOCK_GLASS_PANE:
+            return {SHAPE_PANE,      false, false, true,  false, false};
+        case BLOCK_IRON_BARS:
+            return {SHAPE_PANE,      false, false, false, false, false};
+        case BLOCK_FENCE_WOOD:
+            return {SHAPE_FENCE,     true,  false, false, false, false};
+
+        // Interactive
+        case BLOCK_DOOR_OAK:
+        case BLOCK_DOOR_IRON:
+            return {SHAPE_DOOR,      true,  true,  false, false, false};
+        case BLOCK_TRAPDOOR_OAK:
+            return {SHAPE_TRAPDOOR,  true,  true,  false, false, false};
+        case BLOCK_FENCE_GATE:
+            return {SHAPE_FENCE,     true,  true,  false, false, false};
+        case BLOCK_LADDER:
+            return {SHAPE_FLAT_PANEL,false, false, false, false, true};
+
+        // Decorative
+        case BLOCK_LANTERN:
+            return {SHAPE_SMALL_HEX, false, false, false, true,  false};
+        case BLOCK_TORCH_BLOCK:
+            return {SHAPE_SMALL_HEX, false, false, false, true,  false};
+        case BLOCK_SIGN:
+            return {SHAPE_FLAT_PANEL,false, false, false, false, false};
+        case BLOCK_BANNER:
+            return {SHAPE_FLAT_PANEL,false, false, false, false, false};
+
+        // Existing transparent blocks
+        case BLOCK_GLASS:
+            return {SHAPE_FULL_HEX,  true,  false, true,  false, false};
+        case BLOCK_WATER:
+            return {SHAPE_FULL_HEX,  false, false, true,  false, false};
+        case BLOCK_ICE:
+            return {SHAPE_FULL_HEX,  true,  false, true,  false, false};
+        case BLOCK_GLOWSTONE:
+            return {SHAPE_FULL_HEX,  true,  false, false, true,  false};
+        case BLOCK_ORE_DIAMOND:
+        case BLOCK_ORE_GOLD:
+            return {SHAPE_FULL_HEX,  true,  false, false, true,  false};
+
+        // Default: solid full hex
+        default:
+            return {SHAPE_FULL_HEX,  true,  false, false, false, false};
+    }
+}
+
+// Inventory Structures
+struct InventorySlot {
+    int type; // BlockType (0 = AIR)
+    int count; // max 64
+};
+
+// 0-8: Hotbar. 9-35: Storage Grid
+InventorySlot playerInventory[36];
+// Crafting UI
+InventorySlot craftingGrid[9];
+InventorySlot craftingOutput;
+
+// =====================================================
+// Crafting Recipes
+// =====================================================
+struct CraftingRecipe {
+    int pattern[9];   // 3x3 grid: BlockType per cell (0 = empty)
+    int resultType;
+    int resultCount;
+};
+
+// _ = BLOCK_AIR (empty), pattern is row-major: [0-2]=top row, [3-5]=mid, [6-8]=bottom
+const CraftingRecipe recipes[] = {
+    // 1 Wood Log -> 4 Planks (Wood -> Wood x4, simplified)
+    // Single wood in any slot produces planks — we match center
+    {{0,0,0, 0,BLOCK_WOOD,0, 0,0,0}, BLOCK_WOOD, 4},
+
+    // 4 Stone -> 4 Stone Bricks (Stone Light)
+    {{0,0,0, 0,0,0, BLOCK_STONE,BLOCK_STONE,0}, BLOCK_STONE_LIGHT, 4},
+
+    // 4 Sand -> 1 Glass (smelting proxy)
+    {{BLOCK_SAND,BLOCK_SAND,0, BLOCK_SAND,BLOCK_SAND,0, 0,0,0}, BLOCK_GLASS, 1},
+
+    // 3 Stone -> 3 Stone Slabs (proxy: gravel)
+    {{BLOCK_STONE,BLOCK_STONE,BLOCK_STONE, 0,0,0, 0,0,0}, BLOCK_GRAVEL, 3},
+
+    // 2 Dirt + 1 Leaf -> 1 Grass
+    {{0,BLOCK_LEAF,0, 0,BLOCK_DIRT,0, 0,BLOCK_DIRT,0}, BLOCK_GRASS, 1},
+
+    // Snow + Snow -> Ice
+    {{0,0,0, BLOCK_SNOW,BLOCK_SNOW,0, BLOCK_SNOW,BLOCK_SNOW,0}, BLOCK_ICE, 1},
+
+    // 9 Diamond Ore -> 1 Diamond Block (proxy: glass)
+    {{BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,
+      BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,
+      BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND}, BLOCK_ICE, 1},
+
+    // Clay -> 4 Bricks (proxy: stone light)
+    {{0,0,0, 0,BLOCK_CLAY,0, 0,0,0}, BLOCK_STONE_LIGHT, 4},
+
+    // --- NEW EXPANDED RECIPES --------------------------
+
+    // Wood -> 4 Planks
+    {{0,0,0, 0,BLOCK_WOOD,0, 0,0,0}, BLOCK_PLANKS, 4},
+    // Planks x4 -> Crafting Table
+    {{0,0,0, BLOCK_PLANKS,BLOCK_PLANKS,0, BLOCK_PLANKS,BLOCK_PLANKS,0}, BLOCK_CRAFTING_TABLE, 1},
+    // Sand x4 -> Sandstone
+    {{0,0,0, BLOCK_SAND,BLOCK_SAND,0, BLOCK_SAND,BLOCK_SAND,0}, BLOCK_SANDSTONE, 1},
+    // Sandstone x4 -> Cut Sandstone
+    {{0,0,0, BLOCK_SANDSTONE,BLOCK_SANDSTONE,0, BLOCK_SANDSTONE,BLOCK_SANDSTONE,0}, BLOCK_CUT_SANDSTONE, 1},
+    // Stone Light x4 -> Bricks (replacing proxy)
+    {{0,0,0, BLOCK_STONE_LIGHT,BLOCK_STONE_LIGHT,0, BLOCK_STONE_LIGHT,BLOCK_STONE_LIGHT,0}, BLOCK_BRICKS, 1},
+    // Red Wool (String proxy = Grass + Red Dye proxy = Dirt) -> red wool
+    {{BLOCK_DIRT,0,0, BLOCK_GRASS,BLOCK_GRASS,0, BLOCK_GRASS,BLOCK_GRASS,0}, BLOCK_WOOL_RED, 1},
+    // Blue Wool
+    {{BLOCK_WATER,0,0, BLOCK_GRASS,BLOCK_GRASS,0, BLOCK_GRASS,BLOCK_GRASS,0}, BLOCK_WOOL_BLUE, 1},
+    // White Wool (4 Grass representing String proxy)
+    {{0,0,0, BLOCK_GRASS,BLOCK_GRASS,0, BLOCK_GRASS,BLOCK_GRASS,0}, BLOCK_WOOL_WHITE, 1},
+    // Stone + Stone... wait, Cobblestone = breaking Stone
+    {{0,0,0, BLOCK_STONE,BLOCK_STONE,0, BLOCK_STONE,BLOCK_STONE,0}, BLOCK_COBBLESTONE, 4},
+    // Mossy Cobblestone = Cobble + Leaf
+    {{0,0,0, BLOCK_COBBLESTONE,BLOCK_LEAF,0, 0,0,0}, BLOCK_MOSSY_COBBLESTONE, 1},
+    // Mossy Bricks = Stone Light + Leaf
+    {{0,0,0, BLOCK_STONE_LIGHT,BLOCK_LEAF,0, 0,0,0}, BLOCK_MOSSY_BRICKS, 1},
+    // Glowstone = 4 Sand + 4 Wood ? (proxy)
+    {{0,0,0, BLOCK_WOOD,BLOCK_WOOD,0, BLOCK_WOOD,BLOCK_WOOD,0}, BLOCK_GLOWSTONE, 1},
+    // Polished Diorite = 4 Gravel
+    {{0,0,0, BLOCK_GRAVEL,BLOCK_GRAVEL,0, BLOCK_GRAVEL,BLOCK_GRAVEL,0}, BLOCK_POLISHED_DIORITE, 1},
+    // Polished Granite = Diorite + Dirt
+    {{0,0,0, BLOCK_POLISHED_DIORITE,BLOCK_DIRT,0, 0,0,0}, BLOCK_POLISHED_GRANITE, 1},
+    // Polished Andesite = Diorite + Cobblestone
+    {{0,0,0, BLOCK_POLISHED_DIORITE,BLOCK_COBBLESTONE,0, 0,0,0}, BLOCK_POLISHED_ANDESITE, 1},
+    // Quartz Block = 4 Snow
+    {{0,0,0, BLOCK_SNOW,BLOCK_SNOW,0, BLOCK_SNOW,BLOCK_SNOW,0}, BLOCK_QUARTZ_BLOCK, 1},
+    // Iron Block = 9 Stone
+    {{BLOCK_STONE,BLOCK_STONE,BLOCK_STONE, BLOCK_STONE,BLOCK_STONE,BLOCK_STONE, BLOCK_STONE,BLOCK_STONE,BLOCK_STONE}, BLOCK_IRON_BLOCK, 1},
+    // Diamond Block = 9 Diamond Ore
+    {{BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND, BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND, BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND}, BLOCK_DIAMOND_BLOCK, 1},
+    // Gold Block = 9 Gold Ore
+    {{BLOCK_ORE_GOLD,BLOCK_ORE_GOLD,BLOCK_ORE_GOLD, BLOCK_ORE_GOLD,BLOCK_ORE_GOLD,BLOCK_ORE_GOLD, BLOCK_ORE_GOLD,BLOCK_ORE_GOLD,BLOCK_ORE_GOLD}, BLOCK_GOLD_BLOCK, 1},
+    // Obsidian = Water + Bedrock
+    {{0,0,0, BLOCK_WATER,BLOCK_BEDROCK,0, 0,0,0}, BLOCK_OBSIDIAN, 1},
+
+    // --- BUILDING & DECORATION BLOCK RECIPES ---
+
+    // Slabs (3 in a row = 6 slabs)
+    {{BLOCK_STONE,BLOCK_STONE,BLOCK_STONE, 0,0,0, 0,0,0}, BLOCK_SLAB_STONE, 6},
+    {{BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS, 0,0,0, 0,0,0}, BLOCK_SLAB_WOOD, 6},
+    {{BLOCK_SANDSTONE,BLOCK_SANDSTONE,BLOCK_SANDSTONE, 0,0,0, 0,0,0}, BLOCK_SLAB_SANDSTONE, 6},
+    {{BLOCK_BRICKS,BLOCK_BRICKS,BLOCK_BRICKS, 0,0,0, 0,0,0}, BLOCK_SLAB_BRICK, 6},
+
+    // Stairs (staircase pattern = 4 stairs)
+    {{BLOCK_STONE,0,0, BLOCK_STONE,BLOCK_STONE,0, BLOCK_STONE,BLOCK_STONE,BLOCK_STONE}, BLOCK_STAIRS_STONE, 4},
+    {{BLOCK_PLANKS,0,0, BLOCK_PLANKS,BLOCK_PLANKS,0, BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS}, BLOCK_STAIRS_WOOD, 4},
+
+    // Carpets (2 wool in a row = 3 carpets)
+    {{0,0,0, BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE,0, 0,0,0}, BLOCK_CARPET_WHITE, 3},
+    {{0,0,0, BLOCK_WOOL_RED,BLOCK_WOOL_RED,0, 0,0,0}, BLOCK_CARPET_RED, 3},
+    {{0,0,0, BLOCK_WOOL_BLUE,BLOCK_WOOL_BLUE,0, 0,0,0}, BLOCK_CARPET_BLUE, 3},
+
+    // Glass pane (6 glass in 2 rows = 6 panes)
+    {{BLOCK_GLASS,BLOCK_GLASS,BLOCK_GLASS, BLOCK_GLASS,BLOCK_GLASS,BLOCK_GLASS, 0,0,0}, BLOCK_GLASS_PANE, 6},
+
+    // Iron bars (6 iron blocks in 2 rows = 6 bars)
+    {{BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK, BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK, 0,0,0}, BLOCK_IRON_BARS, 6},
+
+    // Fence (planks + cobble pattern)
+    {{BLOCK_PLANKS,BLOCK_COBBLESTONE,BLOCK_PLANKS, BLOCK_PLANKS,BLOCK_COBBLESTONE,BLOCK_PLANKS, 0,0,0}, BLOCK_FENCE_WOOD, 3},
+
+    // Fence gate
+    {{0,0,0, BLOCK_COBBLESTONE,BLOCK_PLANKS,BLOCK_COBBLESTONE, BLOCK_COBBLESTONE,BLOCK_PLANKS,BLOCK_COBBLESTONE}, BLOCK_FENCE_GATE, 1},
+
+    // Oak door (6 planks 2x3)
+    {{BLOCK_PLANKS,BLOCK_PLANKS,0, BLOCK_PLANKS,BLOCK_PLANKS,0, BLOCK_PLANKS,BLOCK_PLANKS,0}, BLOCK_DOOR_OAK, 1},
+
+    // Iron door (6 iron blocks 2x3)
+    {{BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK,0, BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK,0, BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK,0}, BLOCK_DOOR_IRON, 1},
+
+    // Trapdoor (6 planks 3x2 bottom)
+    {{0,0,0, BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS, BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS}, BLOCK_TRAPDOOR_OAK, 2},
+
+    // Ladder (H-shape planks)
+    {{BLOCK_PLANKS,0,BLOCK_PLANKS, BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS, BLOCK_PLANKS,0,BLOCK_PLANKS}, BLOCK_LADDER, 3},
+
+    // Bookshelf (planks + glowstone as books proxy)
+    {{BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS, BLOCK_GLOWSTONE,BLOCK_GLOWSTONE,BLOCK_GLOWSTONE, BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS}, BLOCK_BOOKSHELF, 1},
+
+    // Lantern (glowstone center + glass)
+    {{0,BLOCK_GLOWSTONE,0, BLOCK_GLOWSTONE,BLOCK_GLASS,BLOCK_GLOWSTONE, 0,BLOCK_GLOWSTONE,0}, BLOCK_LANTERN, 1},
+
+    // Torch block (wood + stone)
+    {{0,BLOCK_WOOD,0, 0,BLOCK_STONE,0, 0,0,0}, BLOCK_TORCH_BLOCK, 4},
+
+    // Sign (planks top + wood stick bottom)
+    {{BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS, BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS, 0,BLOCK_WOOD,0}, BLOCK_SIGN, 3},
+
+    // Smooth stone (2 stone light)
+    {{0,0,0, BLOCK_STONE_LIGHT,BLOCK_STONE_LIGHT,0, 0,0,0}, BLOCK_SMOOTH_STONE, 2},
+
+    // Terracotta (4 clay)
+    {{0,0,0, BLOCK_CLAY,BLOCK_CLAY,0, BLOCK_CLAY,BLOCK_CLAY,0}, BLOCK_TERRACOTTA, 4},
+
+    // Wool color variants (white wool + dye proxy)
+    {{0,0,0, BLOCK_WOOL_WHITE,BLOCK_LEAF,0, 0,0,0}, BLOCK_WOOL_GREEN, 1},
+    {{0,0,0, BLOCK_WOOL_WHITE,BLOCK_SAND,0, 0,0,0}, BLOCK_WOOL_YELLOW, 1},
+    {{0,0,0, BLOCK_WOOL_WHITE,BLOCK_COAL_ORE,0, 0,0,0}, BLOCK_WOOL_BLACK, 1},
+    {{0,0,0, BLOCK_WOOL_WHITE,BLOCK_ORE_GOLD,0, 0,0,0}, BLOCK_WOOL_ORANGE, 1},
+    {{0,0,0, BLOCK_WOOL_WHITE,BLOCK_BRICKS,0, 0,0,0}, BLOCK_WOOL_PINK, 1},
+    {{0,0,0, BLOCK_WOOL_BLUE,BLOCK_WOOL_RED,0, 0,0,0}, BLOCK_WOOL_PURPLE, 1},
+    {{0,0,0, BLOCK_WOOL_BLUE,BLOCK_LEAF,0, 0,0,0}, BLOCK_WOOL_CYAN, 1},
+    {{0,0,0, BLOCK_WOOL_RED,BLOCK_DIRT,0, 0,0,0}, BLOCK_WOOL_BROWN, 1},
+    {{0,0,0, BLOCK_WOOL_WHITE,BLOCK_STONE,0, 0,0,0}, BLOCK_WOOL_GRAY, 1},
+    {{0,0,0, BLOCK_WOOL_GRAY,BLOCK_WOOL_WHITE,0, 0,0,0}, BLOCK_WOOL_LIGHT_GRAY, 1},
+    {{0,0,0, BLOCK_WOOL_PINK,BLOCK_WOOL_PURPLE,0, 0,0,0}, BLOCK_WOOL_MAGENTA, 1},
+    {{0,0,0, BLOCK_WOOL_GREEN,BLOCK_WOOL_WHITE,0, 0,0,0}, BLOCK_WOOL_LIME, 1},
+
+    // Banner (wool top 2 rows + wood stick)
+    {{BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE, BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE, 0,BLOCK_WOOD,0}, BLOCK_BANNER, 1}
+};
+const int NUM_RECIPES = sizeof(recipes) / sizeof(recipes[0]);
+
+void checkCraftingRecipes() {
+    // Compare craftingGrid against each recipe
+    for (int r = 0; r < NUM_RECIPES; r++) {
+        bool match = true;
+        for (int i = 0; i < 9; i++) {
+            int need = recipes[r].pattern[i];
+            int have = craftingGrid[i].type;
+            if (need == BLOCK_AIR) {
+                if (have != BLOCK_AIR) { match = false; break; }
+            } else {
+                if (have != need || craftingGrid[i].count < 1) { match = false; break; }
+            }
+        }
+        if (match) {
+            craftingOutput.type = recipes[r].resultType;
+            craftingOutput.count = recipes[r].resultCount;
+            return;
+        }
+    }
+    // No recipe matched
+    craftingOutput.type = BLOCK_AIR;
+    craftingOutput.count = 0;
+}
+
+void consumeCraftingInputs() {
+    // Remove one item from each non-empty crafting slot
+    for (int i = 0; i < 9; i++) {
+        if (craftingGrid[i].type != BLOCK_AIR) {
+            craftingGrid[i].count--;
+            if (craftingGrid[i].count <= 0) {
+                craftingGrid[i].type = BLOCK_AIR;
+                craftingGrid[i].count = 0;
+            }
+        }
+    }
+    checkCraftingRecipes(); // re-check after consuming
+}
+
+// Mouse Drag State
+InventorySlot draggedSlot;
+
+bool inventoryOpen = false;
+bool recipeBookOpen = false;
+int recipePage = 0;
+std::string recipeSearchText = "";
+
+const char* getBlockName(int type) {
+    switch (type) {
+        case BLOCK_AIR:              return "air";
+        case BLOCK_GRASS:            return "grass block";
+        case BLOCK_DIRT:             return "dirt";
+        case BLOCK_SAND:             return "sand";
+        case BLOCK_STONE:            return "stone";
+        case BLOCK_WATER:            return "water";
+        case BLOCK_WOOD:             return "oak log";
+        case BLOCK_LEAF:             return "oak leaves";
+        case BLOCK_ORE_DIAMOND:      return "diamond ore";
+        case BLOCK_ORE_GOLD:         return "gold ore";
+        case BLOCK_GLASS:            return "glass";
+        case BLOCK_STONE_LIGHT:      return "stone bricks";
+        case BLOCK_BEDROCK:          return "bedrock";
+        case BLOCK_COAL_ORE:         return "coal ore";
+        case BLOCK_GRAVEL:           return "gravel";
+        case BLOCK_CLAY:             return "clay";
+        case BLOCK_SNOW:             return "snow";
+        case BLOCK_ICE:              return "ice";
+        case BLOCK_PLANKS:           return "oak planks";
+        case BLOCK_CRAFTING_TABLE:   return "crafting table";
+        case BLOCK_SANDSTONE:        return "sandstone";
+        case BLOCK_BRICKS:           return "bricks";
+        case BLOCK_WOOL_WHITE:       return "white wool";
+        case BLOCK_WOOL_RED:         return "red wool";
+        case BLOCK_WOOL_BLUE:        return "blue wool";
+        case BLOCK_COBBLESTONE:      return "cobblestone";
+        case BLOCK_MOSSY_COBBLESTONE:return "mossy cobblestone";
+        case BLOCK_GLOWSTONE:        return "glowstone";
+        case BLOCK_POLISHED_DIORITE: return "polished diorite";
+        case BLOCK_POLISHED_GRANITE: return "polished granite";
+        case BLOCK_POLISHED_ANDESITE:return "polished andesite";
+        case BLOCK_QUARTZ_BLOCK:     return "quartz block";
+        case BLOCK_IRON_BLOCK:       return "iron block";
+        case BLOCK_DIAMOND_BLOCK:    return "diamond block";
+        case BLOCK_GOLD_BLOCK:       return "gold block";
+        case BLOCK_CUT_SANDSTONE:    return "cut sandstone";
+        case BLOCK_MOSSY_BRICKS:     return "mossy bricks";
+        case BLOCK_OBSIDIAN:         return "obsidian";
+        case BLOCK_WOOL_GREEN:       return "green wool";
+        case BLOCK_WOOL_YELLOW:      return "yellow wool";
+        case BLOCK_WOOL_BLACK:       return "black wool";
+        case BLOCK_WOOL_ORANGE:      return "orange wool";
+        case BLOCK_WOOL_PINK:        return "pink wool";
+        case BLOCK_WOOL_PURPLE:      return "purple wool";
+        case BLOCK_WOOL_CYAN:        return "cyan wool";
+        case BLOCK_WOOL_BROWN:       return "brown wool";
+        case BLOCK_WOOL_GRAY:        return "gray wool";
+        case BLOCK_WOOL_LIGHT_GRAY:  return "light gray wool";
+        case BLOCK_WOOL_MAGENTA:     return "magenta wool";
+        case BLOCK_WOOL_LIME:        return "lime wool";
+        case BLOCK_BOOKSHELF:        return "bookshelf";
+        case BLOCK_SMOOTH_STONE:     return "smooth stone";
+        case BLOCK_TERRACOTTA:       return "terracotta";
+        case BLOCK_SLAB_STONE:       return "stone slab";
+        case BLOCK_SLAB_WOOD:        return "wood slab";
+        case BLOCK_SLAB_SANDSTONE:   return "sandstone slab";
+        case BLOCK_SLAB_BRICK:       return "brick slab";
+        case BLOCK_STAIRS_STONE:     return "stone stairs";
+        case BLOCK_STAIRS_WOOD:      return "wood stairs";
+        case BLOCK_CARPET_WHITE:     return "white carpet";
+        case BLOCK_CARPET_RED:       return "red carpet";
+        case BLOCK_CARPET_BLUE:      return "blue carpet";
+        case BLOCK_GLASS_PANE:       return "glass pane";
+        case BLOCK_IRON_BARS:        return "iron bars";
+        case BLOCK_FENCE_WOOD:       return "wood fence";
+        case BLOCK_DOOR_OAK:         return "oak door";
+        case BLOCK_DOOR_IRON:        return "iron door";
+        case BLOCK_TRAPDOOR_OAK:     return "trapdoor";
+        case BLOCK_FENCE_GATE:       return "fence gate";
+        case BLOCK_LADDER:           return "ladder";
+        case BLOCK_LANTERN:          return "lantern";
+        case BLOCK_TORCH_BLOCK:      return "torch";
+        case BLOCK_SIGN:             return "sign";
+        case BLOCK_BANNER:           return "banner";
+        default:                     return "unknown";
+    }
+}
+
+void autoCraftRecipe(int recipeIndex) {
+    if (recipeIndex < 0 || recipeIndex >= NUM_RECIPES) return;
+    
+    // We only auto-fill if the crafting grid is completely empty
+    for(int i=0; i<9; i++) {
+        if(craftingGrid[i].type != BLOCK_AIR) return;
+    }
+    
+    int required[256] = {0};
+    for(int i=0; i<9; i++) {
+        int t = recipes[recipeIndex].pattern[i];
+        if(t != BLOCK_AIR) required[t]++;
+    }
+    
+    int available[256] = {0};
+    for(int i=0; i<36; i++) {
+        int t = playerInventory[i].type;
+        if(t != BLOCK_AIR) available[t] += playerInventory[i].count;
+    }
+    
+    for(int i=0; i<256; i++) {
+        if(required[i] > available[i]) {
+            printf("[Craft] Cannot auto-craft, missing materials.\n");
+            return;
+        }
+    }
+    
+    // Take from inventory and place exactly 1 of each required item in grid
+    for(int i=0; i<9; i++) {
+        int t = recipes[recipeIndex].pattern[i];
+        if(t != BLOCK_AIR) {
+            craftingGrid[i].type = t;
+            craftingGrid[i].count = 1;
+            for(int j=0; j<36; j++) {
+                if(playerInventory[j].type == t && playerInventory[j].count > 0) {
+                    playerInventory[j].count--;
+                    if(playerInventory[j].count == 0) playerInventory[j].type = BLOCK_AIR;
+                    break;
+                }
+            }
+        }
+    }
+    checkCraftingRecipes();
+    printf("[Craft] Auto-filled recipe %d\n", recipeIndex);
+}
+
+int hotbarSlot = 0; // 0-8
 const int HOTBAR_SIZE = 9;
 
 // Block targeting (raycasting)
@@ -80,8 +572,6 @@ std::vector<ItemDrop> itemDrops;
 const float ITEM_PICKUP_RADIUS = 1.5f;
 const float ITEM_DESPAWN_TIME = 60.0f;
 
-// Simple inventory (slot -> count) beyond hotbar
-int inventoryCounts[BLOCK_COUNT]; // how many of each block type the player has
 
 // =====================================================
 // Mobs
@@ -112,8 +602,8 @@ glm::vec3 camPos(4.0f, 10.0f, 16.0f);
 glm::vec3 camFront(0.0f, -0.4f, -1.0f);
 glm::vec3 camUp(0.0f, 1.0f, 0.0f);
 float camSpeed = 5.0f;
-float camPitch = -25.0f, camYaw = -90.0f, camRoll = 0.0f;
-float mouseSensitivity = 0.1f;
+float camPitch = -15.0f, camYaw = -90.0f, camRoll = 0.0f;
+float mouseSensitivity = 0.15f;
 bool firstMouse = true;
 double lastMouseX = 640.0, lastMouseY = 360.0;
 bool mouseCaptured = false; // right-click to toggle
@@ -125,6 +615,7 @@ glm::vec3 playerWorldPos(0.0f, 5.0f, 0.0f); // world position — will snap to g
 float playerYaw = 0.0f;       // horizontal facing direction (radians)
 float playerVelY = 0.0f;      // vertical velocity (for jump/gravity)
 bool playerOnGround = true;
+bool playerOnLadder = false;
 bool playerWalking = false;
 float playerWalkTime = 0.0f;  // for walk animation cycle
 bool playerSprinting = false;
@@ -143,8 +634,8 @@ bool trackingFall = false;
 
 // Camera mode: 0=third-person, 1=first-person, 2=free-fly
 int cameraMode = 0;
-float thirdPersonDist = 4.0f;  // distance behind player
-float thirdPersonHeight = 1.5f; // height above player
+float thirdPersonDist = 3.5f;  // distance behind player (Minecraft-like)
+float thirdPersonHeight = 0.8f; // height offset above eye level
 
 // Timing
 float deltaTime = 0.0f, lastFrame = 0.0f;
@@ -200,8 +691,19 @@ bool useGouraud = false;     // H toggle
 // Shader
 GLuint shaderProgram;
 
-// Textures
+// Textures — local
 GLuint texBrick = 0, texGrass = 0, texWood = 0;
+// Textures — FM Default pack
+GLuint texStoneFM = 0, texCobblestone = 0, texMossyCobble = 0;
+GLuint texStoneBricks = 0, texMossyStoneBricks = 0, texCrackedStoneBricks = 0;
+GLuint texOakPlanks = 0, texBookshelf = 0;
+GLuint texIronBars = 0, texGlassFM = 0, texGlassPaneTop = 0;
+GLuint texLadder = 0;
+GLuint texIronDoorBot = 0, texIronDoorTop = 0;
+GLuint texItemOakDoor = 0, texItemIronDoor = 0;  // item sprites for inventory icons
+GLuint texTorchBlock = 0, texSeaLantern = 0;
+GLuint texCraftingTop = 0, texCraftingFront = 0;
+GLuint texBedrock = 0, texCoalOre = 0, texDiamondOre = 0, texGoldOre = 0;
 
 // Hex mesh
 GLuint hexVAO, hexVBO;

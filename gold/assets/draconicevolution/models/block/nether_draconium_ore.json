@@ -1,0 +1,7 @@
+{
+	"parent": "draconicevolution:block/overworld_draconium_ore",
+    "textures": {
+        "0": "draconicevolution:block/nether_draconium_ore",
+		"particle": "draconicevolution:block/nether_draconium_ore"
+    }
+}

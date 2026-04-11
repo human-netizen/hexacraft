@@ -1,0 +1,83 @@
+{
+    "__comment": "Model generated using MrCrayfish's Model Creator (http://mrcrayfish.com/modelcreator/)",
+	"textures": {
+		"particle": "block/iron_bars",
+		"bars": "block/iron_bars",
+		"edge": "block/iron_bars"
+	},
+	"elements": [ 	 
+		{
+			"name": "Bottom",
+			"from": [ 7.0, 0, 0 ],
+			"to": [ 9.0, 0.5, 7.0 ],
+			"faces": {
+				"down": { "uv": [ 9, 0, 7, 7 ], "texture": "#edge" },
+				"up": { "uv": [ 7, 0, 9, 7 ], "texture": "#edge" },
+				"north": { "uv": [ 9, 0, 8, 2 ], "texture": "#edge", "cullface": "north", "rotation": 90 },
+				"south": { "uv": [ 9, 0, 8, 2 ], "texture": "#edge", "rotation": 90 },
+				"west": { "uv": [ 9, 0, 8, 7 ], "texture": "#edge", "rotation": 90 },
+				"east": { "uv": [ 9, 0, 8, 7 ], "texture": "#edge", "rotation": 90 }
+			}
+		},
+		{
+			"name": "Top",
+			"from": [ 7.0, 15.5, 0 ],
+			"to": [ 9.0, 16.0, 7.0 ],
+			"faces": {
+				"down": { "uv": [ 9, 0, 7, 7 ], "texture": "#edge" },
+				"up": { "uv": [ 7, 0, 9, 7 ], "texture": "#edge" },
+				"north": { "uv": [ 9, 0, 8, 4 ], "texture": "#edge", "cullface": "north", "rotation": 90 },
+				"south": { "uv": [ 9, 0, 8, 4 ], "texture": "#edge", "rotation": 90 },
+				"west": { "uv": [ 9, 0, 8, 7 ], "texture": "#edge", "rotation": 90 },
+				"east": { "uv": [ 9, 0, 8, 7 ], "texture": "#edge", "rotation": 90 }
+			}
+		},
+		{
+			"name": "EndRod",
+			"from": [ 7.5, 0.01, 7.0 ],
+			"to": [ 8.5, 15.99, 8.0 ],
+			"faces": {
+				"down": { "uv": [ 7, 12, 8, 13 ], "texture": "#bars" },
+				"up": { "uv": [ 8, 2, 9, 3 ], "texture": "#bars" },
+				"north": { "uv": [ 13, 0, 14, 16 ], "texture": "#bars" },
+				"south": { "uv": [ 13, 0, 14, 16 ], "texture": "#bars" },
+				"west": { "uv": [ 13, 0, 14, 16 ], "texture": "#bars" },
+				"east": { "uv": [ 13, 0, 14, 16 ], "texture": "#bars" }
+			}
+		},
+		{
+			"name": "3x2",
+			"from": [ 7.5, 2.0, 4.0 ],
+			"to": [ 8.5, 4.0, 7.0 ],
+			"faces": {
+				"down": { "uv": [ 8, 12, 9, 15 ], "texture": "#bars" },
+				"up": { "uv": [ 8, 2, 9, 5 ], "texture": "#bars" },
+				"west": { "uv": [ 0, 7, 3, 9 ], "texture": "#bars" },
+				"east": { "uv": [ 0, 7, 3, 9 ], "texture": "#bars" }
+			}
+		},
+		{
+			"name": "ThickRod",
+			"from": [ 7.5, 0.01, 2.0 ],
+			"to": [ 8.5, 15.99, 4.0 ],
+			"faces": {
+				"north": { "uv": [ 13, 0, 14, 16 ], "texture": "#bars" },
+				"south": { "uv": [ 13, 0, 14, 16 ], "texture": "#bars" },
+				"west": { "uv": [ 12, 0, 14, 16 ], "texture": "#bars" },
+				"east": { "uv": [ 12, 0, 14, 16 ], "texture": "#bars" }
+			}
+		},
+		{
+			"name": "2x2",
+			"from": [ 7.5, 7.0, 0 ],
+			"to": [ 8.5, 9.0, 2.0 ],
+			"faces": {
+				"down": { "uv": [ 8, 12, 9, 14 ], "texture": "#bars" },
+				"up": { "uv": [ 8, 2, 9, 4 ], "texture": "#bars" },
+				"north": { "uv": [ 0, 7, 1, 9 ], "texture": "#bars", "cullface": "north" },
+				"west": { "uv": [ 0, 7, 2, 9 ], "texture": "#bars" },
+				"east": { "uv": [ 0, 7, 2, 9 ], "texture": "#bars" }
+			}
+		}
+	]
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "bigreactors:block/yellorite_ore",
+  "textures": {
+		"0": "bigreactors:block/benitoite_ore",
+		"particle": "bigreactors:block/benitoite_ore"
+  }
+}

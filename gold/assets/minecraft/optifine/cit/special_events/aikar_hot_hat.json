@@ -1,0 +1,8 @@
+{
+    "parent": "block/cube_bottom_top",
+    "textures": {
+        "bottom": "block/aikar_hot_hat_bottom",
+        "top": "block/aikar_hot_hat_top",
+        "side": "block/aikar_hot_hat"
+    }
+}

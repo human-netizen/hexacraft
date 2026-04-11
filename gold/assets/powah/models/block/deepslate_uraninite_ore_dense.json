@@ -1,0 +1,7 @@
+{
+    "parent": "powah:block/uraninite_ore_dense",
+    "textures": {
+        "0": "powah:block/deepslate_uraninite_ore_dense",
+        "particle": "powah:block/deepslate_uraninite_ore_dense"
+    }
+}

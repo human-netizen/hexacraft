@@ -1,0 +1,24 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"rail": "railcraft:block/whistle_track"
+	},
+	"elements": [
+		{
+			"name": "Base",
+			"from": [5.999, 0.014, 0],
+			"to": [10.001, 1.014, 22.62742],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8, 1, 0]},
+			"faces": {
+				"north": {"uv": [6, 0, 10, 1], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 0, 10, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 15, 10, 16], "texture": "#rail"},
+				"west": {"uv": [6, 0, 7, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 0, 10, 16], "texture": "#rail"},
+				"down": {"uv": [6, 16, 10, 0], "texture": "#rail"}
+			}
+		}
+	]
+}

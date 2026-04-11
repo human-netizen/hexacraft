@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:block/template_flat_sided_trapdoor_top",
+	"textures": {
+		"texture": "regions_unexplored:block/mauve_trapdoor",		
+		"side": "regions_unexplored:block/mauve_trapdoor_side"
+	}
+}

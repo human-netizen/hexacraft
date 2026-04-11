@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_bottom_right",
+	"textures": {
+		"bottom": "chipped:block/jungle_door/paper_jungle_door_bottom",
+		"side": "chipped:block/jungle_door/chipped_lower_hinged_jungle_door_side",
+		"particle": "chipped:block/jungle_door/paper_jungle_door_bottom"
+	}
+}

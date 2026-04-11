@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/booster_track",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/booster_track_on"
+  }
+}

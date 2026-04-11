@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/peridot_ore",
+    "textures": {
+		"0": "alltheores:block/other_peridot_ore",
+		"particle": "alltheores:block/other_peridot_ore"
+    }
+}

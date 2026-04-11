@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/heliodor_ore",
+  "textures": {
+    "0": "silentgems:block/end_heliodor_ore",
+    "particle": "silentgems:block/end_heliodor_ore"
+  }
+}

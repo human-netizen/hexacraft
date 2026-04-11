@@ -1,0 +1,6 @@
+{
+  "parent": "create:block/zinc_ore",
+  "textures": {
+    "0": "create:block/deepslate_zinc_ore"
+  }
+}

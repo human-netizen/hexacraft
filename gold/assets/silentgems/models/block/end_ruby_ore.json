@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/ruby_ore",
+  "textures": {
+    "0": "silentgems:block/end_ruby_ore",
+    "particle": "silentgems:block/end_ruby_ore"
+  }
+}

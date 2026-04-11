@@ -1,0 +1,55 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "#side"
+	},
+	"elements": [
+		{
+			"name": "Frame1",
+			"from": [0, 0, 14],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [7, 0, 10, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 2, 16], "texture": "#bottom", "cullface": "west"},
+				"south": {"uv": [7, 0, 10, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [2, 0, 0, 16], "texture": "#bottom"},
+				"down": {"uv": [13, 0, 16, 2], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Frame2",
+			"from": [0, 0, 2],
+			"to": [3, 2, 14],
+			"faces": {
+				"east": {"uv": [2, 14, 14, 16], "texture": "#bottom", "cullface": "west"},
+				"west": {"uv": [14, 14, 2, 16], "texture": "#bottom"},
+				"up": {"uv": [10, 14, 7, 2], "texture": "#side"},
+				"down": {"uv": [13, 2, 16, 14], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Frame3",
+			"from": [0, 0, 0],
+			"to": [3, 16, 2],
+			"faces": {
+				"north": {"uv": [9, 0, 6, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [14, 0, 16, 16], "texture": "#bottom", "cullface": "west"},
+				"south": {"uv": [10, 0, 7, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 14, 16], "texture": "#bottom"},
+				"down": {"uv": [13, 14, 16, 16], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Glass",
+			"from": [1.5, 2, 2],
+			"to": [1.5, 16, 14],
+			"faces": {
+				"east": {"uv": [2, 0, 14, 14], "texture": "#bottom", "cullface": "west"},
+				"west": {"uv": [14, 0, 2, 14], "texture": "#bottom"}
+			}
+		}
+	]
+}

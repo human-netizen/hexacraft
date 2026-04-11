@@ -1,0 +1,7 @@
+{
+	"parent": "block/gold_ore",
+    "textures": {
+		"particle": "block/deepslate_gold_ore",
+        "0": "block/deepslate_gold_ore"
+    }
+}

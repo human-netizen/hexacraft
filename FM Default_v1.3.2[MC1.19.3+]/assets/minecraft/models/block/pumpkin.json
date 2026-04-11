@@ -1,0 +1,10 @@
+{
+    "parent": "block/orientable_custom",
+    "textures": {
+        "top": "block/pumpkin_top",
+        "front": "block/pumpkin_side",
+        "side": "block/pumpkin_side",
+		"bottom": "block/pumpkin_bottom"
+    }
+}
+

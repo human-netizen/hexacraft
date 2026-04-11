@@ -1,0 +1,50 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "#rail"
+	},
+	"elements": [
+		{
+			"name": "Cube1",
+			"from": [5.999, 0.014, -6.62742],
+			"to": [10.001, 1.014, -0.97198],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [6, 0, 10, 1], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 0, 10, 4], "rotation": 90, "texture": "#rail"},
+				"west": {"uv": [6, 0, 7, 4], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 0, 10, 4], "texture": "#rail"},
+				"down": {"uv": [6, 4, 10, 0], "texture": "#rail"}
+			}
+		},
+		{
+			"name": "Cube2",
+			"from": [4.999, 0.014, -0.97198],
+			"to": [11.001, 1.014, 10.34456],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"north": {"uv": [5, 4, 11, 5], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 4, 11, 12], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 11, 11, 12], "texture": "#rail"},
+				"west": {"uv": [5, 4, 6, 12], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 4, 11, 12], "texture": "#rail"},
+				"down": {"uv": [5, 12, 11, 4], "texture": "#rail"}
+			}
+		},
+		{
+			"name": "Cube3",
+			"from": [5.999, 0.014, 10.34456],
+			"to": [10.001, 1.014, 16],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 1, 16]},
+			"faces": {
+				"east": {"uv": [9, 12, 10, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 15, 10, 16], "texture": "#rail"},
+				"west": {"uv": [6, 12, 7, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 12, 10, 16], "texture": "#rail"},
+				"down": {"uv": [6, 16, 10, 12], "texture": "#rail"}
+			}
+		}
+	]
+}

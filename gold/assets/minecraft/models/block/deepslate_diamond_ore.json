@@ -1,0 +1,7 @@
+{
+	"parent": "block/diamond_ore",
+    "textures": {
+		"particle": "block/deepslate_diamond_ore",
+        "0": "block/deepslate_diamond_ore"
+    }
+}

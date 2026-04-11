@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/rail_flat",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/high_speed_track",
+	"particle": "railcraft:block/high_speed_track"
+  }
+}

@@ -1,0 +1,9 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/oak_trapdoor_bottom",
+	"textures": {
+		"0": "chipped:block/acacia_trapdoor/classic_acacia_trapdoor",
+		"side": "chipped:block/acacia_trapdoor/classic_acacia_trapdoor_side"
+	}
+}

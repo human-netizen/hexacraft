@@ -1,0 +1,26 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "biomeswevegone:block/aspen/trapdoor",
+		"texture": "biomeswevegone:block/aspen/trapdoor",
+		"side": "biomeswevegone:block/aspen/trapdoor_side"
+	},
+	"elements": [
+		{
+			"name": "Flat_Base",
+			"from": [0, 0, 0],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 3], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [0, 0, 16, 3], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 3], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [0, 0, 16, 3], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#texture"},
+				"down": {"uv": [0, 16, 16, 0], "texture": "#texture", "cullface": "down"}
+			}
+		}
+	]
+}

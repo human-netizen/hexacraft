@@ -1,0 +1,89 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "chipped:block/spruce_door/barred_spruce_door_top",
+		"top": "chipped:block/spruce_door/barred_spruce_door_top",
+		"side": "chipped:block/spruce_door/chipped_spruce_door_side"
+	},
+	"elements": [
+		{
+			"name": "Top",
+			"from": [0, 11, 3],
+			"to": [3, 16, 13],
+			"faces": {
+				"east": {"uv": [3, 0, 13, 5], "texture": "#top"},
+				"west": {"uv": [13, 0, 3, 5], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 3, 15, 13], "rotation": 180, "texture": "#side", "cullface": "up"},
+				"down": {"uv": [9, 3, 12, 13], "rotation": 180, "texture": "#side"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 3],
+			"to": [3, 1, 13],
+			"faces": {
+				"east": {"uv": [3, 15, 13, 16], "texture": "#top"},
+				"west": {"uv": [3, 15, 13, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 3, 15, 13], "rotation": 180, "texture": "#side"}
+			}
+		},
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 13],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [9, 0, 12, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 3, 16], "texture": "#top"},
+				"south": {"uv": [6, 0, 3, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [3, 0, 0, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 0, 15, 3], "rotation": 180, "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 3],
+			"faces": {
+				"north": {"uv": [9, 0, 12, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [13, 0, 16, 16], "texture": "#top"},
+				"south": {"uv": [15, 0, 12, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 13, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 13, 15, 16], "rotation": 180, "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "Inside_1",
+			"from": [0, 1, 9],
+			"to": [3, 11, 11],
+			"faces": {
+				"north": {"uv": [9, 5, 12, 15], "texture": "#side"},
+				"east": {"uv": [5, 5, 7, 15], "texture": "#top"},
+				"south": {"uv": [12, 5, 15, 15], "texture": "#side"},
+				"west": {"uv": [7, 5, 5, 15], "texture": "#top", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Inside_2",
+			"from": [0, 1, 5],
+			"to": [3, 11, 7],
+			"faces": {
+				"north": {"uv": [9, 5, 12, 15], "texture": "#side"},
+				"east": {"uv": [9, 5, 11, 15], "texture": "#top"},
+				"south": {"uv": [12, 5, 15, 15], "texture": "#side"},
+				"west": {"uv": [11, 5, 9, 15], "texture": "#top", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Handle",
+			"from": [0, 1, 3],
+			"to": [3, 2, 5],
+			"faces": {
+				"east": {"uv": [11, 14, 13, 15], "texture": "#top"},
+				"west": {"uv": [13, 14, 11, 15], "texture": "#top", "cullface": "west"}
+			}
+		}
+	]
+}

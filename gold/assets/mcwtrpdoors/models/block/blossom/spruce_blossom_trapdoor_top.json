@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/cherry_trapdoor_top",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/blossom/spruce_blossom_trapdoor",
+        "0": "mcwtrpdoors:block/blossom/spruce_blossom_trapdoor"
+    }
+}

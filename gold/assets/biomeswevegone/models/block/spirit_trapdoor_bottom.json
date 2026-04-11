@@ -1,0 +1,83 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"parent": "block/thin_block",
+	"render_type": "minecraft:translucent",
+	"textures": {
+		"particle": "biomeswevegone:block/spirit/trapdoor",
+		"texture": "biomeswevegone:block/spirit/trapdoor",
+		"side": "biomeswevegone:block/spirit/trapdoor_side"
+	},
+	"elements": [
+		{
+			"name": "North",
+			"from": [0, 0, 0],
+			"to": [16, 3, 6],
+			"faces": {
+				"north": {"uv": [0, 3, 16, 0], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [10, 3, 16, 0], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 6, 16, 3], "texture": "#side"},
+				"west": {"uv": [0, 3, 6, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 6], "texture": "#texture"},
+				"down": {"uv": [0, 6, 16, 0], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 9],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 6, 16, 3], "texture": "#side"},
+				"east": {"uv": [0, 3, 7, 0], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 3, 16, 0], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [9, 3, 16, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 9, 16, 16], "texture": "#texture"},
+				"down": {"uv": [0, 16, 16, 9], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "West",
+			"from": [0, 0, 6],
+			"to": [5, 3, 9],
+			"faces": {
+				"east": {"uv": [7, 6, 10, 3], "texture": "#side"},
+				"west": {"uv": [7, 3, 10, 0], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 6, 5, 9], "texture": "#texture"},
+				"down": {"uv": [0, 9, 5, 6], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [11, 0, 6],
+			"to": [16, 3, 9],
+			"faces": {
+				"east": {"uv": [7, 3, 10, 0], "texture": "#side", "cullface": "east"},
+				"west": {"uv": [7, 6, 10, 3], "texture": "#side"},
+				"up": {"uv": [11, 6, 16, 9], "texture": "#texture"},
+				"down": {"uv": [11, 9, 16, 6], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bar1",
+			"from": [6, 0, 6],
+			"to": [7, 3, 9],
+			"faces": {
+				"east": {"uv": [7, 3, 10, 6], "texture": "#side"},
+				"west": {"uv": [7, 3, 10, 6], "texture": "#side"},
+				"up": {"uv": [6, 6, 7, 9], "texture": "#texture"},
+				"down": {"uv": [6, 6, 7, 9], "texture": "#texture", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bar2",
+			"from": [9, 0, 6],
+			"to": [10, 3, 9],
+			"faces": {
+				"east": {"uv": [7, 3, 10, 6], "texture": "#side"},
+				"west": {"uv": [7, 3, 10, 6], "texture": "#side"},
+				"up": {"uv": [9, 6, 10, 9], "texture": "#texture"},
+				"down": {"uv": [9, 6, 10, 9], "texture": "#texture", "cullface": "down"}
+			}
+		}
+	]
+}

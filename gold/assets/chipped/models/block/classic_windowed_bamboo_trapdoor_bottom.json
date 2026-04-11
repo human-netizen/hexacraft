@@ -1,0 +1,7 @@
+{
+	"parent": "chipped:block/template_classic_windowed_trapdoor_bottom",
+	"textures": {
+		"texture": "chipped:block/bamboo_trapdoor/classic_windowed_bamboo_trapdoor",
+		"side": "chipped:block/bamboo_trapdoor/classic_bamboo_trapdoor_side"
+	}
+}

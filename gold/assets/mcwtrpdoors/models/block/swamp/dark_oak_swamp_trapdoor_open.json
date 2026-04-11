@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/mangrove_trapdoor_open",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/swamp/dark_oak_swamp_trapdoor",
+        "0": "mcwtrpdoors:block/swamp/dark_oak_swamp_trapdoor"
+    }
+}

@@ -1,0 +1,8 @@
+{
+	"parent": "chipped:block/template_pointless_trapdoor_open",
+	"textures": {
+		"texture": "chipped:block/oak_trapdoor/pointless_oak_trapdoor",
+		"side": "chipped:block/oak_trapdoor/pointless_oak_trapdoor_side",
+		"window": "chipped:block/oak_trapdoor/cobweb_oak_trapdoor"
+	}
+}

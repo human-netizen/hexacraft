@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/door_bottom_right_open",
+	"textures": {
+		"bottom": "mcwdoors:block/spruce_beach_door_lower",
+		"top": "mcwdoors:block/spruce_beach_door_upper"
+		"particle": "mcwdoors:block/spruce_beach_door_lower"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "alltheores:block/uranium_ore",
+    "textures": {
+		"0": "alltheores:block/deepslate_uranium_ore",
+		"particle": "alltheores:block/deepslate_uranium_ore"
+    }
+}

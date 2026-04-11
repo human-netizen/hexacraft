@@ -1,0 +1,89 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "chipped:block/dark_oak_door/tile_windowed_dark_oak_door_bottom",
+		"bottom": "chipped:block/dark_oak_door/tile_windowed_dark_oak_door_bottom",
+		"side": "chipped:block/dark_oak_door/chipped_dark_oak_door_side"
+	},
+	"elements": [
+		{
+			"name": "Top",
+			"from": [0, 14, 3],
+			"to": [3, 16, 13],
+			"faces": {
+				"east": {"uv": [3, 0, 13, 2], "texture": "#bottom"},
+				"west": {"uv": [13, 0, 3, 2], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 3, 9, 13], "rotation": 180, "texture": "#side"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 3],
+			"to": [3, 3, 13],
+			"faces": {
+				"east": {"uv": [3, 13, 13, 16], "texture": "#bottom"},
+				"west": {"uv": [13, 13, 3, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 3, 15, 7], "rotation": 180, "texture": "#side"},
+				"down": {"uv": [9, 3, 12, 7], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 3],
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [13, 0, 16, 16], "texture": "#bottom"},
+				"south": {"uv": [15, 0, 12, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 13, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 7, 9, 16], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 13],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 3, 16], "texture": "#bottom"},
+				"south": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [3, 0, 0, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 0, 9, 3], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Divider1",
+			"from": [0.01, 7, 3],
+			"to": [2.99, 9, 13],
+			"faces": {
+				"east": {"uv": [3, 7, 13, 9], "texture": "#bottom"},
+				"west": {"uv": [13, 7, 3, 9], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 3, 14.98, 13], "rotation": 180, "texture": "#side"},
+				"down": {"uv": [6, 3, 8.98, 13], "rotation": 180, "texture": "#side"}
+			}
+		},
+		{
+			"name": "Divider2",
+			"from": [0, 3, 7],
+			"to": [3, 14, 9],
+			"faces": {
+				"north": {"uv": [6, 2, 9, 13], "texture": "#side"},
+				"east": {"uv": [7, 2, 9, 13], "texture": "#bottom"},
+				"south": {"uv": [12, 2, 15, 13], "texture": "#side"},
+				"west": {"uv": [9, 2, 7, 13], "texture": "#bottom", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Glass",
+			"from": [1, 3, 3],
+			"to": [2, 14, 13],
+			"faces": {
+				"east": {"uv": [3, 2, 13, 13], "texture": "#bottom"},
+				"west": {"uv": [13, 2, 3, 13], "texture": "#bottom", "cullface": "west"}
+			}
+		}
+	]
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "immersiveengineering:block/ore_silver",
+  "textures": {
+		"0": "immersiveengineering:block/metal/deepslate_ore_silver",
+		"particle": "immersiveengineering:block/metal/deepslate_ore_silver"
+  }
+}

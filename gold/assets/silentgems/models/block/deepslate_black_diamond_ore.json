@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/black_diamond_ore",
+  "textures": {
+    "0": "silentgems:block/deepslate_black_diamond_ore",
+    "particle": "silentgems:block/deepslate_black_diamond_ore"
+  }
+}

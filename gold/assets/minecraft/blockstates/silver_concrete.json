@@ -1,0 +1,22 @@
+{
+    "variants": {
+        "normal": [
+            { "model": "silver_concrete" },
+            { "model": "silver_concrete", "x": 90 },
+            { "model": "silver_concrete", "x": 180 },
+            { "model": "silver_concrete", "x": 270 },
+            { "model": "silver_concrete", "y": 90 },
+            { "model": "silver_concrete", "y": 90, "x": 90 },
+            { "model": "silver_concrete", "y": 90, "x": 180 },
+            { "model": "silver_concrete", "y": 90, "x": 270 },
+            { "model": "silver_concrete", "y": 180 },
+            { "model": "silver_concrete", "y": 180, "x": 90 },
+            { "model": "silver_concrete", "y": 180, "x": 180 },
+            { "model": "silver_concrete", "y": 180, "x": 270 },
+            { "model": "silver_concrete", "y": 270 },
+            { "model": "silver_concrete", "y": 270, "x": 90 },
+            { "model": "silver_concrete", "y": 270, "x": 180 },
+            { "model": "silver_concrete", "y": 270, "x": 270 }
+        ]
+    }
+}

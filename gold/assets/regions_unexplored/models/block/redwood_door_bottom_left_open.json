@@ -1,0 +1,61 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "regions_unexplored:block/redwood_door_bottom",
+		"bottom": "regions_unexplored:block/redwood_door_bottom",
+		"side": "regions_unexplored:block/redwood_door_side"
+	},
+	"elements": [
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 12],
+			"to": [3, 16, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 8, 8]},
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 4, 16], "texture": "#bottom"},
+				"south": {"uv": [3, 0, 0, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [4, 0, 0, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 0, 9, 4], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 4],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 8, 8]},
+			"faces": {
+				"north": {"uv": [6, 0, 9, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [12, 0, 16, 16], "texture": "#bottom"},
+				"south": {"uv": [15, 0, 12, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 12, 16], "texture": "#bottom", "cullface": "west"},
+				"down": {"uv": [6, 12, 9, 16], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottom",
+			"from": [0, 0, 4],
+			"to": [3, 4, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 8, 8]},
+			"faces": {
+				"east": {"uv": [4, 12, 12, 16], "texture": "#bottom"},
+				"west": {"uv": [12, 12, 4, 16], "texture": "#bottom", "cullface": "west"},
+				"up": {"uv": [12, 4, 15, 12], "rotation": 180, "texture": "#side"},
+				"down": {"uv": [6, 4, 9, 12], "texture": "#side", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Glass",
+			"from": [1, 4, 4],
+			"to": [2, 16, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [1.5, 8, 8]},
+			"faces": {
+				"east": {"uv": [4, 0, 12, 12], "texture": "#bottom"},
+				"west": {"uv": [12, 0, 4, 12], "texture": "#bottom", "cullface": "west"}
+			}
+		}
+	]
+}

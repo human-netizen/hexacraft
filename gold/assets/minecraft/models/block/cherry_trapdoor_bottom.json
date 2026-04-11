@@ -1,0 +1,102 @@
+{
+	"credit": "Model generated using MrCrayfish's Model Creator (http://mrcrayfish.com/modelcreator/)",
+	"parent": "block/thin_block",
+	"textures": {
+		"0": "block/cherry_trapdoor",
+		"particle": "block/cherry_trapdoor"
+	},
+	"elements": [
+		{
+			"name": "West",
+			"from": [0, 0, 4],
+			"to": [4, 3, 12],
+			"faces": {
+				"east": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"west": {"uv": [4, 0, 12, 3], "texture": "#0"},
+				"up": {"uv": [0, 4, 4, 12], "texture": "#0"},
+				"down": {"uv": [0, 4, 4, 12], "texture": "#0"}
+			}
+		},
+		{
+			"name": "East",
+			"from": [12, 0, 4],
+			"to": [16, 3, 12],
+			"faces": {
+				"east": {"uv": [4, 0, 12, 3], "texture": "#0"},
+				"west": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"up": {"uv": [12, 4, 16, 12], "texture": "#0"},
+				"down": {"uv": [12, 4, 16, 12], "texture": "#0"}
+			}
+		},
+		{
+			"name": "North",
+			"from": [0, 0, 0],
+			"to": [16, 3, 4],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 3], "texture": "#0"},
+				"east": {"uv": [13, 0, 16, 3], "texture": "#0"},
+				"south": {"uv": [0, 4, 16, 1], "texture": "#0"},
+				"west": {"uv": [0, 0, 3, 3], "texture": "#0"},
+				"up": {"uv": [0, 16, 16, 12], "texture": "#0"},
+				"down": {"uv": [0, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "South",
+			"from": [0, 0, 12],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 4, 16, 1], "texture": "#0"},
+				"east": {"uv": [0, 0, 3, 3], "texture": "#0"},
+				"south": {"uv": [0, 0, 16, 3], "texture": "#0"},
+				"west": {"uv": [13, 0, 16, 3], "texture": "#0"},
+				"up": {"uv": [0, 4, 16, 0], "texture": "#0"},
+				"down": {"uv": [0, 0, 16, 4], "texture": "#0"}
+			}
+		},
+		{
+			"name": "NS Bar_0",
+			"from": [9, 0, 4],
+			"to": [10, 3, 12],
+			"faces": {
+				"east": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"west": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"up": {"uv": [6, 12, 7, 4], "texture": "#0"},
+				"down": {"uv": [6, 4, 7, 12], "texture": "#0"}
+			}
+		},
+		{
+			"name": "NS Bar_1",
+			"from": [6, 0, 4],
+			"to": [7, 3, 12],
+			"faces": {
+				"east": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"west": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"up": {"uv": [9, 12, 10, 4], "texture": "#0"},
+				"down": {"uv": [9, 4, 10, 12], "texture": "#0"}
+			}
+		},
+		{
+			"name": "WE Bar_0",
+			"from": [4, 0.001, 9],
+			"to": [12, 2.999, 10],
+			"faces": {
+				"north": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"south": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"up": {"uv": [12, 6, 4, 7], "texture": "#0"},
+				"down": {"uv": [4, 6, 12, 7], "texture": "#0"}
+			}
+		},
+		{
+			"name": "WE Bar_1",
+			"from": [4, -0.001, 6],
+			"to": [12, 2.997, 7],
+			"faces": {
+				"north": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"south": {"uv": [4, 4, 12, 1], "texture": "#0"},
+				"up": {"uv": [12, 9, 4, 10], "texture": "#0"},
+				"down": {"uv": [4, 9, 12, 10], "texture": "#0"}
+			}
+		}
+	]
+}

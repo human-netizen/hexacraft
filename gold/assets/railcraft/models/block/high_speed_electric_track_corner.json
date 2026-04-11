@@ -1,0 +1,10 @@
+{
+  "parent": "railcraft:block/electric_track_corner",
+  "render_type": "minecraft:cutout",
+  "textures": {
+	"rail": "railcraft:block/high_speed_electric_track_corner",
+	"center": "railcraft:block/high_speed_electric_track",
+	"railbed": "railcraft:item/stone_railbed",
+	"particle": "railcraft:block/high_speed_electric_track_corner"
+  }
+}

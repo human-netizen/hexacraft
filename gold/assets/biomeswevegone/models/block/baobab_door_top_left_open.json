@@ -1,0 +1,81 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "biomeswevegone:block/baobab/door_top",
+		"top": "biomeswevegone:block/baobab/door_top",
+		"side": "biomeswevegone:block/baobab/door_side"
+	},
+	"elements": [
+		{
+			"name": "Top",
+			"from": [0, 12, 3],
+			"to": [3, 16, 13],
+			"faces": {
+				"east": {"uv": [0, 0, 10, 4], "texture": "#top"},
+				"west": {"uv": [10, 0, 0, 4], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 3, 15, 13], "rotation": 180, "texture": "#side", "cullface": "up"},
+				"down": {"uv": [9, 3, 12, 13], "rotation": 180, "texture": "#side"}
+			}
+		},
+		{
+			"name": "LeftEnd",
+			"from": [0, 0, 13],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [3, 0, 6, 16], "texture": "#side"},
+				"east": {"uv": [0, 0, 3, 16], "texture": "#top"},
+				"south": {"uv": [9, 0, 12, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [3, 0, 0, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 0, 15, 3], "rotation": 180, "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "RightEnd",
+			"from": [0, 0, 0],
+			"to": [3, 16, 3],
+			"faces": {
+				"north": {"uv": [3, 0, 6, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [13, 0, 16, 16], "texture": "#top"},
+				"south": {"uv": [12, 0, 9, 16], "texture": "#side"},
+				"west": {"uv": [16, 0, 13, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [12, 13, 15, 16], "rotation": 180, "texture": "#side", "cullface": "up"}
+			}
+		},
+		{
+			"name": "Bar1",
+			"from": [1, 0, 10],
+			"to": [2, 12, 12],
+			"faces": {
+				"north": {"uv": [5, 4, 6, 16], "texture": "#top"},
+				"east": {"uv": [4, 4, 6, 16], "texture": "#top"},
+				"south": {"uv": [5, 4, 4, 16], "texture": "#top"},
+				"west": {"uv": [6, 4, 4, 16], "texture": "#top", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Bar2",
+			"from": [1, 0, 7],
+			"to": [2, 12, 9],
+			"faces": {
+				"north": {"uv": [8, 4, 9, 16], "texture": "#top"},
+				"east": {"uv": [7, 4, 9, 16], "texture": "#top"},
+				"south": {"uv": [8, 4, 7, 16], "texture": "#top"},
+				"west": {"uv": [9, 4, 7, 16], "texture": "#top", "cullface": "west"}
+			}
+		},
+		{
+			"name": "Bar3",
+			"from": [1, 0, 4],
+			"to": [2, 12, 6],
+			"faces": {
+				"north": {"uv": [11, 4, 12, 16], "texture": "#top"},
+				"east": {"uv": [10, 4, 12, 16], "texture": "#top"},
+				"south": {"uv": [11, 4, 10, 16], "texture": "#top"},
+				"west": {"uv": [12, 4, 10, 16], "texture": "#top", "cullface": "west"}
+			}
+		}
+	]
+}

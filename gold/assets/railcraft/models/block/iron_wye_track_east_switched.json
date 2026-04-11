@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/wye_track_east_switched",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/iron_wye_track_east_switched"
+  }
+}

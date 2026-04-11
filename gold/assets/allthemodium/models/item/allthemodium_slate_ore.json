@@ -1,0 +1,6 @@
+{
+  "parent": "allthemodium:block/allthemodium_slate_ore",
+  "textures": {
+    "all": "allthemodium:block/allthemodium_slate_ore"
+  }
+}

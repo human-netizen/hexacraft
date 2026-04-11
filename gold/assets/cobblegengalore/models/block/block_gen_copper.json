@@ -1,0 +1,9 @@
+{
+  "parent": "cobblegengalore:block/template_block_gen",
+  "textures": {
+    "0": "cobblegengalore:block/copper_side",
+    "1": "cobblegengalore:block/copper_top",
+    "2": "cobblegengalore:block/copper_bottom",
+    "particle": "cobblegengalore:block/copper_side"
+  }
+}

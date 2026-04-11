@@ -1,0 +1,8 @@
+{
+	"parent": "minecraft:block/acacia_trapdoor_top",
+	"textures": {
+		"0": "chipped:block/cherry_trapdoor/airy_cherry_trapdoor",
+		"texture": "chipped:block/cherry_trapdoor/airy_cherry_trapdoor",		
+		"particle": "chipped:block/cherry_trapdoor/airy_cherry_trapdoor"
+	}
+}

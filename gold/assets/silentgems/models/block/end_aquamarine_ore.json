@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/aquamarine_ore",
+  "textures": {
+    "0": "silentgems:block/end_aquamarine_ore",
+    "particle": "silentgems:block/end_aquamarine_ore"
+  }
+}

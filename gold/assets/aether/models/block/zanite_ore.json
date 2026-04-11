@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/iron_ore",
+  "textures": {
+    "0": "aether:block/natural/zanite_ore",
+    "particle": "aether:block/natural/zanite_ore"
+  }
+}

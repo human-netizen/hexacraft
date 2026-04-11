@@ -1,0 +1,8 @@
+{
+	"parent": "minecraft:block/jungle_trapdoor_bottom",
+	"textures": {
+		"0": "chipped:block/oak_trapdoor/fancy_oak_trapdoor",
+		"texture": "chipped:block/oak_trapdoor/fancy_oak_trapdoor",		
+		"particle": "chipped:block/oak_trapdoor/fancy_oak_trapdoor"
+	}
+}

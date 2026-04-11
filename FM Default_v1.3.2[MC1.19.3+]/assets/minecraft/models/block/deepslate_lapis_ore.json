@@ -1,0 +1,7 @@
+{
+	"parent": "block/lapis_ore",
+    "textures": {
+		"particle": "block/deepslate_lapis_ore",
+        "0": "block/deepslate_lapis_ore"
+    }
+}

@@ -1,0 +1,86 @@
+{
+  "entity.player.hurt": {
+	"replace": true,
+	"subtitle": "subtitles.entity.player.hurt",
+    "sounds": [
+	{
+      "name": "entity/player/hurt/hurt1",
+	  "pitch": 0.95
+	},
+	{
+      "name": "entity/player/hurt/hurt1",
+	  "pitch": 1
+	},
+	{
+      "name": "entity/player/hurt/hurt1",
+	  "pitch": 1.05
+	},
+	{
+      "name": "entity/player/hurt/hurt2",
+	  "pitch": 0.95
+	},
+	{
+      "name": "entity/player/hurt/hurt2",
+	  "pitch": 1.0
+	},
+	{
+      "name": "entity/player/hurt/hurt2",
+	  "pitch": 1.05
+	},
+	{
+      "name": "entity/player/hurt/hurt3",
+	  "pitch": 0.95
+	},
+	{
+      "name": "entity/player/hurt/hurt3",
+	  "pitch": 1.0
+	},
+	{
+      "name": "entity/player/hurt/hurt3",
+	  "pitch": 1.05
+	}
+	]
+  },
+  "entity.player.death": {
+	"replace": true,
+	"subtitle": "subtitles.entity.player.death",
+    "sounds": [
+	{
+      "name": "entity/player/hurt/hurt1",
+	  "pitch": 0.95
+	},
+	{
+      "name": "entity/player/hurt/hurt1",
+	  "pitch": 1
+	},
+	{
+      "name": "entity/player/hurt/hurt1",
+	  "pitch": 1.05
+	},
+	{
+      "name": "entity/player/hurt/hurt2",
+	  "pitch": 0.95
+	},
+	{
+      "name": "entity/player/hurt/hurt2",
+	  "pitch": 1.0
+	},
+	{
+      "name": "entity/player/hurt/hurt2",
+	  "pitch": 1.05
+	},
+	{
+      "name": "entity/player/hurt/hurt3",
+	  "pitch": 0.95
+	},
+	{
+      "name": "entity/player/hurt/hurt3",
+	  "pitch": 1.0
+	},
+	{
+      "name": "entity/player/hurt/hurt3",
+	  "pitch": 1.05
+	}
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:models/item/sign",
+	    "textures": {
+        "0": "block/flowering_azalea_sign"
+    }
+}

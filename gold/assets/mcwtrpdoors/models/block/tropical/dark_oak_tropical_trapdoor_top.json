@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/acacia_trapdoor_top",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/tropical/dark_oak_tropical_trapdoor",
+        "0": "mcwtrpdoors:block/tropical/dark_oak_tropical_trapdoor"
+    }
+}

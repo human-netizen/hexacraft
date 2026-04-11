@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/stable_head/stable_head_door_top_right",
+	"textures": {
+		"top": "mcwdoors:block/stable_head/acacia_stable_head_door_lower",
+		"side": "mcwdoors:block/acacia_barn_door_lower",
+		"particle": "mcwdoors:block/acacia_barn_door_lower"
+	}
+}

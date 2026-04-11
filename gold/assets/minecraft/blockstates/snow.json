@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "normal": [
+            { "model": "snow" },
+            { "model": "snow", "x": 180 },
+            { "model": "snow", "y": 180 },
+            { "model": "snow", "y": 180, "x": 180 }
+        ]
+    }
+}

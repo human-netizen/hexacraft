@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/template_flat_sided_door_bottom_left_open",
+	"textures": {
+		"bottom": "chipped:block/birch_door/fortified_birch_door_bottom",
+		"side": "chipped:block/birch_door/chipped_birch_door_side",
+		"particle": "chipped:block/birch_door/fortified_birch_door_bottom"
+	}
+}

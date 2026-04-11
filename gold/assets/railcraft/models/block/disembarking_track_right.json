@@ -1,0 +1,171 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "railcraft:block/disembarking_track_right",
+		"rail": "railcraft:block/disembarking_track_right"
+	},
+	"elements": [
+		{
+			"name": "Gold Railing L",
+			"from": [3.999, 0.001, 0],
+			"to": [5.001, 1.001, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [4, 0, 5, 1], "texture": "#rail", "cullface": "north"},
+				"east": {"uv": [4, 0, 5, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [4, 15, 5, 16], "texture": "#rail", "cullface": "south"},
+				"west": {"uv": [4, 0, 5, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [4, 0, 5, 16], "texture": "#rail"},
+				"down": {"uv": [4, 0, 5, 16], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Gold Railing R",
+			"from": [10.999, 0.001, 0],
+			"to": [12.019, 1.001, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [11, 0, 12, 1], "texture": "#rail", "cullface": "north"},
+				"east": {"uv": [11, 0, 12, 16], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [11, 15, 12, 16], "texture": "#rail", "cullface": "south"},
+				"west": {"uv": [11, 0, 12, 16], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [11, 0, 12, 16], "texture": "#rail"},
+				"down": {"uv": [11, 0, 12, 16], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Pow 1",
+			"from": [5, 0.001, 0.999],
+			"to": [6.001, 1.001, 3.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [5, 1, 6, 2], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [5, 1, 6, 3], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 2, 6, 3], "texture": "#rail"},
+				"west": {"uv": [5, 1, 6, 3], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 1, 6, 3], "texture": "#rail"},
+				"down": {"uv": [5, 3, 6, 1], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Pow 2",
+			"from": [9.999, 0.001, 0.999],
+			"to": [11, 1.001, 3.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [10, 1, 11, 2], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 1, 11, 3], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [10, 2, 11, 3], "texture": "#rail"},
+				"west": {"uv": [10, 1, 11, 3], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [10, 1, 11, 3], "texture": "#rail"},
+				"down": {"uv": [10, 3, 11, 1], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Pow 3",
+			"from": [5, 0.001, 12.999],
+			"to": [6.001, 1.001, 15.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [5, 13, 6, 14], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [5, 13, 6, 15], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 14, 6, 15], "texture": "#rail"},
+				"west": {"uv": [5, 13, 6, 15], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 13, 6, 15], "texture": "#rail"},
+				"down": {"uv": [5, 15, 6, 13], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Pow 4",
+			"from": [9.999, 0.001, 12.999],
+			"to": [11, 1.001, 15.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [10, 1, 11, 2], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 1, 11, 3], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [10, 2, 11, 3], "texture": "#rail"},
+				"west": {"uv": [10, 1, 11, 3], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [10, 1, 11, 3], "texture": "#rail"},
+				"down": {"uv": [10, 3, 11, 1], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "b1",
+			"from": [6.999, 0.001, 3.999],
+			"to": [9.001, 1.001, 4.999],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [7, 4, 9, 5], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [8, 4, 9, 5], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [7, 4, 9, 5], "texture": "#rail"},
+				"west": {"uv": [7, 4, 8, 5], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [7, 4, 9, 5], "texture": "#rail"},
+				"down": {"uv": [7, 5, 9, 4], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "b2",
+			"from": [5.999, 0.002, 4.999],
+			"to": [10.001, 1.002, 11.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [6, 5, 10, 6], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 5, 10, 11], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 10, 10, 11], "texture": "#rail"},
+				"west": {"uv": [6, 5, 7, 11], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 5, 10, 11], "texture": "#rail"},
+				"down": {"uv": [6, 11, 10, 5], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "b3",
+			"from": [5, 0.001, 5.999],
+			"to": [11, 1.001, 10.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [5, 6, 11, 7], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 6, 11, 10], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 9, 11, 10], "texture": "#rail"},
+				"west": {"uv": [5, 6, 6, 10], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 6, 11, 10], "texture": "#rail"},
+				"down": {"uv": [5, 10, 11, 6], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "b4",
+			"from": [6.999, 0.001, 11.001],
+			"to": [9.001, 1.001, 12.001],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 16]},
+			"faces": {
+				"north": {"uv": [7, 11, 9, 12], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [8, 11, 9, 12], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [7, 11, 9, 12], "texture": "#rail"},
+				"west": {"uv": [7, 11, 8, 12], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [7, 11, 9, 12], "texture": "#rail"},
+				"down": {"uv": [7, 12, 9, 11], "texture": "#rail", "cullface": "down"}
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "Railing",
+			"origin": [8, 1, 16],
+			"color": 0,
+			"children": [0, 1]
+		},
+		{
+			"name": "CornerPow",
+			"origin": [8, 1, 16],
+			"color": 0,
+			"children": [2, 3, 4, 5]
+		},
+		{
+			"name": "CenterPlate",
+			"origin": [8, 1, 16],
+			"color": 0,
+			"children": [6, 7, 8, 9]
+		}
+	]
+}

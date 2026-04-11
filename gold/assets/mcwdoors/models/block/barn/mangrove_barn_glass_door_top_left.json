@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/barn/barn_glass_door_top_left",
+	"textures": {
+		"top": "mcwdoors:block/mangrove_barn_glass_door_upper",
+		"side": "mcwdoors:block/mangrove_barn_door_lower",
+		"particle": "mcwdoors:block/mangrove_barn_door_lower"
+	}
+}

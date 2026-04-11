@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/door_bottom_right",
+	"textures": {
+		"bottom": "mcwdoors:block/acacia_beach_door_lower",
+		"top": "mcwdoors:block/acacia_beach_door_upper",
+		"particle": "mcwdoors:block/acacia_beach_door_lower"		
+	}
+}

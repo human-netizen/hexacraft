@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/activator_rail_raised_ne",
+  "textures": {
+		"0": "block/activator_rail_on",
+		"particle": "block/activator_rail_on"
+  }
+}

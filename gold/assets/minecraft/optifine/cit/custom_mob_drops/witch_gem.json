@@ -1,0 +1,13 @@
+{
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "item/witch_gem"
+    },
+	"display": {
+        "head": {
+            "rotation": [ 0, 180, 0 ],
+            "translation": [ 0, 13, 0],
+            "scale":[ 1, 1, 1]
+        }
+    }
+}

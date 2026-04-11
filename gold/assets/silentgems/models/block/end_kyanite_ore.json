@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/kyanite_ore",
+  "textures": {
+    "0": "silentgems:block/end_kyanite_ore",
+    "particle": "silentgems:block/end_kyanite_ore"
+  }
+}

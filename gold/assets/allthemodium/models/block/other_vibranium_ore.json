@@ -1,0 +1,7 @@
+{
+	"parent": "allthemodium:block/vibranium_ore",
+    "textures": {
+		"0": "allthemodium:block/other_vibranium_ore",
+		"particle": "allthemodium:block/other_vibranium_ore"
+    }
+}

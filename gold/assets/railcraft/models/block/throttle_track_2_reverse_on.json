@@ -1,0 +1,7 @@
+{
+  "parent": "railcraft:block/template_throttle_track",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "rail": "railcraft:block/throttle_track_2_reverse_on"
+  }
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "chipped:block/template_metal_barred_trapdoor_open",
+	"textures": {
+		"texture": "chipped:block/oak_trapdoor/iron_barred_oak_trapdoor",		
+		"side": "chipped:block/oak_trapdoor/pointless_oak_trapdoor_side"
+	}
+}

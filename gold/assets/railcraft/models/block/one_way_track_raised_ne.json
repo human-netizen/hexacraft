@@ -1,0 +1,137 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "railcraft:block/one_way_track",
+		"rail": "railcraft:block/one_way_track"
+	},
+	"elements": [
+		{
+			"name": "Arrow_1",
+			"from": [6.999, -0.208, -0.5],
+			"to": [9.001, 0.5, 0.499],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [7, 0, 9, 1], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [8, 0, 9, 1], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [7, 0, 9, 1], "texture": "#rail"},
+				"west": {"uv": [7, 0, 8, 1], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [7, 0, 9, 1], "texture": "#rail"},
+				"down": {"uv": [7, 1, 9, 0], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Arrow_2",
+			"from": [5.999, -0.208, 0.499],
+			"to": [10.001, 0.5, 1.499],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [6, 1, 10, 2], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 1, 10, 2], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 1, 10, 2], "texture": "#rail"},
+				"west": {"uv": [6, 1, 7, 2], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 1, 10, 2], "texture": "#rail"},
+				"down": {"uv": [6, 2, 10, 1], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Arrow_3",
+			"from": [4.999, -0.208, 1.499],
+			"to": [11.001, 0.5, 6.501],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [5, 2, 11, 3], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 2, 11, 7], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 6, 11, 7], "texture": "#rail"},
+				"west": {"uv": [5, 2, 6, 7], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 2, 11, 7], "texture": "#rail"},
+				"down": {"uv": [5, 7, 11, 2], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Arrow_4",
+			"from": [3.999, -0.208, 2.499],
+			"to": [4.999, 0.5, 4.501],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [4, 3, 5, 4], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [4, 3, 5, 5], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [4, 4, 5, 5], "texture": "#rail"},
+				"west": {"uv": [4, 3, 5, 5], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [4, 3, 5, 5], "texture": "#rail"},
+				"down": {"uv": [4, 5, 5, 3], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Arrow_5",
+			"from": [11.001, -0.208, 2.499],
+			"to": [12.001, 0.5, 4.501],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [11, 3, 12, 4], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [11, 3, 12, 5], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [11, 4, 12, 5], "texture": "#rail"},
+				"west": {"uv": [11, 3, 12, 5], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [11, 3, 12, 5], "texture": "#rail"},
+				"down": {"uv": [11, 5, 12, 3], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Transistor_1",
+			"from": [5.999, -0.208, 7.499],
+			"to": [10.001, 0.5, 8.499],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [6, 8, 10, 9], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 8, 10, 9], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 8, 10, 9], "texture": "#rail"},
+				"west": {"uv": [6, 8, 7, 9], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 8, 10, 9], "texture": "#rail"},
+				"down": {"uv": [6, 9, 10, 8], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Transistor_2",
+			"from": [4.999, -0.208, 8.499],
+			"to": [11.001, 0.5, 9.501],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [5, 9, 11, 10], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [10, 9, 11, 10], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [5, 9, 11, 10], "texture": "#rail"},
+				"west": {"uv": [5, 9, 6, 10], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [5, 9, 11, 10], "texture": "#rail"},
+				"down": {"uv": [5, 10, 11, 9], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Transistor_3",
+			"from": [5.999, -0.208, 9.5],
+			"to": [7.001, 0.5, 13.501],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [6, 10, 7, 11], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [6, 10, 7, 14], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [6, 13, 7, 14], "texture": "#rail"},
+				"west": {"uv": [6, 10, 7, 14], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [6, 10, 7, 14], "texture": "#rail"},
+				"down": {"uv": [6, 14, 7, 10], "texture": "#rail", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Transistor_4",
+			"from": [8.999, -0.208, 9.5],
+			"to": [10.001, 0.5, 13.501],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8, 0, 16], "rescale": true},
+			"faces": {
+				"north": {"uv": [9, 10, 10, 11], "rotation": 180, "texture": "#rail"},
+				"east": {"uv": [9, 10, 10, 14], "rotation": 90, "texture": "#rail"},
+				"south": {"uv": [9, 13, 10, 14], "texture": "#rail"},
+				"west": {"uv": [9, 10, 10, 14], "rotation": 270, "texture": "#rail"},
+				"up": {"uv": [9, 10, 10, 14], "texture": "#rail"},
+				"down": {"uv": [9, 14, 10, 10], "texture": "#rail", "cullface": "down"}
+			}
+		}
+	]
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "chipped:block/template_classic_windowed_trapdoor_top",
+	"textures": {
+		"texture": "chipped:block/oak_trapdoor/classic_windowed_oak_trapdoor",
+		"side": "chipped:block/oak_trapdoor/classic_oak_trapdoor_side"
+	}
+}

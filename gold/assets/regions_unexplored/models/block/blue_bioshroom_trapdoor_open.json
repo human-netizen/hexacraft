@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:block/template_flat_sided_trapdoor_open",
+	"textures": {
+		"texture": "regions_unexplored:block/blue_bioshroom_trapdoor",		
+		"side": "regions_unexplored:block/blue_bioshroom_trapdoor_side"
+	}
+}

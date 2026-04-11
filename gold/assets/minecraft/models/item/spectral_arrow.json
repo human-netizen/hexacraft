@@ -1,0 +1,6 @@
+{
+    "parent": "item/arrow",
+    "textures": {
+        "layer0": "items/spectral_arrow"
+    }
+}

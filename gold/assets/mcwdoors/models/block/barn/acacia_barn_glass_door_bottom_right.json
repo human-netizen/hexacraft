@@ -1,0 +1,8 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "mcwdoors:block/barn/barn_glass_door_bottom_right",
+	"textures": {
+		"bottom": "mcwdoors:block/acacia_barn_door_lower",
+		"particle": "mcwdoors:block/acacia_barn_door_lower"
+	}
+}

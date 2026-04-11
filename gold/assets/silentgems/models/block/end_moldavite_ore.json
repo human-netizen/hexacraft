@@ -1,0 +1,7 @@
+{
+  "parent": "silentgems:block/moldavite_ore",
+  "textures": {
+    "0": "silentgems:block/end_moldavite_ore",
+    "particle": "silentgems:block/end_moldavite_ore"
+  }
+}

@@ -1,0 +1,9 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:block/oak_trapdoor_open",
+	"render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "mcwtrpdoors:block/classic/birch_classic_trapdoor",
+        "0": "mcwtrpdoors:block/classic/birch_classic_trapdoor"
+    }
+}

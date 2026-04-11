@@ -1,0 +1,58 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"particle": "mcwdoors:block/metal_warning_door_upper",
+		"top": "mcwdoors:block/metal_warning_door_upper"
+	},
+	"elements": [
+		{
+			"name": "Frame_Top",
+			"from": [0, 13, 6],
+			"to": [3, 16, 10],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, -3]},
+			"faces": {
+				"east": {"uv": [10, 0, 6, 3], "texture": "#top"},
+				"west": {"uv": [6, 0, 10, 3], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [6, 3, 10, 0], "rotation": 90, "texture": "#top", "cullface": "up"},
+				"down": {"uv": [6, 3, 10, 0], "rotation": 270, "texture": "#top"}
+			}
+		},
+		{
+			"name": "Frame_Left",
+			"from": [0, 0, 0],
+			"to": [3, 16, 6],
+			"faces": {
+				"north": {"uv": [3, 0, 0, 16], "texture": "#top", "cullface": "north"},
+				"east": {"uv": [6, 0, 0, 16], "texture": "#top"},
+				"south": {"uv": [6, 0, 3, 16], "texture": "#top"},
+				"west": {"uv": [0, 0, 6, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [0, 3, 6, 0], "rotation": 90, "texture": "#top", "cullface": "up"}
+			}
+		},
+		{
+			"name": "Frame_Right",
+			"from": [0, 0, 10],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [13, 0, 10, 16], "texture": "#top"},
+				"east": {"uv": [16, 0, 10, 16], "texture": "#top"},
+				"south": {"uv": [0, 0, 3, 16], "texture": "#top", "cullface": "south"},
+				"west": {"uv": [10, 0, 16, 16], "texture": "#top", "cullface": "west"},
+				"up": {"uv": [10, 3, 16, 0], "rotation": 90, "texture": "#top", "cullface": "up"}
+			}
+		},
+		{
+			"name": "Glass",
+			"from": [1, 0, 6],
+			"to": [2, 13, 10],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 3, 3]},
+			"faces": {
+				"east": {"uv": [10, 3, 6, 16], "texture": "#top"},
+				"west": {"uv": [6, 3, 10, 16], "texture": "#top", "cullface": "west"}
+			}
+		}
+	]
+}
