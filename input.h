@@ -122,6 +122,9 @@ void placeBlock() {
     int bt = playerInventory[hotbarSlot].type;
     if (bt == BLOCK_AIR || playerInventory[hotbarSlot].count <= 0) return;
 
+    // Items (tools etc.) can't be placed in the world
+    if (getBlockProps(bt).isItem) return;
+
     setBlock(placeCol, placeRow, placeHeight, bt);
     playerInventory[hotbarSlot].count--;
     if (playerInventory[hotbarSlot].count <= 0) playerInventory[hotbarSlot].type = BLOCK_AIR;
@@ -1401,6 +1404,14 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         if (hasTarget) {
             int tbt = getBlock(targetCol, targetRow, targetHeight);
             BlockProperties tprops = getBlockProps(tbt);
+            if (tbt == BLOCK_CRAFTING_TABLE) {
+                // Open crafting/inventory UI
+                inventoryOpen = true;
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                printf("[Block] Opened crafting table at (%d,%d,%d)\n",
+                       targetCol, targetRow, targetHeight);
+                return;
+            }
             if (tprops.isInteractive) {
                 // Toggle open/closed (bit 2 of state)
                 uint16_t state = getBlockState(targetCol, targetRow, targetHeight);

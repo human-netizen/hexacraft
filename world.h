@@ -227,6 +227,22 @@ glm::vec3 getBlockColor(int type) {
         case BLOCK_SIGN: return glm::vec3(0.6f, 0.45f, 0.25f);
         case BLOCK_BANNER: return glm::vec3(0.9f, 0.9f, 0.9f);
 
+        // Tools
+        case ITEM_STICK:           return glm::vec3(0.6f, 0.4f, 0.15f);
+        case ITEM_SWORD_WOOD:      case ITEM_AXE_WOOD:
+        case ITEM_PICKAXE_WOOD:    case ITEM_SHOVEL_WOOD:
+            return glm::vec3(0.65f, 0.45f, 0.2f);
+        case ITEM_SWORD_STONE:     case ITEM_AXE_STONE:
+        case ITEM_PICKAXE_STONE:   case ITEM_SHOVEL_STONE:
+            return glm::vec3(0.55f, 0.55f, 0.55f);
+        case ITEM_SWORD_IRON:      case ITEM_AXE_IRON:
+        case ITEM_PICKAXE_IRON:    case ITEM_SHOVEL_IRON:
+            return glm::vec3(0.8f, 0.8f, 0.85f);
+        case ITEM_SWORD_DIAMOND:   case ITEM_AXE_DIAMOND:
+        case ITEM_PICKAXE_DIAMOND: case ITEM_SHOVEL_DIAMOND:
+            return glm::vec3(0.3f, 0.85f, 0.9f);
+        case ITEM_BOW:             return glm::vec3(0.55f, 0.38f, 0.15f);
+
         default: return glm::vec3(1, 0, 1); // magenta = error
     }
 }
@@ -1600,6 +1616,27 @@ GLuint getBlockTexture(int type) {
         case BLOCK_ORE_DIAMOND:   return texDiamondOre;
         case BLOCK_ORE_GOLD:      return texGoldOre;
         // All wool, carpets, terracotta, concrete — use color only (no FM texture)
+
+        // Tool item sprites
+        case ITEM_STICK:           return texItemStick;
+        case ITEM_SWORD_WOOD:      return texItemSwordWood;
+        case ITEM_AXE_WOOD:        return texItemAxeWood;
+        case ITEM_PICKAXE_WOOD:    return texItemPickaxeWood;
+        case ITEM_SHOVEL_WOOD:     return texItemShovelWood;
+        case ITEM_SWORD_STONE:     return texItemSwordStone;
+        case ITEM_AXE_STONE:       return texItemAxeStone;
+        case ITEM_PICKAXE_STONE:   return texItemPickaxeStone;
+        case ITEM_SHOVEL_STONE:    return texItemShovelStone;
+        case ITEM_SWORD_IRON:      return texItemSwordIron;
+        case ITEM_AXE_IRON:        return texItemAxeIron;
+        case ITEM_PICKAXE_IRON:    return texItemPickaxeIron;
+        case ITEM_SHOVEL_IRON:     return texItemShovelIron;
+        case ITEM_SWORD_DIAMOND:   return texItemSwordDiamond;
+        case ITEM_AXE_DIAMOND:     return texItemAxeDiamond;
+        case ITEM_PICKAXE_DIAMOND: return texItemPickaxeDiamond;
+        case ITEM_SHOVEL_DIAMOND:  return texItemShovelDiamond;
+        case ITEM_BOW:             return texItemBow;
+
         default: return 0;
     }
 }
@@ -1709,8 +1746,25 @@ void renderTerrain(float time = 0.0f) {
                     drawHex(p + glm::vec3(0, -HEX_HEIGHT * 0.47f, 0), col3,
                             glm::vec3(1.0f, 0.06f, 1.0f));
                 } else if (props.shape == SHAPE_FENCE) {
-                    // Thin vertical post
-                    drawHex(p, col3, glm::vec3(0.3f, 1.0f, 0.3f));
+                    if (props.isInteractive) {
+                        // Fence gate: two side posts + crossbar panel that swings open
+                        float baseAngle = facing * PI / 2.0f;
+                        float postW = HEX_RADIUS * 0.25f;
+                        // Left post
+                        glm::vec3 side(cosf(baseAngle), 0, -sinf(baseAngle));
+                        drawHex(p + side * (HEX_RADIUS * 0.7f), col3, glm::vec3(postW / HEX_RADIUS, 1.0f, postW / HEX_RADIUS));
+                        // Right post
+                        drawHex(p - side * (HEX_RADIUS * 0.7f), col3, glm::vec3(postW / HEX_RADIUS, 1.0f, postW / HEX_RADIUS));
+                        // Crossbar: closes straight across, opens by rotating 90 deg at one post
+                        float barAngle = baseAngle + (isOpen ? PI / 2.0f : 0.0f);
+                        glm::vec3 barOrig = isOpen ? (p + side * (HEX_RADIUS * 0.7f)) : p;
+                        glm::mat4 mb = glm::translate(glm::mat4(1.0f), barOrig);
+                        mb = myRotate(mb, barAngle, glm::vec3(0, 1, 0));
+                        drawPanel(mb, col3 * 0.85f, HEX_RADIUS * 1.4f, HEX_HEIGHT * 0.55f);
+                    } else {
+                        // Regular fence: thin post
+                        drawHex(p, col3, glm::vec3(0.3f, 1.0f, 0.3f));
+                    }
                 } else if (props.shape == SHAPE_SMALL_HEX) {
                     drawHexEmissive(p, col3);
                 } else if (props.shape == SHAPE_DOOR) {

@@ -80,11 +80,15 @@ void main()
         objColor = texColor * objectColor;
     }
 
-    // HUD objects draw exactly their color/texture with no lighting or fog.
-    // textureMode > 0: use objColor (has texture applied).
-    // textureMode == 0: use per-vertex color — isometric face shading is baked there.
+    // HUD objects: no lighting, no fog.
+    // textureMode 0 : solid — use per-vertex color (face shading baked in)
+    // textureMode 1 : sprite — texture only (door item icons, etc.)
+    // textureMode 2 : textured iso face — texture * per-vertex tint (light/dark faces)
     if (isHUD) {
-        vec3 hudColor = (textureMode == 0) ? vertexColor : objColor;
+        vec3 hudColor;
+        if (textureMode == 0)      hudColor = vertexColor;
+        else if (textureMode == 1) hudColor = texture(texture1, TexCoord).rgb;
+        else                       hudColor = texture(texture1, TexCoord).rgb * vertexColor;
         FragColor = vec4(hudColor, alpha);
         return;
     }

@@ -97,7 +97,23 @@ enum BlockType {
     // Decorative
     BLOCK_LANTERN, BLOCK_TORCH_BLOCK, BLOCK_SIGN, BLOCK_BANNER,
 
-    BLOCK_COUNT
+    BLOCK_COUNT,
+
+    // ---- Items (non-placeable) ----
+    ITEM_STICK = BLOCK_COUNT,
+
+    // Wood tools
+    ITEM_SWORD_WOOD, ITEM_AXE_WOOD, ITEM_PICKAXE_WOOD, ITEM_SHOVEL_WOOD,
+    // Stone tools
+    ITEM_SWORD_STONE, ITEM_AXE_STONE, ITEM_PICKAXE_STONE, ITEM_SHOVEL_STONE,
+    // Iron tools
+    ITEM_SWORD_IRON, ITEM_AXE_IRON, ITEM_PICKAXE_IRON, ITEM_SHOVEL_IRON,
+    // Diamond tools
+    ITEM_SWORD_DIAMOND, ITEM_AXE_DIAMOND, ITEM_PICKAXE_DIAMOND, ITEM_SHOVEL_DIAMOND,
+    // Ranged
+    ITEM_BOW,
+
+    ITEM_COUNT
 };
 
 // Underground depth: all terrain raised by this many blocks to create minable underground
@@ -138,74 +154,84 @@ struct BlockProperties {
     bool isTransparent;  // needs alpha blending
     bool isEmissive;     // glows
     bool isClimbable;    // ladders
+    bool isItem;         // non-placeable inventory item (tools, etc.)
 };
 
 BlockProperties getBlockProps(int type) {
-    //                          shape            solid  interact transp emiss  climb
+    //                          shape            solid  interact transp emiss  climb  item
     switch (type) {
         // Slabs
         case BLOCK_SLAB_STONE:
         case BLOCK_SLAB_WOOD:
         case BLOCK_SLAB_SANDSTONE:
         case BLOCK_SLAB_BRICK:
-            return {SHAPE_SLAB,      true,  false, false, false, false};
+            return {SHAPE_SLAB,      true,  false, false, false, false, false};
 
         // Stairs
         case BLOCK_STAIRS_STONE:
         case BLOCK_STAIRS_WOOD:
-            return {SHAPE_STAIR,     true,  false, false, false, false};
+            return {SHAPE_STAIR,     true,  false, false, false, false, false};
 
         // Carpets
         case BLOCK_CARPET_WHITE:
         case BLOCK_CARPET_RED:
         case BLOCK_CARPET_BLUE:
-            return {SHAPE_CARPET,    false, false, false, false, false};
+            return {SHAPE_CARPET,    false, false, false, false, false, false};
 
         // Thin blocks
         case BLOCK_GLASS_PANE:
-            return {SHAPE_PANE,      false, false, true,  false, false};
+            return {SHAPE_PANE,      false, false, true,  false, false, false};
         case BLOCK_IRON_BARS:
-            return {SHAPE_PANE,      false, false, false, false, false};
+            return {SHAPE_PANE,      false, false, false, false, false, false};
         case BLOCK_FENCE_WOOD:
-            return {SHAPE_FENCE,     true,  false, false, false, false};
+            return {SHAPE_FENCE,     true,  false, false, false, false, false};
 
         // Interactive
         case BLOCK_DOOR_OAK:
         case BLOCK_DOOR_IRON:
-            return {SHAPE_DOOR,      true,  true,  false, false, false};
+            return {SHAPE_DOOR,      true,  true,  false, false, false, false};
         case BLOCK_TRAPDOOR_OAK:
-            return {SHAPE_TRAPDOOR,  true,  true,  false, false, false};
+            return {SHAPE_TRAPDOOR,  true,  true,  false, false, false, false};
         case BLOCK_FENCE_GATE:
-            return {SHAPE_FENCE,     true,  true,  false, false, false};
+            return {SHAPE_FENCE,     true,  true,  false, false, false, false};
         case BLOCK_LADDER:
-            return {SHAPE_FLAT_PANEL,false, false, false, false, true};
+            return {SHAPE_FLAT_PANEL,false, false, false, false, true,  false};
 
         // Decorative
         case BLOCK_LANTERN:
-            return {SHAPE_SMALL_HEX, false, false, false, true,  false};
+            return {SHAPE_SMALL_HEX, false, false, false, true,  false, false};
         case BLOCK_TORCH_BLOCK:
-            return {SHAPE_SMALL_HEX, false, false, false, true,  false};
+            return {SHAPE_SMALL_HEX, false, false, false, true,  false, false};
         case BLOCK_SIGN:
-            return {SHAPE_FLAT_PANEL,false, false, false, false, false};
+            return {SHAPE_FLAT_PANEL,false, false, false, false, false, false};
         case BLOCK_BANNER:
-            return {SHAPE_FLAT_PANEL,false, false, false, false, false};
+            return {SHAPE_FLAT_PANEL,false, false, false, false, false, false};
 
         // Existing transparent blocks
         case BLOCK_GLASS:
-            return {SHAPE_FULL_HEX,  true,  false, true,  false, false};
+            return {SHAPE_FULL_HEX,  true,  false, true,  false, false, false};
         case BLOCK_WATER:
-            return {SHAPE_FULL_HEX,  false, false, true,  false, false};
+            return {SHAPE_FULL_HEX,  false, false, true,  false, false, false};
         case BLOCK_ICE:
-            return {SHAPE_FULL_HEX,  true,  false, true,  false, false};
+            return {SHAPE_FULL_HEX,  true,  false, true,  false, false, false};
         case BLOCK_GLOWSTONE:
-            return {SHAPE_FULL_HEX,  true,  false, false, true,  false};
+            return {SHAPE_FULL_HEX,  true,  false, false, true,  false, false};
         case BLOCK_ORE_DIAMOND:
         case BLOCK_ORE_GOLD:
-            return {SHAPE_FULL_HEX,  true,  false, false, true,  false};
+            return {SHAPE_FULL_HEX,  true,  false, false, true,  false, false};
+
+        // Tools & items (non-placeable)
+        case ITEM_STICK:
+        case ITEM_SWORD_WOOD:  case ITEM_AXE_WOOD:  case ITEM_PICKAXE_WOOD:  case ITEM_SHOVEL_WOOD:
+        case ITEM_SWORD_STONE: case ITEM_AXE_STONE: case ITEM_PICKAXE_STONE: case ITEM_SHOVEL_STONE:
+        case ITEM_SWORD_IRON:  case ITEM_AXE_IRON:  case ITEM_PICKAXE_IRON:  case ITEM_SHOVEL_IRON:
+        case ITEM_SWORD_DIAMOND: case ITEM_AXE_DIAMOND: case ITEM_PICKAXE_DIAMOND: case ITEM_SHOVEL_DIAMOND:
+        case ITEM_BOW:
+            return {SHAPE_FULL_HEX,  false, false, false, false, false, true};
 
         // Default: solid full hex
         default:
-            return {SHAPE_FULL_HEX,  true,  false, false, false, false};
+            return {SHAPE_FULL_HEX,  true,  false, false, false, false, false};
     }
 }
 
@@ -376,7 +402,44 @@ const CraftingRecipe recipes[] = {
     {{0,0,0, BLOCK_WOOL_GREEN,BLOCK_WOOL_WHITE,0, 0,0,0}, BLOCK_WOOL_LIME, 1},
 
     // Banner (wool top 2 rows + wood stick)
-    {{BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE, BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE, 0,BLOCK_WOOD,0}, BLOCK_BANNER, 1}
+    {{BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE, BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE,BLOCK_WOOL_WHITE, 0,BLOCK_WOOD,0}, BLOCK_BANNER, 1},
+
+    // ---- TOOL RECIPES ----
+    // S = ITEM_STICK, material tiers: planks / stone / iron / diamond
+
+    // Stick (2 planks vertical = 4 sticks)
+    {{0,BLOCK_PLANKS,0, 0,BLOCK_PLANKS,0, 0,0,0}, ITEM_STICK, 4},
+
+    // --- Wood tools ---
+    // Sword: 2 planks + 1 stick (col)
+    {{0,BLOCK_PLANKS,0, 0,BLOCK_PLANKS,0, 0,ITEM_STICK,0}, ITEM_SWORD_WOOD, 1},
+    // Axe: 2x2 planks top-left + 2 sticks
+    {{BLOCK_PLANKS,BLOCK_PLANKS,0, BLOCK_PLANKS,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_AXE_WOOD, 1},
+    // Pickaxe: 3 planks top + 2 sticks
+    {{BLOCK_PLANKS,BLOCK_PLANKS,BLOCK_PLANKS, 0,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_PICKAXE_WOOD, 1},
+    // Shovel: 1 plank + 2 sticks
+    {{0,BLOCK_PLANKS,0, 0,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_SHOVEL_WOOD, 1},
+
+    // --- Stone tools ---
+    {{0,BLOCK_COBBLESTONE,0, 0,BLOCK_COBBLESTONE,0, 0,ITEM_STICK,0}, ITEM_SWORD_STONE, 1},
+    {{BLOCK_COBBLESTONE,BLOCK_COBBLESTONE,0, BLOCK_COBBLESTONE,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_AXE_STONE, 1},
+    {{BLOCK_COBBLESTONE,BLOCK_COBBLESTONE,BLOCK_COBBLESTONE, 0,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_PICKAXE_STONE, 1},
+    {{0,BLOCK_COBBLESTONE,0, 0,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_SHOVEL_STONE, 1},
+
+    // --- Iron tools ---
+    {{0,BLOCK_IRON_BLOCK,0, 0,BLOCK_IRON_BLOCK,0, 0,ITEM_STICK,0}, ITEM_SWORD_IRON, 1},
+    {{BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK,0, BLOCK_IRON_BLOCK,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_AXE_IRON, 1},
+    {{BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK,BLOCK_IRON_BLOCK, 0,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_PICKAXE_IRON, 1},
+    {{0,BLOCK_IRON_BLOCK,0, 0,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_SHOVEL_IRON, 1},
+
+    // --- Diamond tools ---
+    {{0,BLOCK_ORE_DIAMOND,0, 0,BLOCK_ORE_DIAMOND,0, 0,ITEM_STICK,0}, ITEM_SWORD_DIAMOND, 1},
+    {{BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,0, BLOCK_ORE_DIAMOND,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_AXE_DIAMOND, 1},
+    {{BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND, 0,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_PICKAXE_DIAMOND, 1},
+    {{0,BLOCK_ORE_DIAMOND,0, 0,ITEM_STICK,0, 0,ITEM_STICK,0}, ITEM_SHOVEL_DIAMOND, 1},
+
+    // --- Bow (3 sticks + string proxy: wool) ---
+    {{0,ITEM_STICK,BLOCK_WOOL_WHITE, ITEM_STICK,0,BLOCK_WOOL_WHITE, 0,ITEM_STICK,BLOCK_WOOL_WHITE}, ITEM_BOW, 1}
 };
 const int NUM_RECIPES = sizeof(recipes) / sizeof(recipes[0]);
 
@@ -502,37 +565,132 @@ const char* getBlockName(int type) {
         case BLOCK_TORCH_BLOCK:      return "torch";
         case BLOCK_SIGN:             return "sign";
         case BLOCK_BANNER:           return "banner";
+        // Tools
+        case ITEM_STICK:             return "stick";
+        case ITEM_SWORD_WOOD:        return "wooden sword";
+        case ITEM_AXE_WOOD:          return "wooden axe";
+        case ITEM_PICKAXE_WOOD:      return "wooden pickaxe";
+        case ITEM_SHOVEL_WOOD:       return "wooden shovel";
+        case ITEM_SWORD_STONE:       return "stone sword";
+        case ITEM_AXE_STONE:         return "stone axe";
+        case ITEM_PICKAXE_STONE:     return "stone pickaxe";
+        case ITEM_SHOVEL_STONE:      return "stone shovel";
+        case ITEM_SWORD_IRON:        return "iron sword";
+        case ITEM_AXE_IRON:          return "iron axe";
+        case ITEM_PICKAXE_IRON:      return "iron pickaxe";
+        case ITEM_SHOVEL_IRON:       return "iron shovel";
+        case ITEM_SWORD_DIAMOND:     return "diamond sword";
+        case ITEM_AXE_DIAMOND:       return "diamond axe";
+        case ITEM_PICKAXE_DIAMOND:   return "diamond pickaxe";
+        case ITEM_SHOVEL_DIAMOND:    return "diamond shovel";
+        case ITEM_BOW:               return "bow";
         default:                     return "unknown";
     }
 }
 
+// Add crafted items directly to player inventory (no grid needed)
+bool addToInventory(int type, int count) {
+    // Try to stack onto existing slot first
+    for(int j=0; j<36; j++) {
+        if(playerInventory[j].type == type && playerInventory[j].count + count <= 64) {
+            playerInventory[j].count += count;
+            return true;
+        }
+    }
+    // Then find an empty slot
+    for(int j=0; j<36; j++) {
+        if(playerInventory[j].type == BLOCK_AIR) {
+            playerInventory[j].type = type;
+            playerInventory[j].count = count;
+            return true;
+        }
+    }
+    return false; // inventory full
+}
+
+// Auto-craft an intermediate ingredient directly into inventory (no grid).
+// Returns true if the player ends up with at least `needed` of `itemType`.
+bool autoCraftIngredient(int itemType, int needed) {
+    auto countInInventory = [&](int t) {
+        int n = 0;
+        for(int i=0; i<36; i++) if(playerInventory[i].type == t) n += playerInventory[i].count;
+        return n;
+    };
+
+    if(countInInventory(itemType) >= needed) return true;
+
+    // Find a recipe that produces itemType
+    for(int r=0; r<NUM_RECIPES; r++) {
+        if(recipes[r].resultType != itemType) continue;
+
+        while(countInInventory(itemType) < needed) {
+            // Check if we have all ingredients for this recipe
+            int req[256] = {0};
+            for(int i=0; i<9; i++) {
+                int t = recipes[r].pattern[i];
+                if(t != BLOCK_AIR) req[t]++;
+            }
+            bool canCraft = true;
+            for(int i=0; i<256; i++) {
+                if(req[i] == 0) continue;
+                if(countInInventory(i) < req[i]) { canCraft = false; break; }
+            }
+            if(!canCraft) break;
+
+            // Consume ingredients
+            for(int i=0; i<9; i++) {
+                int t = recipes[r].pattern[i];
+                if(t == BLOCK_AIR) continue;
+                for(int j=0; j<36; j++) {
+                    if(playerInventory[j].type == t && playerInventory[j].count > 0) {
+                        playerInventory[j].count--;
+                        if(playerInventory[j].count == 0) playerInventory[j].type = BLOCK_AIR;
+                        break;
+                    }
+                }
+            }
+            addToInventory(recipes[r].resultType, recipes[r].resultCount);
+            printf("[Craft] Auto-crafted intermediate: %s\n", getBlockName(recipes[r].resultType));
+        }
+        return countInInventory(itemType) >= needed;
+    }
+    return false;
+}
+
 void autoCraftRecipe(int recipeIndex) {
     if (recipeIndex < 0 || recipeIndex >= NUM_RECIPES) return;
-    
+
     // We only auto-fill if the crafting grid is completely empty
     for(int i=0; i<9; i++) {
         if(craftingGrid[i].type != BLOCK_AIR) return;
     }
-    
+
+    // Count required ingredients
     int required[256] = {0};
     for(int i=0; i<9; i++) {
         int t = recipes[recipeIndex].pattern[i];
         if(t != BLOCK_AIR) required[t]++;
     }
-    
+
+    // Auto-craft any missing intermediate ingredients (e.g. sticks from planks)
+    for(int i=1; i<256; i++) {
+        if(required[i] > 0) autoCraftIngredient(i, required[i]);
+    }
+
+    // Now check if we have everything
     int available[256] = {0};
     for(int i=0; i<36; i++) {
         int t = playerInventory[i].type;
         if(t != BLOCK_AIR) available[t] += playerInventory[i].count;
     }
-    
     for(int i=0; i<256; i++) {
         if(required[i] > available[i]) {
-            printf("[Craft] Cannot auto-craft, missing materials.\n");
+            printf("[Craft] Cannot auto-craft recipe %d: missing %s\n",
+                   recipeIndex, getBlockName(i));
             return;
         }
     }
-    
+
     // Take from inventory and place exactly 1 of each required item in grid
     for(int i=0; i<9; i++) {
         int t = recipes[recipeIndex].pattern[i];
@@ -701,6 +859,14 @@ GLuint texIronBars = 0, texGlassFM = 0, texGlassPaneTop = 0;
 GLuint texLadder = 0;
 GLuint texIronDoorBot = 0, texIronDoorTop = 0;
 GLuint texItemOakDoor = 0, texItemIronDoor = 0;  // item sprites for inventory icons
+
+// Tool item sprites (FM Default pack)
+GLuint texItemStick = 0;
+GLuint texItemSwordWood = 0, texItemAxeWood = 0, texItemPickaxeWood = 0, texItemShovelWood = 0;
+GLuint texItemSwordStone = 0, texItemAxeStone = 0, texItemPickaxeStone = 0, texItemShovelStone = 0;
+GLuint texItemSwordIron = 0, texItemAxeIron = 0, texItemPickaxeIron = 0, texItemShovelIron = 0;
+GLuint texItemSwordDiamond = 0, texItemAxeDiamond = 0, texItemPickaxeDiamond = 0, texItemShovelDiamond = 0;
+GLuint texItemBow = 0;
 GLuint texTorchBlock = 0, texSeaLantern = 0;
 GLuint texCraftingTop = 0, texCraftingFront = 0;
 GLuint texBedrock = 0, texCoalOre = 0, texDiamondOre = 0, texGoldOre = 0;

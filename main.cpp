@@ -163,6 +163,25 @@ int main() {
     #define FM_ITEM(f) "FM Default_v1.3.2[MC1.19.3+]/assets/minecraft/textures/item/" f
     texItemOakDoor      = loadTexture(FM_ITEM("oak_door.png"));
     texItemIronDoor     = loadTexture(FM_ITEM("iron_door.png"));
+    // Tool sprites
+    texItemStick           = loadTexture(FM_ITEM("stick.png"));
+    texItemSwordWood       = loadTexture(FM_ITEM("wooden_sword.png"));
+    texItemAxeWood         = loadTexture(FM_ITEM("wooden_axe.png"));
+    texItemPickaxeWood     = loadTexture(FM_ITEM("wooden_pickaxe.png"));
+    texItemShovelWood      = loadTexture(FM_ITEM("wooden_shovel.png"));
+    texItemSwordStone      = loadTexture(FM_ITEM("stone_sword.png"));
+    texItemAxeStone        = loadTexture(FM_ITEM("stone_axe.png"));
+    texItemPickaxeStone    = loadTexture(FM_ITEM("stone_pickaxe.png"));
+    texItemShovelStone     = loadTexture(FM_ITEM("stone_shovel.png"));
+    texItemSwordIron       = loadTexture(FM_ITEM("iron_sword.png"));
+    texItemAxeIron         = loadTexture(FM_ITEM("iron_axe.png"));
+    texItemPickaxeIron     = loadTexture(FM_ITEM("iron_pickaxe.png"));
+    texItemShovelIron      = loadTexture(FM_ITEM("iron_shovel.png"));
+    texItemSwordDiamond    = loadTexture(FM_ITEM("diamond_sword.png"));
+    texItemAxeDiamond      = loadTexture(FM_ITEM("diamond_axe.png"));
+    texItemPickaxeDiamond  = loadTexture(FM_ITEM("diamond_pickaxe.png"));
+    texItemShovelDiamond   = loadTexture(FM_ITEM("diamond_shovel.png"));
+    texItemBow             = loadTexture(FM_ITEM("bow.png"));
     texTorchBlock       = loadTexture(FM_BLOCK("torch.png"));
     texSeaLantern       = loadTexture(FM_BLOCK("sea_lantern.png"));
     texCraftingTop      = loadTexture(FM_BLOCK("crafting_table_top.png"));

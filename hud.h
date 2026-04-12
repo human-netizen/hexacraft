@@ -65,84 +65,164 @@ void pushQuad(std::vector<float>& verts, float x1, float y1, float x2, float y2,
     pushQuadUV(verts, x1, y1, x2, y2, col, 0,0,0,0);
 }
 
-// Helper: push an arbitrary 4-point polygon (2 triangles, CCW: a→b→c→d) — for isometric faces
-void pushPoly4(std::vector<float>& v, float ax, float ay, float bx, float by,
-               float cx, float cy, float dx, float dy, glm::vec3 col) {
-    auto pv = [&](float px, float py, float u, float vv) {
-        v.push_back(px); v.push_back(py); v.push_back(0);
-        v.push_back(0);  v.push_back(0);  v.push_back(1);
-        v.push_back(col.r); v.push_back(col.g); v.push_back(col.b);
-        v.push_back(u); v.push_back(vv);
-    };
-    pv(ax,ay,0,0); pv(bx,by,1,0); pv(cx,cy,1,1);   // tri 1
-    pv(ax,ay,0,0); pv(cx,cy,1,1); pv(dx,dy,0,1);   // tri 2
+// Draw a block icon as a flat sprite — textured if tex!=0, else solid color.
+// Adds a dark right+bottom shadow strip to give a subtle 2.5D feel.
+// x1,y1 = bottom-left corner, x2,y2 = top-right corner of the icon area.
+void drawFlatIcon(std::vector<float>& v, GLuint tex, float x1, float y1, float x2, float y2,
+                  glm::vec3 col) {
+    if (tex) {
+        pushQuadUV(v, x1, y1, x2, y2, glm::vec3(1.0f), 0, 0, 1, 1);
+    } else {
+        // Solid color with a lighter top-left and darker bottom-right strip (fake 2.5D)
+        float s = (x2-x1) * 0.1f; // shadow strip width
+        pushQuad(v, x1,   y1,   x2,   y2,   col);                          // main face
+        pushQuad(v, x2-s, y1,   x2,   y2,   col * 0.55f);                  // right shadow
+        pushQuad(v, x1,   y1,   x2,   y1+s, col * 0.55f);                  // bottom shadow
+        pushQuad(v, x1,   y2-s, x2,   y2,   glm::min(col*1.3f,glm::vec3(1))); // top highlight
+    }
 }
 
-// Draw a Minecraft-style isometric block icon into the HUD vertex buffer.
-// ox,oy = bottom-left of drawing area, b = size in pixels.
-// sideH = fraction of b used by side faces (rest is top face).
-// Faces: top (lightest), left (mid), right (darkest) — matching MC shading.
-void pushIsoBlock(std::vector<float>& v, float ox, float oy, float b,
-                  glm::vec3 col, float sideHFrac = 0.62f) {
-    float sh  = b * sideHFrac;          // side face height
-    float hw  = b * 0.5f;               // half width
-    float lean = b * 0.22f;             // top-face parallelogram lean
+// =====================================================
+// Minimal 5x7 bitmap font — column-major, bit0=top
+// 95 printable ASCII chars starting at index 0 = 0x20 (space).
+// Each char: 5 bytes, one per column, 7 bits per byte (bit 0 = topmost row).
+// =====================================================
+static const uint8_t FONT5x7[95][5] = {
+    {0x00,0x00,0x00,0x00,0x00}, // 0x20 space
+    {0x00,0x00,0x5F,0x00,0x00}, // !
+    {0x00,0x07,0x00,0x07,0x00}, // "
+    {0x14,0x7F,0x14,0x7F,0x14}, // #
+    {0x24,0x2A,0x7F,0x2A,0x12}, // $
+    {0x23,0x13,0x08,0x64,0x62}, // %
+    {0x36,0x49,0x55,0x22,0x50}, // &
+    {0x00,0x05,0x03,0x00,0x00}, // '
+    {0x00,0x1C,0x22,0x41,0x00}, // (
+    {0x00,0x41,0x22,0x1C,0x00}, // )
+    {0x08,0x2A,0x1C,0x2A,0x08}, // *
+    {0x08,0x08,0x3E,0x08,0x08}, // +
+    {0x00,0x50,0x30,0x00,0x00}, // ,
+    {0x08,0x08,0x08,0x08,0x08}, // -
+    {0x00,0x60,0x60,0x00,0x00}, // .
+    {0x20,0x10,0x08,0x04,0x02}, // /
+    {0x3E,0x51,0x49,0x45,0x3E}, // 0
+    {0x00,0x42,0x7F,0x40,0x00}, // 1
+    {0x42,0x61,0x51,0x49,0x46}, // 2
+    {0x21,0x41,0x45,0x4B,0x31}, // 3
+    {0x18,0x14,0x12,0x7F,0x10}, // 4
+    {0x27,0x45,0x45,0x45,0x39}, // 5
+    {0x3C,0x4A,0x49,0x49,0x30}, // 6
+    {0x01,0x71,0x09,0x05,0x03}, // 7
+    {0x36,0x49,0x49,0x49,0x36}, // 8
+    {0x06,0x49,0x49,0x29,0x1E}, // 9
+    {0x00,0x36,0x36,0x00,0x00}, // :
+    {0x00,0x56,0x36,0x00,0x00}, // ;
+    {0x08,0x14,0x22,0x41,0x00}, // <
+    {0x14,0x14,0x14,0x14,0x14}, // =
+    {0x00,0x41,0x22,0x14,0x08}, // >
+    {0x02,0x01,0x51,0x09,0x06}, // ?
+    {0x32,0x49,0x79,0x41,0x3E}, // @
+    {0x7E,0x11,0x11,0x11,0x7E}, // A
+    {0x7F,0x49,0x49,0x49,0x36}, // B
+    {0x3E,0x41,0x41,0x41,0x22}, // C
+    {0x7F,0x41,0x41,0x22,0x1C}, // D
+    {0x7F,0x49,0x49,0x49,0x41}, // E
+    {0x7F,0x09,0x09,0x09,0x01}, // F
+    {0x3E,0x41,0x49,0x49,0x7A}, // G
+    {0x7F,0x08,0x08,0x08,0x7F}, // H
+    {0x00,0x41,0x7F,0x41,0x00}, // I
+    {0x20,0x40,0x41,0x3F,0x01}, // J
+    {0x7F,0x08,0x14,0x22,0x41}, // K
+    {0x7F,0x40,0x40,0x40,0x40}, // L
+    {0x7F,0x02,0x04,0x02,0x7F}, // M
+    {0x7F,0x04,0x08,0x10,0x7F}, // N
+    {0x3E,0x41,0x41,0x41,0x3E}, // O
+    {0x7F,0x09,0x09,0x09,0x06}, // P
+    {0x3E,0x41,0x51,0x21,0x5E}, // Q
+    {0x7F,0x09,0x19,0x29,0x46}, // R
+    {0x46,0x49,0x49,0x49,0x31}, // S
+    {0x01,0x01,0x7F,0x01,0x01}, // T
+    {0x3F,0x40,0x40,0x40,0x3F}, // U
+    {0x1F,0x20,0x40,0x20,0x1F}, // V
+    {0x3F,0x40,0x38,0x40,0x3F}, // W
+    {0x63,0x14,0x08,0x14,0x63}, // X
+    {0x07,0x08,0x70,0x08,0x07}, // Y
+    {0x61,0x51,0x49,0x45,0x43}, // Z
+    {0x00,0x7F,0x41,0x41,0x00}, // [
+    {0x02,0x04,0x08,0x10,0x20}, // backslash
+    {0x00,0x41,0x41,0x7F,0x00}, // ]
+    {0x04,0x02,0x01,0x02,0x04}, // ^
+    {0x40,0x40,0x40,0x40,0x40}, // _
+    {0x00,0x01,0x02,0x04,0x00}, // `
+    {0x20,0x54,0x54,0x54,0x78}, // a
+    {0x7F,0x48,0x44,0x44,0x38}, // b
+    {0x38,0x44,0x44,0x44,0x20}, // c
+    {0x38,0x44,0x44,0x48,0x7F}, // d
+    {0x38,0x54,0x54,0x54,0x18}, // e
+    {0x08,0x7E,0x09,0x01,0x02}, // f
+    {0x08,0x54,0x54,0x54,0x3C}, // g
+    {0x7F,0x08,0x04,0x04,0x78}, // h
+    {0x00,0x44,0x7D,0x40,0x00}, // i
+    {0x20,0x40,0x44,0x3D,0x00}, // j
+    {0x00,0x7F,0x10,0x28,0x44}, // k
+    {0x00,0x41,0x7F,0x40,0x00}, // l
+    {0x7C,0x04,0x18,0x04,0x78}, // m
+    {0x7C,0x08,0x04,0x04,0x78}, // n
+    {0x38,0x44,0x44,0x44,0x38}, // o
+    {0x7C,0x14,0x14,0x14,0x08}, // p
+    {0x08,0x14,0x14,0x18,0x7C}, // q
+    {0x7C,0x08,0x04,0x04,0x08}, // r
+    {0x48,0x54,0x54,0x54,0x20}, // s
+    {0x04,0x3F,0x44,0x40,0x20}, // t
+    {0x3C,0x40,0x40,0x20,0x7C}, // u
+    {0x1C,0x20,0x40,0x20,0x1C}, // v
+    {0x3C,0x40,0x30,0x40,0x3C}, // w
+    {0x44,0x28,0x10,0x28,0x44}, // x
+    {0x0C,0x50,0x50,0x50,0x3C}, // y
+    {0x44,0x64,0x54,0x4C,0x44}, // z
+    {0x00,0x08,0x36,0x41,0x00}, // {
+    {0x00,0x00,0x7F,0x00,0x00}, // |
+    {0x00,0x41,0x36,0x08,0x00}, // }
+    {0x08,0x04,0x08,0x10,0x08}, // ~
+};
 
-    glm::vec3 top   = glm::min(col * 1.30f, glm::vec3(1.0f)); // lighter
-    glm::vec3 left  = col;                                      // base
-    glm::vec3 right = col * 0.68f;                              // shadow
-
-    // Left face  (ox, oy) → (ox+hw, oy) → (ox+hw, oy+sh) → (ox, oy+sh)
-    pushQuad(v, ox,    oy,    ox+hw, oy+sh, left);
-    // Right face (ox+hw, oy) → (ox+b, oy) → (ox+b, oy+sh) → (ox+hw, oy+sh)
-    pushQuad(v, ox+hw, oy,    ox+b,  oy+sh, right);
-    // Top face — parallelogram: BL, BR, TR, TL
-    pushPoly4(v,
-        ox,          oy+sh,          // BL
-        ox+b,        oy+sh,          // BR
-        ox+b-lean,   oy+b,           // TR
-        ox+lean,     oy+b,           // TL
-        top);
+// Draw a string into a HUD vertex buffer at (x, y = bottom-left).
+// pixH = total character height in screen pixels.
+float hudDrawString(std::vector<float>& v, const char* str, float x, float y,
+                    float pixH, glm::vec3 color) {
+    if (!str) return 0.0f;
+    float pxH = pixH / 7.0f;               // height of one pixel row
+    float pxW = pxH;                        // square pixels
+    float charAdv = pxW * 6.0f;            // 5 cols + 1 gap
+    float cx = x;
+    for (const char* p = str; *p; ++p) {
+        unsigned char c = (unsigned char)*p;
+        if (c < 0x20 || c > 0x7E) { cx += charAdv; continue; }
+        const uint8_t* glyph = FONT5x7[c - 0x20];
+        for (int col = 0; col < 5; col++) {
+            uint8_t bits = glyph[col];
+            for (int row = 0; row < 7; row++) {
+                if (bits & (1 << row)) {
+                    float px = cx + col * pxW;
+                    float py = y  + (6 - row) * pxH; // bit0=top, but y=0 is bottom in GL
+                    pushQuad(v, px, py, px + pxW, py + pxH, color);
+                }
+            }
+        }
+        cx += charAdv;
+    }
+    return cx - x;
 }
 
-// Draw isometric block icon using an actual texture on all 3 faces.
-// Draws 3 separate GL calls: left face, right face, top face — each tinted differently.
-// Must be called with hudVAO/VBO bound. Resets textureMode to 0 when done.
-void drawIsoBlockTex(GLuint tex, float ox, float oy, float b, glm::vec3 tint,
-                     float sideHFrac = 0.62f) {
-    float sh   = b * sideHFrac;
-    float hw   = b * 0.5f;
-    float lean = b * 0.22f;
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    setInt(shaderProgram, "textureMode", 2);   // texture * vertex color (tint)
-
-    std::vector<float> v;
-    // Left face — normal brightness
-    pushQuadUV(v, ox, oy, ox+hw, oy+sh, tint, 0,0,0.5f,1);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, v.size()*sizeof(float), v.data());
-    glDrawArrays(GL_TRIANGLES, 0, (int)v.size()/11);
-
-    v.clear();
-    // Right face — dark (shadow side)
-    glm::vec3 dark = tint * 0.62f;
-    pushQuadUV(v, ox+hw, oy, ox+b, oy+sh, dark, 0.5f,0,1,1);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, v.size()*sizeof(float), v.data());
-    glDrawArrays(GL_TRIANGLES, 0, (int)v.size()/11);
-
-    v.clear();
-    // Top face — light (parallelogram, UV mapped to full texture)
-    glm::vec3 lite = glm::min(tint * 1.25f, glm::vec3(1.0f));
-    pushPoly4(v,
-        ox,        oy+sh,       ox+b,      oy+sh,
-        ox+b-lean, oy+b,        ox+lean,   oy+b,  lite);
-    // set proper UV on the top poly vertices (overwrite u,v bytes — simpler to re-push)
-    // poly4 already has UV 0,0 / 1,0 / 1,1 / 0,1 baked in from the updated pushPoly4
-    glBufferSubData(GL_ARRAY_BUFFER, 0, v.size()*sizeof(float), v.data());
-    glDrawArrays(GL_TRIANGLES, 0, (int)v.size()/11);
-
-    setInt(shaderProgram, "textureMode", 0);
+// Measure string width without drawing
+float hudMeasureString(const char* str, float pixH) {
+    if (!str) return 0.0f;
+    float pxH = pixH / 7.0f;
+    float charAdv = pxH * 6.0f;
+    float w = 0.0f;
+    for (const char* p = str; *p; ++p) {
+        if ((unsigned char)*p >= 0x20) w += charAdv;
+    }
+    return w;
 }
 
 void renderHUD(int screenW, int screenH) {
@@ -245,112 +325,119 @@ void renderHUD(int screenW, int screenH) {
         if (bType == BLOCK_AIR) return;
         std::vector<float> iv;
         float pad  = 5.0f;
-        float b    = slotSize - pad * 2.0f;   // 30px drawing area
-        float ox   = sx + pad;
-        float oy   = sy + pad;
+        float pad2 = 4.0f;
+        float b    = slotSize - pad2 * 2.0f;
+        float ox   = sx + pad2, oy = sy + pad2;
         glm::vec3 bc = getBlockColor(bType);
         BlockShape shape = getBlockProps(bType).shape;
         GLuint blockTex = getBlockTexture(bType);
 
-        // Helper: draw iso block, using real texture if available, else solid color
-        auto isoBlock = [&](float _ox, float _oy, float _b, glm::vec3 tint, float shf = 0.62f) {
-            if (blockTex) drawIsoBlockTex(blockTex, _ox, _oy, _b, tint, shf);
-            else          { pushIsoBlock(iv, _ox, _oy, _b, tint, shf); flushDraw(iv); }
+        // Helper: upload iv and draw, then clear
+        auto go = [&]() {
+            if (iv.empty()) return;
+            if (blockTex) {
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, blockTex);
+                setInt(shaderProgram, "textureMode", 1);
+            }
+            glBufferSubData(GL_ARRAY_BUFFER, 0, iv.size()*sizeof(float), iv.data());
+            glDrawArrays(GL_TRIANGLES, 0, (int)iv.size()/11);
+            if (blockTex) setInt(shaderProgram, "textureMode", 0);
+            iv.clear();
         };
 
-        // ---- DOOR: item sprite (tall flat panel) ----
+        // ---- ITEM (tools, sticks, etc.): always flat sprite, full slot ----
+        if (getBlockProps(bType).isItem) {
+            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+b, bc);
+            go();
+            return;
+        }
+
+        // ---- DOOR: tall panel ----
         if (shape == SHAPE_DOOR) {
-            GLuint doorTex = (bType == BLOCK_DOOR_OAK  && texItemOakDoor)  ? texItemOakDoor
-                           : (bType == BLOCK_DOOR_IRON && texItemIronDoor) ? texItemIronDoor : 0;
-            float dw = b * 0.52f, dh = b * 0.96f;
-            float dx = ox + (b - dw) * 0.5f, dy = oy + (b - dh) * 0.5f;
+            GLuint doorTex = (bType==BLOCK_DOOR_OAK  && texItemOakDoor)  ? texItemOakDoor
+                           : (bType==BLOCK_DOOR_IRON && texItemIronDoor) ? texItemIronDoor
+                           : blockTex;
+            float dw = b*0.55f, dh = b*0.98f;
+            float dx = ox+(b-dw)*0.5f, dy = oy+(b-dh)*0.5f;
             if (doorTex) {
                 pushQuadUV(iv, dx, dy, dx+dw, dy+dh, glm::vec3(1.0f), 0,0,1,1);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, iv.size()*sizeof(float), iv.data());
                 glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, doorTex);
-                setInt(shaderProgram, "textureMode", 1);
-                glDrawArrays(GL_TRIANGLES, 0, (int)iv.size()/11);
-                setInt(shaderProgram, "textureMode", 0); iv.clear();
-                return;
+                setInt(shaderProgram,"textureMode",1);
+                glBufferSubData(GL_ARRAY_BUFFER,0,iv.size()*sizeof(float),iv.data());
+                glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
+                setInt(shaderProgram,"textureMode",0); iv.clear();
+            } else {
+                drawFlatIcon(iv, 0, dx, dy, dx+dw, dy+dh, bc); go();
+                glm::vec3 knob(0.9f,0.82f,0.25f);
+                pushQuad(iv, dx+dw*0.72f-2.0f, dy+dh*0.5f-2.0f, dx+dw*0.72f+2.0f, dy+dh*0.5f+2.0f, knob);
+                go();
             }
-            // Fallback procedural door
-            pushQuad(iv, dx, dy, dx+dw, dy+dh, bc);  flushDraw(iv);
-            glm::vec3 fr = bc*0.55f; float ft = 2.0f;
-            pushQuad(iv,dx,dy,dx+dw,dy+ft,fr); pushQuad(iv,dx,dy+dh-ft,dx+dw,dy+dh,fr);
-            pushQuad(iv,dx,dy,dx+ft,dy+dh,fr); pushQuad(iv,dx+dw-ft,dy,dx+dw,dy+dh,fr);
-            pushQuad(iv,dx+dw*0.5f-1.0f,dy+ft,dx+dw*0.5f+1.0f,dy+dh-ft,fr); flushDraw(iv);
-            pushQuad(iv,dx+dw*0.74f-2.0f,dy+dh*0.5f-2.0f,dx+dw*0.74f+2.0f,dy+dh*0.5f+2.0f,glm::vec3(0.9f,0.82f,0.25f));
-            flushDraw(iv); return;
+            return;
         }
 
-        // ---- TRAPDOOR ----
-        if (shape == SHAPE_TRAPDOOR) { isoBlock(ox, oy+b*0.28f, b, bc, 0.20f); return; }
+        // ---- TRAPDOOR: flat wide panel (bottom half of slot) ----
+        if (shape == SHAPE_TRAPDOOR) {
+            float th = b*0.45f;
+            float ty = oy + (b-th)*0.5f;
+            drawFlatIcon(iv, blockTex, ox, ty, ox+b, ty+th, bc); go();
+            return;
+        }
 
-        // ---- SLAB ----
-        if (shape == SHAPE_SLAB)     { isoBlock(ox, oy,         b, bc, 0.32f); return; }
+        // ---- SLAB: bottom half ----
+        if (shape == SHAPE_SLAB) {
+            float sh = b*0.5f;
+            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+sh, bc); go();
+            return;
+        }
 
-        // ---- STAIR ----
+        // ---- STAIR: L-shape (slab bottom + step right half top) ----
         if (shape == SHAPE_STAIR) {
-            isoBlock(ox, oy, b, bc, 0.30f);
-            float hw = b*0.5f, stepBase = oy + b*0.30f*0.62f;
-            isoBlock(ox+hw*0.5f, stepBase, hw, bc*0.92f, 0.55f);
+            float sh = b*0.5f;
+            drawFlatIcon(iv, blockTex, ox,       oy,    ox+b,    oy+sh,  bc);        // bottom
+            drawFlatIcon(iv, blockTex, ox+b*0.5f, oy+sh, ox+b,   oy+b,   bc*0.88f); // top-right step
+            go();
             return;
         }
 
-        // ---- CARPET ----
-        if (shape == SHAPE_CARPET)   { isoBlock(ox, oy, b, bc, 0.10f); return; }
+        // ---- CARPET: thin strip at bottom ----
+        if (shape == SHAPE_CARPET) {
+            float th = b*0.18f;
+            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+th, bc); go();
+            return;
+        }
 
-        // ---- FENCE: post + rails (textured if available) ----
+        // ---- FENCE: post + two rails ----
         if (shape == SHAPE_FENCE) {
-            float cx2 = ox+b*0.5f, pw = b*0.18f;
-            if (blockTex) {
-                glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, blockTex);
-                setInt(shaderProgram, "textureMode", 2);
-                pushQuadUV(iv,cx2-pw*0.5f,oy,cx2+pw*0.5f,oy+b,      bc,  0.4f,0,0.6f,1);
-                pushQuadUV(iv,ox+b*0.08f,oy+b*0.28f,ox+b*0.92f,oy+b*0.28f+pw,bc*0.85f,0,0.4f,1,0.6f);
-                pushQuadUV(iv,ox+b*0.08f,oy+b*0.62f,ox+b*0.92f,oy+b*0.62f+pw,bc*0.85f,0,0.4f,1,0.6f);
-                glBufferSubData(GL_ARRAY_BUFFER,0,iv.size()*sizeof(float),iv.data());
-                glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
-                setInt(shaderProgram,"textureMode",0); iv.clear();
-            } else {
-                pushQuad(iv,cx2-pw*0.5f,oy,cx2+pw*0.5f,oy+b,bc);
-                pushQuad(iv,ox+b*0.08f,oy+b*0.28f,ox+b*0.92f,oy+b*0.28f+pw,bc*0.85f);
-                pushQuad(iv,ox+b*0.08f,oy+b*0.62f,ox+b*0.92f,oy+b*0.62f+pw,bc*0.85f);
-                flushDraw(iv);
-            }
+            float pw = b*0.20f, cx2 = ox+b*0.5f;
+            drawFlatIcon(iv, blockTex, cx2-pw*0.5f, oy,       cx2+pw*0.5f, oy+b,       bc);
+            drawFlatIcon(iv, blockTex, ox+b*0.05f,  oy+b*0.3f, ox+b*0.95f, oy+b*0.3f+pw*0.9f, bc*0.8f);
+            drawFlatIcon(iv, blockTex, ox+b*0.05f,  oy+b*0.62f,ox+b*0.95f, oy+b*0.62f+pw*0.9f,bc*0.8f);
+            go();
             return;
         }
 
-        // ---- PANE / FLAT PANEL ----
+        // ---- PANE / FLAT PANEL: thin cross ----
         if (shape == SHAPE_PANE || shape == SHAPE_FLAT_PANEL) {
-            float pw = b*0.14f, cx2 = ox+b*0.5f;
+            float pw = b*0.15f, cx2 = ox+b*0.5f;
             glm::vec3 pc = getBlockProps(bType).isTransparent
-                ? glm::mix(bc,glm::vec3(0.7f,0.9f,1.0f),0.4f) : bc;
-            if (blockTex) {
-                glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, blockTex);
-                setInt(shaderProgram,"textureMode",2);
-                pushQuadUV(iv,cx2-pw*0.5f,oy+b*0.04f,cx2+pw*0.5f,oy+b*0.96f,pc, 0,0,1,1);
-                pushQuadUV(iv,ox+b*0.04f,oy+b*0.47f,ox+b*0.96f,oy+b*0.53f,pc*0.85f, 0,0,1,1);
-                glBufferSubData(GL_ARRAY_BUFFER,0,iv.size()*sizeof(float),iv.data());
-                glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
-                setInt(shaderProgram,"textureMode",0); iv.clear();
-            } else {
-                pushQuad(iv,cx2-pw*0.5f,oy+b*0.04f,cx2+pw*0.5f,oy+b*0.96f,pc);
-                pushQuad(iv,ox+b*0.04f,oy+b*0.47f,ox+b*0.96f,oy+b*0.53f,pc*0.85f);
-                flushDraw(iv);
-            }
+                ? glm::mix(bc,glm::vec3(0.6f,0.85f,1.0f),0.5f) : bc;
+            drawFlatIcon(iv, blockTex, cx2-pw*0.5f, oy+b*0.05f, cx2+pw*0.5f, oy+b*0.95f, pc);
+            drawFlatIcon(iv, blockTex, ox+b*0.05f, oy+b*0.45f, ox+b*0.95f,  oy+b*0.55f, pc*0.8f);
+            go();
             return;
         }
 
-        // ---- SMALL HEX / EMISSIVE ----
+        // ---- SMALL HEX: small centered square ----
         if (shape == SHAPE_SMALL_HEX) {
-            float sb = b*0.72f;
-            isoBlock(ox+(b-sb)*0.5f, oy+(b-sb)*0.5f, sb, bc, 0.55f);
+            float sb = b*0.7f, off = (b-sb)*0.5f;
+            drawFlatIcon(iv, blockTex, ox+off, oy+off, ox+off+sb, oy+off+sb, bc); go();
             return;
         }
 
-        // ---- DEFAULT: full isometric cube ----
-        isoBlock(ox, oy, b, bc);
+        // ---- DEFAULT: full flat icon ----
+        drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+b, bc);
+        go();
     };
 
     // Helper: draw a slot background
@@ -586,29 +673,43 @@ void renderHUD(int screenW, int screenH) {
             drawRect(sbX,          sbY,          1.5f, sbH,  sbBorder);
             drawRect(sbX+sbW-1.5f, sbY,          1.5f, sbH,  sbBorder);
 
-            // Draw one small colored square per typed character (shows search activity)
-            float dotSize = 7.0f;
-            float dotGap  = 2.0f;
-            float dotStartX = sbX + 4.0f;
-            float dotY = sbY + (sbH - dotSize) * 0.5f;
-            for (int ci = 0; ci < (int)recipeSearchText.size() && ci < 20; ci++) {
-                // Map each character to a hue so different letters look different
-                char ch = recipeSearchText[ci];
-                float hue = (float)((ch - 'a' + 26) % 26) / 26.0f; // 0..1
-                // HSV->RGB simple conversion
-                int hi = (int)(hue * 6.0f);
-                float f = hue * 6.0f - hi;
-                float q = 1.0f - f, t = f;
-                glm::vec3 dotCol;
-                switch (hi % 6) {
-                    case 0: dotCol = glm::vec3(1,t,0); break;
-                    case 1: dotCol = glm::vec3(q,1,0); break;
-                    case 2: dotCol = glm::vec3(0,1,t); break;
-                    case 3: dotCol = glm::vec3(0,q,1); break;
-                    case 4: dotCol = glm::vec3(t,0,1); break;
-                    default:dotCol = glm::vec3(1,0,q); break;
+            // Draw search text using bitmap font
+            if (!recipeSearchText.empty()) {
+                std::vector<float> tv;
+                float tH   = sbH * 0.72f;
+                float tY   = sbY + (sbH - tH) * 0.5f;
+                float tX   = sbX + 5.0f;
+                glm::vec3 textCol = isSearching ? glm::vec3(1.0f, 0.9f, 0.5f) : glm::vec3(0.7f, 0.7f, 0.7f);
+                hudDrawString(tv, recipeSearchText.c_str(), tX, tY, tH, textCol);
+                // upload and draw text quads
+                glBufferSubData(GL_ARRAY_BUFFER, 0, tv.size()*sizeof(float), tv.data());
+                setInt(shaderProgram, "textureMode", 0);
+                glDrawArrays(GL_TRIANGLES, 0, (int)tv.size()/11);
+            } else {
+                // Placeholder hint text when empty
+                std::vector<float> tv;
+                float tH = sbH * 0.60f;
+                float tY = sbY + (sbH - tH) * 0.5f;
+                hudDrawString(tv, "Search...", sbX + 5.0f, tY, tH, glm::vec3(0.4f, 0.4f, 0.4f));
+                glBufferSubData(GL_ARRAY_BUFFER, 0, tv.size()*sizeof(float), tv.data());
+                setInt(shaderProgram, "textureMode", 0);
+                glDrawArrays(GL_TRIANGLES, 0, (int)tv.size()/11);
+            }
+
+            // Blinking cursor at end of text
+            {
+                float tH  = sbH * 0.72f;
+                float tY  = sbY + (sbH - tH) * 0.5f;
+                float tX  = sbX + 5.0f;
+                float curX = tX + hudMeasureString(recipeSearchText.c_str(), tH);
+                float curW = 1.5f, curH = tH;
+                // blink at ~1Hz
+                if (fmod((float)glfwGetTime(), 1.0f) < 0.5f) {
+                    std::vector<float> cv;
+                    pushQuad(cv, curX, tY, curX + curW, tY + curH, glm::vec3(1.0f, 0.9f, 0.5f));
+                    glBufferSubData(GL_ARRAY_BUFFER, 0, cv.size()*sizeof(float), cv.data());
+                    glDrawArrays(GL_TRIANGLES, 0, (int)cv.size()/11);
                 }
-                drawRect(dotStartX + ci * (dotSize + dotGap), dotY, dotSize, dotSize, dotCol);
             }
 
             // Match count indicator: small bar below search box
@@ -661,6 +762,7 @@ void renderHUD(int screenW, int screenH) {
                 float gX = rbX + 18.0f;
                 float gY = rowY + 9.0f;
 
+                // drawMiniItem: same flat-sprite logic scaled to mSlot size
                 auto drawMiniItem = [&](float sx, float sy, int bType) {
                     if (bType == BLOCK_AIR) return;
                     std::vector<float> iv;
@@ -669,86 +771,70 @@ void renderHUD(int screenW, int screenH) {
                     GLuint mTex = getBlockTexture(bType);
                     float b = mSlot;
 
-                    auto mFlush = [&]() {
+                    auto mGo = [&]() {
                         if (iv.empty()) return;
-                        glBufferSubData(GL_ARRAY_BUFFER, 0, iv.size()*sizeof(float), iv.data());
-                        glDrawArrays(GL_TRIANGLES, 0, (int)iv.size()/11);
+                        if (mTex) { glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, mTex); setInt(shaderProgram,"textureMode",1); }
+                        glBufferSubData(GL_ARRAY_BUFFER,0,iv.size()*sizeof(float),iv.data());
+                        glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
+                        if (mTex) setInt(shaderProgram,"textureMode",0);
                         iv.clear();
                     };
-                    auto mIso = [&](float _ox, float _oy, float _b, glm::vec3 t, float shf=0.62f){
-                        if (mTex) drawIsoBlockTex(mTex, _ox, _oy, _b, t, shf);
-                        else { pushIsoBlock(iv, _ox, _oy, _b, t, shf); mFlush(); }
-                    };
+
+                    // Items (tools etc.): full flat sprite
+                    if (getBlockProps(bType).isItem) {
+                        drawFlatIcon(iv, mTex, sx, sy, sx+b, sy+b, bc); mGo(); return;
+                    }
 
                     if (mShape == SHAPE_DOOR) {
                         GLuint doorTex = (bType==BLOCK_DOOR_OAK && texItemOakDoor) ? texItemOakDoor
-                                       : (bType==BLOCK_DOOR_IRON && texItemIronDoor) ? texItemIronDoor : 0;
-                        float dw=b*0.50f, dh=b*0.96f;
-                        float dx=sx+(b-dw)*0.5f, dy=sy+(b-dh)*0.5f;
+                                       : (bType==BLOCK_DOOR_IRON && texItemIronDoor) ? texItemIronDoor
+                                       : mTex;
+                        float dw=b*0.55f, dh=b;
+                        float dx=sx+(b-dw)*0.5f;
                         if (doorTex) {
-                            pushQuadUV(iv,dx,dy,dx+dw,dy+dh,glm::vec3(1.0f),0,0,1,1);
-                            glBufferSubData(GL_ARRAY_BUFFER,0,iv.size()*sizeof(float),iv.data());
-                            glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, doorTex);
+                            pushQuadUV(iv,dx,sy,dx+dw,sy+dh,glm::vec3(1.0f),0,0,1,1);
+                            glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D,doorTex);
                             setInt(shaderProgram,"textureMode",1);
-                            glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
-                            setInt(shaderProgram,"textureMode",0); iv.clear(); return;
-                        }
-                        pushQuad(iv,dx,dy,dx+dw,dy+dh,bc); mFlush();
-                        glm::vec3 fr=bc*0.55f;
-                        pushQuad(iv,dx,dy,dx+dw,dy+1.5f,fr); pushQuad(iv,dx,dy+dh-1.5f,dx+dw,dy+dh,fr);
-                        pushQuad(iv,dx,dy,dx+1.5f,dy+dh,fr); pushQuad(iv,dx+dw-1.5f,dy,dx+dw,dy+dh,fr);
-                        mFlush(); return;
-                    }
-                    if (mShape == SHAPE_TRAPDOOR) { mIso(sx, sy+b*0.28f, b, bc, 0.20f); return; }
-                    if (mShape == SHAPE_SLAB)     { mIso(sx, sy, b, bc, 0.32f);          return; }
-                    if (mShape == SHAPE_STAIR) {
-                        mIso(sx, sy, b, bc, 0.30f);
-                        mIso(sx+b*0.25f, sy+b*0.30f*0.62f, b*0.5f, bc*0.92f, 0.55f); return;
-                    }
-                    if (mShape == SHAPE_CARPET)  { mIso(sx, sy, b, bc, 0.10f); return; }
-                    if (mShape == SHAPE_FENCE) {
-                        float cx2=sx+b*0.5f, pw=b*0.20f;
-                        if (mTex) {
-                            glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, mTex);
-                            setInt(shaderProgram,"textureMode",2);
-                            pushQuadUV(iv,cx2-pw*0.5f,sy,cx2+pw*0.5f,sy+b,bc,0.4f,0,0.6f,1);
-                            pushQuadUV(iv,sx+b*0.08f,sy+b*0.28f,sx+b*0.92f,sy+b*0.28f+pw,bc*0.85f,0,0.4f,1,0.6f);
-                            pushQuadUV(iv,sx+b*0.08f,sy+b*0.62f,sx+b*0.92f,sy+b*0.62f+pw,bc*0.85f,0,0.4f,1,0.6f);
                             glBufferSubData(GL_ARRAY_BUFFER,0,iv.size()*sizeof(float),iv.data());
                             glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
                             setInt(shaderProgram,"textureMode",0); iv.clear();
                         } else {
-                            pushQuad(iv,cx2-pw*0.5f,sy,cx2+pw*0.5f,sy+b,bc);
-                            pushQuad(iv,sx+b*0.08f,sy+b*0.28f,sx+b*0.92f,sy+b*0.28f+pw,bc*0.8f);
-                            pushQuad(iv,sx+b*0.08f,sy+b*0.62f,sx+b*0.92f,sy+b*0.62f+pw,bc*0.8f);
-                            mFlush();
+                            drawFlatIcon(iv,0,dx,sy,dx+dw,sy+dh,bc); mGo();
                         }
                         return;
+                    }
+                    if (mShape == SHAPE_TRAPDOOR) {
+                        drawFlatIcon(iv,mTex,sx,sy+b*0.3f,sx+b,sy+b*0.7f,bc); mGo(); return;
+                    }
+                    if (mShape == SHAPE_SLAB) {
+                        drawFlatIcon(iv,mTex,sx,sy,sx+b,sy+b*0.5f,bc); mGo(); return;
+                    }
+                    if (mShape == SHAPE_STAIR) {
+                        drawFlatIcon(iv,mTex,sx,     sy,       sx+b, sy+b*0.5f, bc);
+                        drawFlatIcon(iv,mTex,sx+b*0.5f,sy+b*0.5f, sx+b, sy+b,  bc*0.85f);
+                        mGo(); return;
+                    }
+                    if (mShape == SHAPE_CARPET) {
+                        drawFlatIcon(iv,mTex,sx,sy,sx+b,sy+b*0.22f,bc); mGo(); return;
+                    }
+                    if (mShape == SHAPE_FENCE) {
+                        float pw=b*0.22f, cx2=sx+b*0.5f;
+                        drawFlatIcon(iv,mTex,cx2-pw*0.5f,sy,cx2+pw*0.5f,sy+b,bc);
+                        drawFlatIcon(iv,mTex,sx,sy+b*0.3f,sx+b,sy+b*0.3f+pw*0.85f,bc*0.8f);
+                        drawFlatIcon(iv,mTex,sx,sy+b*0.62f,sx+b,sy+b*0.62f+pw*0.85f,bc*0.8f);
+                        mGo(); return;
                     }
                     if (mShape == SHAPE_PANE || mShape == SHAPE_FLAT_PANEL) {
-                        float pw=b*0.16f, cx2=sx+b*0.5f;
+                        float pw=b*0.18f, cx2=sx+b*0.5f;
                         glm::vec3 pc = getBlockProps(bType).isTransparent
-                            ? glm::mix(bc,glm::vec3(0.7f,0.9f,1.0f),0.4f) : bc;
-                        if (mTex) {
-                            glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, mTex);
-                            setInt(shaderProgram,"textureMode",2);
-                            pushQuadUV(iv,cx2-pw*0.5f,sy+b*0.04f,cx2+pw*0.5f,sy+b*0.96f,pc,0,0,1,1);
-                            pushQuadUV(iv,sx+b*0.04f,sy+b*0.47f,sx+b*0.96f,sy+b*0.53f,pc*0.85f,0,0,1,1);
-                            glBufferSubData(GL_ARRAY_BUFFER,0,iv.size()*sizeof(float),iv.data());
-                            glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
-                            setInt(shaderProgram,"textureMode",0); iv.clear();
-                        } else {
-                            pushQuad(iv,cx2-pw*0.5f,sy+b*0.04f,cx2+pw*0.5f,sy+b*0.96f,pc);
-                            pushQuad(iv,sx+b*0.04f,sy+b*0.47f,sx+b*0.96f,sy+b*0.53f,pc*0.85f);
-                            mFlush();
-                        }
-                        return;
+                            ? glm::mix(bc,glm::vec3(0.6f,0.85f,1.0f),0.5f) : bc;
+                        drawFlatIcon(iv,mTex,cx2-pw*0.5f,sy,cx2+pw*0.5f,sy+b,pc);
+                        drawFlatIcon(iv,mTex,sx,sy+b*0.44f,sx+b,sy+b*0.56f,pc*0.8f);
+                        mGo(); return;
                     }
-                    if (mShape == SHAPE_SMALL_HEX) {
-                        float sb=b*0.72f;
-                        mIso(sx+(b-sb)*0.5f, sy+(b-sb)*0.5f, sb, bc, 0.55f); return;
-                    }
-                    mIso(sx, sy, b, bc);
+                    // default: full flat square
+                    drawFlatIcon(iv, mTex, sx, sy, sx+b, sy+b, bc);
+                    mGo();
                 };
 
                 for (int r = 0; r < 3; r++) {
@@ -770,10 +856,8 @@ void renderHUD(int screenW, int screenH) {
                 float outY2 = gY + (3*mStep - outSize)/2.0f;
                 drawRect(outX, outY2, outSize, outSize, isSearching ? glm::vec3(0.5f, 0.45f, 0.1f) : glm::vec3(0.4f, 0.4f, 0.3f));
 
-                float oldSlotSize = slotSize;
-                slotSize = outSize;
-                drawSlotItem(outX - 6.0f, outY2 - 6.0f, recipes[rIdx].resultType);
-                slotSize = oldSlotSize;
+                // Draw output item directly (no slotSize swap needed with flat icons)
+                drawSlotItem(outX, outY2, recipes[rIdx].resultType);
             }
 
             // "No results" indicator — red bar across middle
