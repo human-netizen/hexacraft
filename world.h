@@ -2122,6 +2122,135 @@ void initStars() {
     starsInitialized = true;
 }
 
+// =====================================================
+// KUET Hill — scenic hill in the NE corner of the map
+// =====================================================
+void buildKUETHill() {
+    // ---------- configuration ----------
+    const int HC       = 60;   // NE corner, well away from spawn (3,5)
+    const int HR       = -55;
+
+    const int HILL_R   = 18;   // hill footprint radius in hex cells
+    const int HILL_H   = 7;    // how many blocks the summit rises above local terrain
+
+    // Scale: each font pixel → SW cols wide, SH blocks tall
+    // Half-height vs. before: SH=1 → 7 blocks tall  SW=2 → 10 cols wide
+    const int SW      = 2;
+    const int SH      = 1;     // half the old height (was 3)
+    const int L_DEPTH = 3;     // depth (3-D thickness in rows)
+    const int L_GAP   = 3;     // column gap between letters
+    // total sign width = 4*(5*SW) + 3*L_GAP = 40+9 = 49 cols
+
+    // ---------- Step 1: find base terrain height at centre ----------
+    int baseH = 1;
+    for (int h = GRID_H - 1; h >= 0; h--) {
+        if (getBlock(HC, HR, h) != BLOCK_AIR) { baseH = h; break; }
+    }
+    int hilltopH = baseH + HILL_H;
+    if (hilltopH >= GRID_H - 8) hilltopH = GRID_H - 9; // leave room for letters
+
+    // ---------- Step 2: sculpt the hill ----------
+    for (int dc = -HILL_R; dc <= HILL_R; dc++) {
+        for (int dr = -HILL_R; dr <= HILL_R; dr++) {
+            int c = HC + dc, r = HR + dr;
+            if (!gridInBounds(c, r, 0)) continue;
+            float dist = sqrtf((float)(dc*dc + dr*dr));
+            if (dist > HILL_R) continue;
+
+            // Smooth cosine dome — full height at centre, fades to zero at edge
+            float t = 0.5f * (1.0f + cosf(dist / HILL_R * 3.14159f));
+            int profileH = baseH + (int)(t * HILL_H + 0.5f);
+            if (profileH >= GRID_H) profileH = GRID_H - 1;
+
+            // Clear stray blocks above profile
+            for (int h = profileH + 1; h < GRID_H; h++)
+                if (getBlock(c, r, h) != BLOCK_AIR)
+                    setBlock(c, r, h, BLOCK_AIR);
+
+            // Fill from current top up to profile
+            int curTop = 0;
+            for (int h = GRID_H - 1; h >= 0; h--)
+                if (getBlock(c, r, h) != BLOCK_AIR) { curTop = h; break; }
+
+            for (int h = curTop + 1; h <= profileH; h++)
+                setBlock(c, r, h, BLOCK_DIRT);
+
+            // Grass cap on the surface
+            setBlock(c, r, profileH, BLOCK_GRASS);
+        }
+    }
+
+    // ---------- Step 3: KUET letters ----------
+    // Bitmaps: row 0 = bottom, row 6 = top; col 0 = left (west)
+    //
+    // K — clean diagonal arms, single apex pixel at centre
+    static const uint8_t K[7][5] = {
+        {1,0,0,0,1},   // row 0  bot
+        {1,0,0,1,0},   // row 1
+        {1,0,1,0,0},   // row 2
+        {1,1,0,0,0},   // row 3  mid — single apex, NOT a wide bar
+        {1,0,1,0,0},   // row 4
+        {1,0,0,1,0},   // row 5
+        {1,0,0,0,1},   // row 6  top
+    };
+    static const uint8_t U[7][5] = {
+        {0,1,1,1,0},   // row 0  bot
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {1,0,0,0,1},   // row 6  top
+    };
+    static const uint8_t E[7][5] = {
+        {1,1,1,1,1},   // row 0  bot
+        {1,0,0,0,0},
+        {1,0,0,0,0},
+        {1,1,1,1,0},   // row 3  mid-bar (4 wide, not 5)
+        {1,0,0,0,0},
+        {1,0,0,0,0},
+        {1,1,1,1,1},   // row 6  top
+    };
+    static const uint8_t T[7][5] = {
+        {0,0,1,0,0},   // row 0  bot
+        {0,0,1,0,0},
+        {0,0,1,0,0},
+        {0,0,1,0,0},
+        {0,0,1,0,0},
+        {0,0,1,0,0},
+        {1,1,1,1,1},   // row 6  top bar
+    };
+    const uint8_t (*glyphs[4])[5] = { K, U, E, T };
+
+    // Centre sign horizontally on HC; faces south so player walks toward it
+    const int totalW = 4 * (5 * SW) + 3 * L_GAP;  // = 49
+    int startC = HC - totalW / 2;
+    int startR = HR;    // front (south) face at startR + L_DEPTH - 1
+
+    for (int li = 0; li < 4; li++) {
+        int cOff = li * (5 * SW + L_GAP);
+        for (int lr = 0; lr < 7; lr++) {       // font row  0=bottom
+            for (int lc = 0; lc < 5; lc++) {   // font col  0=left
+                if (!glyphs[li][lr][lc]) continue;
+                for (int sc = 0; sc < SW; sc++) {
+                    int gc = startC + cOff + lc * SW + sc;
+                    for (int sh = 0; sh < SH; sh++) {
+                        int gh = hilltopH + 1 + lr * SH + sh;
+                        if (gh >= GRID_H) continue;
+                        for (int d = 0; d < L_DEPTH; d++) {
+                            setBlock(gc, startR + d, gh, BLOCK_QUARTZ_BLOCK);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    int endC = startC + totalW - 1;
+    printf("[World] KUET sign built — hill (%d,%d) hilltop h=%d, cols %d..%d, h %d..%d\n",
+           HC, HR, hilltopH, startC, endC, hilltopH+1, hilltopH+7*SH);
+}
+
 void renderSky(float time, glm::vec3 sunDir) {
     if (!starsInitialized) initStars();
 

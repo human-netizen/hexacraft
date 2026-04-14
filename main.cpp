@@ -11,6 +11,7 @@
 #include "objects.h"
 #include "hud.h"
 #include "input.h"
+#include "skybox.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -128,6 +129,7 @@ int main() {
     glClearColor(0.02f, 0.02f, 0.06f, 1.0f);
 
     shaderProgram = loadShaders("vertexShader.glsl", "fragmentShader.glsl");
+    initSkybox();
     initHexMesh();
     initSphere();
     initCone();
@@ -223,6 +225,7 @@ int main() {
 
     printf("[World] Generating terrain...\n");
     initBlockGrid();
+    buildKUETHill();
     printf("[World] Terrain ready! %dx%d grid, %d height layers\n", GRID_W, GRID_D, GRID_H);
 
     // Initialize player on terrain
@@ -381,6 +384,9 @@ int main() {
             glEnable(GL_SCISSOR_TEST);
             glScissor(vx, vy, vw, vh);
             glClear(GL_DEPTH_BUFFER_BIT);
+            // Draw skybox first (behind everything)
+            drawSkybox(vMat, pMat);
+            glUseProgram(shaderProgram);
             setMat4(shaderProgram, "view", vMat);
             setMat4(shaderProgram, "projection", pMat);
             setVec3(shaderProgram, "viewPos", eye);
@@ -463,6 +469,9 @@ int main() {
                 proj = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 200.0f);
             }
 
+            // Draw skybox first (behind everything)
+            drawSkybox(view, proj);
+            glUseProgram(shaderProgram);
             setMat4(shaderProgram, "view", view);
             setMat4(shaderProgram, "projection", proj);
             setVec3(shaderProgram, "viewPos", eye);
@@ -493,6 +502,7 @@ int main() {
         glfwPollEvents();
     }
 
+    destroySkybox();
     glDeleteVertexArrays(1, &hudVAO);
     glDeleteBuffers(1, &hudVBO);
     glDeleteVertexArrays(1, &sphereVAO);
