@@ -133,3 +133,24 @@
 - [x] Ctrl+Scroll adjusts third-person distance (1.5–10 range)
 - [x] FOV: 50° → 70° (Minecraft default)
 - [x] Mouse sensitivity: 0.1 → 0.15
+
+## Phase 15: Mobs & Combat
+- [x] Sheep mob (white woolly body, dark face/legs, drops wool on death)
+- [x] Passive mob flee behavior (run away when attacked, alert nearby mobs)
+- [x] Item drops on mob death (pig/chicken: food, sheep: wool, zombie: dirt, skeleton: stone)
+- [x] Skeleton hostile mob (gray/white bony humanoid, bow in hand)
+- [x] Skeleton AI: approaches to 8-15 range, shoots arrow projectiles, retreats if too close
+- [x] Arrow projectile system (gravity arc, player hit detection, ground collision)
+- [x] Player attack cooldown (0.625s swords, 1.0s axes, 0.4s other)
+- [x] Damage flash (red tint on hit via colorTint shader uniform, 0.3s duration)
+- [x] Death animation (mob falls over sideways + fades out over 1 second)
+- [x] A* pathfinding on hex grid (200 node limit, 1.5s recalc interval)
+- [x] Zombies and skeletons use pathfinding to navigate around walls
+- [x] 12 initial passive mobs (chickens, pigs, sheep) in grass zones
+- [x] Up to 10 hostile mobs spawn at night, despawn at day
+
+## Phase 14: Inventory & Crafting Completion
+- [x] Correct block drops: getBlockDrop() table (stone→cobblestone, grass→dirt, glass→air, etc.)
+- [x] Hold-to-break: left mouse hold required; block hardness table; tool speed multipliers (pickaxe/axe/shovel tiers 2×/4×/6×/8×)
+- [x] Breaking animation: 5-stage progressive darkening overlay on targeted block while holding
+- [x] Tool durability: InventorySlot.durability field; degrade on break/attack; tool breaks at 0; durability bar (green→yellow→red) in HUD hotbar

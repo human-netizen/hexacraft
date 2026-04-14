@@ -208,8 +208,13 @@ void updateBlockTarget() {
                camPos.x, camPos.y, camPos.z, camFront.x, camFront.y, camFront.z);
     }
 
+    // In third-person the camera is behind the player — cast from the player's
+    // eye so the crosshair correctly hits what the player is looking at.
+    glm::vec3 rayOrigin = (cameraMode == 2) ? camPos
+                                             : (playerWorldPos + glm::vec3(0, 1.62f, 0));
+
     for (float d = 0.2f; d < maxDist; d += step) {
-        glm::vec3 p = camPos + camFront * d;
+        glm::vec3 p = rayOrigin + camFront * d;
         int col, row, h;
         worldToGrid(p, col, row, h);
 

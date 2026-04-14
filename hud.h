@@ -18,6 +18,40 @@ void drawBlockHighlight() {
     glLineWidth(1.0f);
 }
 
+// =====================================================
+// Breaking animation — semi-transparent dark overlay in 5 stages
+// progress: 0.0 (just started) → 1.0 (about to break)
+// =====================================================
+void drawBreakOverlay(float progress) {
+    if (!hasTarget || progress <= 0.0f) return;
+
+    glm::vec3 pos = hexGridPos(targetCol, targetRow, 0.0f);
+    pos.y = targetHeight * HEX_HEIGHT;
+
+    // 5 discrete stages → alpha 0.12, 0.25, 0.40, 0.55, 0.70
+    int stage = (int)(progress * 5.0f);
+    if (stage > 4) stage = 4;
+    float alpha = 0.12f + stage * 0.145f;
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+
+    // Draw slightly enlarged dark hex over target block
+    setBool(shaderProgram, "isEmissive", true);
+    setVec3(shaderProgram, "emissiveColor", glm::vec3(0.0f)); // pure black
+    // Use colorTint to make it dark
+    setVec3(shaderProgram, "colorTint", glm::vec3(0.0f));
+    setFloat(shaderProgram, "colorTintStrength", alpha);
+
+    drawHex(pos, glm::vec3(0, 0, 0), glm::vec3(1.02f, 1.02f, 1.02f));
+
+    setBool(shaderProgram, "isEmissive", false);
+    setFloat(shaderProgram, "colorTintStrength", 0.0f);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+}
+
 extern GLuint texBrick, texGrass, texWood;
 extern GLuint texItemOakDoor, texItemIronDoor;
 
@@ -69,9 +103,11 @@ void pushQuad(std::vector<float>& verts, float x1, float y1, float x2, float y2,
 // Adds a dark right+bottom shadow strip to give a subtle 2.5D feel.
 // x1,y1 = bottom-left corner, x2,y2 = top-right corner of the icon area.
 void drawFlatIcon(std::vector<float>& v, GLuint tex, float x1, float y1, float x2, float y2,
-                  glm::vec3 col) {
+                  glm::vec3 col, bool tint = false) {
     if (tex) {
-        pushQuadUV(v, x1, y1, x2, y2, glm::vec3(1.0f), 0, 0, 1, 1);
+        // If tint=true, pass block color for textureMode=2 (texture * color)
+        // Otherwise pass white for textureMode=1 (texture only)
+        pushQuadUV(v, x1, y1, x2, y2, tint ? col : glm::vec3(1.0f), 0, 0, 1, 1);
     } else {
         // Solid color with a lighter top-left and darker bottom-right strip (fake 2.5D)
         float s = (x2-x1) * 0.1f; // shadow strip width
@@ -80,6 +116,11 @@ void drawFlatIcon(std::vector<float>& v, GLuint tex, float x1, float y1, float x
         pushQuad(v, x1,   y1,   x2,   y1+s, col * 0.55f);                  // bottom shadow
         pushQuad(v, x1,   y2-s, x2,   y2,   glm::min(col*1.3f,glm::vec3(1))); // top highlight
     }
+}
+
+// Check if a block type needs color tinting on its texture (grayscale textures like grass, leaves)
+bool needsTint(int bType) {
+    return bType == BLOCK_GRASS || bType == BLOCK_LEAF || bType == BLOCK_WATER;
 }
 
 // =====================================================
@@ -332,13 +373,15 @@ void renderHUD(int screenW, int screenH) {
         BlockShape shape = getBlockProps(bType).shape;
         GLuint blockTex = getBlockTexture(bType);
 
+        bool tint = needsTint(bType);
+
         // Helper: upload iv and draw, then clear
         auto go = [&]() {
             if (iv.empty()) return;
             if (blockTex) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, blockTex);
-                setInt(shaderProgram, "textureMode", 1);
+                setInt(shaderProgram, "textureMode", tint ? 2 : 1);
             }
             glBufferSubData(GL_ARRAY_BUFFER, 0, iv.size()*sizeof(float), iv.data());
             glDrawArrays(GL_TRIANGLES, 0, (int)iv.size()/11);
@@ -348,7 +391,7 @@ void renderHUD(int screenW, int screenH) {
 
         // ---- ITEM (tools, sticks, etc.): always flat sprite, full slot ----
         if (getBlockProps(bType).isItem) {
-            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+b, bc);
+            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+b, bc, tint);
             go();
             return;
         }
@@ -368,7 +411,7 @@ void renderHUD(int screenW, int screenH) {
                 glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
                 setInt(shaderProgram,"textureMode",0); iv.clear();
             } else {
-                drawFlatIcon(iv, 0, dx, dy, dx+dw, dy+dh, bc); go();
+                drawFlatIcon(iv, 0, dx, dy, dx+dw, dy+dh, bc, tint); go();
                 glm::vec3 knob(0.9f,0.82f,0.25f);
                 pushQuad(iv, dx+dw*0.72f-2.0f, dy+dh*0.5f-2.0f, dx+dw*0.72f+2.0f, dy+dh*0.5f+2.0f, knob);
                 go();
@@ -380,22 +423,22 @@ void renderHUD(int screenW, int screenH) {
         if (shape == SHAPE_TRAPDOOR) {
             float th = b*0.45f;
             float ty = oy + (b-th)*0.5f;
-            drawFlatIcon(iv, blockTex, ox, ty, ox+b, ty+th, bc); go();
+            drawFlatIcon(iv, blockTex, ox, ty, ox+b, ty+th, bc, tint); go();
             return;
         }
 
         // ---- SLAB: bottom half ----
         if (shape == SHAPE_SLAB) {
             float sh = b*0.5f;
-            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+sh, bc); go();
+            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+sh, bc, tint); go();
             return;
         }
 
         // ---- STAIR: L-shape (slab bottom + step right half top) ----
         if (shape == SHAPE_STAIR) {
             float sh = b*0.5f;
-            drawFlatIcon(iv, blockTex, ox,       oy,    ox+b,    oy+sh,  bc);        // bottom
-            drawFlatIcon(iv, blockTex, ox+b*0.5f, oy+sh, ox+b,   oy+b,   bc*0.88f); // top-right step
+            drawFlatIcon(iv, blockTex, ox,       oy,    ox+b,    oy+sh,  bc, tint);        // bottom
+            drawFlatIcon(iv, blockTex, ox+b*0.5f, oy+sh, ox+b,   oy+b,   bc*0.88f, tint); // top-right step
             go();
             return;
         }
@@ -403,16 +446,16 @@ void renderHUD(int screenW, int screenH) {
         // ---- CARPET: thin strip at bottom ----
         if (shape == SHAPE_CARPET) {
             float th = b*0.18f;
-            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+th, bc); go();
+            drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+th, bc, tint); go();
             return;
         }
 
         // ---- FENCE: post + two rails ----
         if (shape == SHAPE_FENCE) {
             float pw = b*0.20f, cx2 = ox+b*0.5f;
-            drawFlatIcon(iv, blockTex, cx2-pw*0.5f, oy,       cx2+pw*0.5f, oy+b,       bc);
-            drawFlatIcon(iv, blockTex, ox+b*0.05f,  oy+b*0.3f, ox+b*0.95f, oy+b*0.3f+pw*0.9f, bc*0.8f);
-            drawFlatIcon(iv, blockTex, ox+b*0.05f,  oy+b*0.62f,ox+b*0.95f, oy+b*0.62f+pw*0.9f,bc*0.8f);
+            drawFlatIcon(iv, blockTex, cx2-pw*0.5f, oy,       cx2+pw*0.5f, oy+b,       bc, tint);
+            drawFlatIcon(iv, blockTex, ox+b*0.05f,  oy+b*0.3f, ox+b*0.95f, oy+b*0.3f+pw*0.9f, bc*0.8f, tint);
+            drawFlatIcon(iv, blockTex, ox+b*0.05f,  oy+b*0.62f,ox+b*0.95f, oy+b*0.62f+pw*0.9f,bc*0.8f, tint);
             go();
             return;
         }
@@ -422,8 +465,8 @@ void renderHUD(int screenW, int screenH) {
             float pw = b*0.15f, cx2 = ox+b*0.5f;
             glm::vec3 pc = getBlockProps(bType).isTransparent
                 ? glm::mix(bc,glm::vec3(0.6f,0.85f,1.0f),0.5f) : bc;
-            drawFlatIcon(iv, blockTex, cx2-pw*0.5f, oy+b*0.05f, cx2+pw*0.5f, oy+b*0.95f, pc);
-            drawFlatIcon(iv, blockTex, ox+b*0.05f, oy+b*0.45f, ox+b*0.95f,  oy+b*0.55f, pc*0.8f);
+            drawFlatIcon(iv, blockTex, cx2-pw*0.5f, oy+b*0.05f, cx2+pw*0.5f, oy+b*0.95f, pc, tint);
+            drawFlatIcon(iv, blockTex, ox+b*0.05f, oy+b*0.45f, ox+b*0.95f,  oy+b*0.55f, pc*0.8f, tint);
             go();
             return;
         }
@@ -431,12 +474,12 @@ void renderHUD(int screenW, int screenH) {
         // ---- SMALL HEX: small centered square ----
         if (shape == SHAPE_SMALL_HEX) {
             float sb = b*0.7f, off = (b-sb)*0.5f;
-            drawFlatIcon(iv, blockTex, ox+off, oy+off, ox+off+sb, oy+off+sb, bc); go();
+            drawFlatIcon(iv, blockTex, ox+off, oy+off, ox+off+sb, oy+off+sb, bc, tint); go();
             return;
         }
 
         // ---- DEFAULT: full flat icon ----
-        drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+b, bc);
+        drawFlatIcon(iv, blockTex, ox, oy, ox+b, oy+b, bc, tint);
         go();
     };
 
@@ -449,20 +492,40 @@ void renderHUD(int screenW, int screenH) {
         glDrawArrays(GL_TRIANGLES, 0, (int)sv.size() / 11);
     };
 
+    // Helper: draw item stack count (bottom-right of slot, Minecraft-style)
+    auto drawSlotCount = [&](float sx, float sy, int count) {
+        if (count <= 1) return; // don't show "1"
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%d", count);
+        float textH = 10.0f;
+        float tw = hudMeasureString(buf, textH);
+        float tx = sx + slotSize - tw - 2.0f;
+        float ty = sy + 2.0f;
+        // Shadow
+        std::vector<float> sv;
+        hudDrawString(sv, buf, tx + 1.0f, ty - 1.0f, textH, glm::vec3(0.1f, 0.1f, 0.1f));
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sv.size() * sizeof(float), sv.data());
+        glDrawArrays(GL_TRIANGLES, 0, (int)sv.size() / 11);
+        // Text
+        sv.clear();
+        hudDrawString(sv, buf, tx, ty, textH, glm::vec3(1.0f, 1.0f, 1.0f));
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sv.size() * sizeof(float), sv.data());
+        glDrawArrays(GL_TRIANGLES, 0, (int)sv.size() / 11);
+    };
+
     if (inventoryOpen) {
         // ===== CENTERED INVENTORY PANEL =====
         // Layout (bottom to top inside panel):
         //   Hotbar (1x9)  |  gap  |  Storage (3x9)  |  gap  |  Crafting (3x3) + Arrow + Output
         float panelPad = 15.0f;
         float sectionGap = 14.0f;
-        float craftRowW = 3 * slotStep - slotGap;  // 128 (3x3 grid width)
         float arrowW = 30.0f;
         float arrowGapL = 10.0f, arrowGapR = 10.0f;
         float outputW = slotSize; // 40
 
         float panelW = panelPad + totalW + panelPad; // 392 + 30 = 422
-        float panelH = panelPad + slotSize + sectionGap + 3 * slotStep - slotGap + sectionGap + 3 * slotStep - slotGap + panelPad;
-        // = 15 + 40 + 14 + 128 + 14 + 128 + 15 = 354
+        float craftAreaH = 3 * slotStep - slotGap; // always 3x3 height
+        float panelH = panelPad + slotSize + sectionGap + 3 * slotStep - slotGap + sectionGap + craftAreaH + panelPad;
         float panelX = (screenW - panelW) / 2.0f;
         float panelY = (screenH - panelH) / 2.0f;
 
@@ -511,6 +574,28 @@ void renderHUD(int screenW, int screenH) {
         // Grid left edge (all 9-wide grids start here)
         float gridX = panelX + panelPad;
 
+        // Mouse position for hover highlight (GLFW top=0, HUD bottom=0)
+        float mx = lastMouseX;
+        float my = screenH - lastMouseY;
+        int hoveredItemType = BLOCK_AIR; // track for tooltip
+
+        // Helper: check if mouse is inside a slot and draw highlight overlay
+        auto drawSlotHighlight = [&](float sx, float sy, int itemType = BLOCK_AIR) {
+            if (mx >= sx && mx <= sx + slotSize && my >= sy && my <= sy + slotSize) {
+                if (itemType != BLOCK_AIR) hoveredItemType = itemType;
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                setFloat(shaderProgram, "alpha", 0.3f);
+                std::vector<float> hv;
+                pushQuad(hv, sx, sy, sx + slotSize, sy + slotSize, glm::vec3(1.0f));
+                glBufferSubData(GL_ARRAY_BUFFER, 0, hv.size() * sizeof(float), hv.data());
+                setVec3(shaderProgram, "objectColor", glm::vec3(1.0f));
+                glDrawArrays(GL_TRIANGLES, 0, (int)hv.size() / 11);
+                setFloat(shaderProgram, "alpha", 1.0f);
+                glDisable(GL_BLEND);
+            }
+        };
+
         // ---- HOTBAR (bottom of panel) ----
         float hotbarY = panelY + panelPad;
         for (int i = 0; i < HOTBAR_SIZE; i++) {
@@ -518,6 +603,28 @@ void renderHUD(int screenW, int screenH) {
             glm::vec3 bgCol = (i == hotbarSlot) ? glm::vec3(0.9f, 0.9f, 0.3f) : glm::vec3(0.3f, 0.3f, 0.3f);
             drawSlotBg(sx, hotbarY, bgCol);
             drawSlotItem(sx, hotbarY, playerInventory[i].type);
+            drawSlotCount(sx, hotbarY, playerInventory[i].count);
+            drawSlotHighlight(sx, hotbarY, playerInventory[i].type);
+            // Durability bar
+            int dur = playerInventory[i].durability;
+            int maxDur = getMaxDurability(playerInventory[i].type);
+            if (dur > 0 && maxDur > 0) {
+                float frac = (float)dur / (float)maxDur;
+                glm::vec3 durCol = (frac > 0.5f) ? glm::vec3(0.1f, 0.85f, 0.1f)
+                                 : (frac > 0.2f) ? glm::vec3(0.9f, 0.8f, 0.1f)
+                                                 : glm::vec3(0.9f, 0.15f, 0.1f);
+                std::vector<float> dv;
+                float barW2 = slotSize - 4.0f;
+                pushQuad(dv, sx+2, hotbarY+2, sx+2+barW2, hotbarY+5, glm::vec3(0.1f));
+                glBufferSubData(GL_ARRAY_BUFFER, 0, dv.size()*sizeof(float), dv.data());
+                setVec3(shaderProgram, "objectColor", glm::vec3(0.1f));
+                glDrawArrays(GL_TRIANGLES, 0, (int)dv.size()/11);
+                dv.clear();
+                pushQuad(dv, sx+2, hotbarY+2, sx+2+barW2*frac, hotbarY+5, durCol);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, dv.size()*sizeof(float), dv.data());
+                setVec3(shaderProgram, "objectColor", durCol);
+                glDrawArrays(GL_TRIANGLES, 0, (int)dv.size()/11);
+            }
         }
 
         // ---- Separator line ----
@@ -536,9 +643,11 @@ void renderHUD(int screenW, int screenH) {
             for (int c = 0; c < 9; c++) {
                 int i = 9 + r * 9 + c; // slots 9 to 35
                 float sx = gridX + c * slotStep;
-                float sy = storageY + r * slotStep;
+                float sy = storageY + (2 - r) * slotStep; // row 0 (slots 9-17) at top
                 drawSlotBg(sx, sy, glm::vec3(0.3f));
                 drawSlotItem(sx, sy, playerInventory[i].type);
+                drawSlotCount(sx, sy, playerInventory[i].count);
+                drawSlotHighlight(sx, sy, playerInventory[i].type);
             }
         }
 
@@ -554,11 +663,13 @@ void renderHUD(int screenW, int screenH) {
 
         // ---- CRAFTING AREA (top of panel) ----
         float craftY = storageY + 3 * slotStep - slotGap + sectionGap;
-        // Center crafting row: 3x3 grid + gap + arrow + gap + output
-        float craftTotalW = craftRowW + arrowGapL + arrowW + arrowGapR + outputW;
+        int craftDim = 3; // always 3x3 so all recipes are craftable
+        float craftGridW = craftDim * slotStep - slotGap;
+        // Center crafting row: grid + gap + arrow + gap + output
+        float craftTotalW = craftGridW + arrowGapL + arrowW + arrowGapR + outputW;
         float craftOffX = gridX + (totalW - craftTotalW) / 2.0f;
 
-        // "Recipe Book" toggle button
+        // "Recipe Book" toggle button (always visible)
         float bookBtnX = craftOffX - 40.0f;
         float bookBtnY = craftY + slotStep;
         {
@@ -573,20 +684,22 @@ void renderHUD(int screenW, int screenH) {
         // "Crafting" label bar
         {
             std::vector<float> lv;
-            pushQuad(lv, craftOffX, craftY + 3 * slotStep - slotGap + 4, craftOffX + craftRowW, craftY + 3 * slotStep - slotGap + 18, glm::vec3(0.5f, 0.35f, 0.15f));
+            pushQuad(lv, craftOffX, craftY + craftDim * slotStep - slotGap + 4, craftOffX + craftGridW, craftY + craftDim * slotStep - slotGap + 18, glm::vec3(0.5f, 0.35f, 0.15f));
             glBufferSubData(GL_ARRAY_BUFFER, 0, lv.size() * sizeof(float), lv.data());
             setVec3(shaderProgram, "objectColor", glm::vec3(0.5f, 0.35f, 0.15f));
             glDrawArrays(GL_TRIANGLES, 0, (int)lv.size() / 11);
         }
 
-        // 3x3 crafting grid
-        for (int r = 0; r < 3; r++) {
-            for (int c = 0; c < 3; c++) {
-                int i = r * 3 + c;
+        // Crafting grid (3x3 or 2x2)
+        for (int r = 0; r < craftDim; r++) {
+            for (int c = 0; c < craftDim; c++) {
+                int i = r * 3 + c; // always index into 3x3 grid array
                 float sx = craftOffX + c * slotStep;
-                float sy = craftY + (2 - r) * slotStep; // row 0 at top
+                float sy = craftY + (craftDim - 1 - r) * slotStep; // row 0 at top
                 drawSlotBg(sx, sy, glm::vec3(0.25f, 0.22f, 0.18f));
                 drawSlotItem(sx, sy, craftingGrid[i].type);
+                drawSlotCount(sx, sy, craftingGrid[i].count);
+                drawSlotHighlight(sx, sy, craftingGrid[i].type);
             }
         }
 
@@ -769,11 +882,12 @@ void renderHUD(int screenW, int screenH) {
                     glm::vec3 bc = getBlockColor(bType);
                     BlockShape mShape = getBlockProps(bType).shape;
                     GLuint mTex = getBlockTexture(bType);
+                    bool mTint = needsTint(bType);
                     float b = mSlot;
 
                     auto mGo = [&]() {
                         if (iv.empty()) return;
-                        if (mTex) { glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, mTex); setInt(shaderProgram,"textureMode",1); }
+                        if (mTex) { glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, mTex); setInt(shaderProgram,"textureMode", mTint ? 2 : 1); }
                         glBufferSubData(GL_ARRAY_BUFFER,0,iv.size()*sizeof(float),iv.data());
                         glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
                         if (mTex) setInt(shaderProgram,"textureMode",0);
@@ -782,7 +896,7 @@ void renderHUD(int screenW, int screenH) {
 
                     // Items (tools etc.): full flat sprite
                     if (getBlockProps(bType).isItem) {
-                        drawFlatIcon(iv, mTex, sx, sy, sx+b, sy+b, bc); mGo(); return;
+                        drawFlatIcon(iv, mTex, sx, sy, sx+b, sy+b, bc, mTint); mGo(); return;
                     }
 
                     if (mShape == SHAPE_DOOR) {
@@ -799,41 +913,41 @@ void renderHUD(int screenW, int screenH) {
                             glDrawArrays(GL_TRIANGLES,0,(int)iv.size()/11);
                             setInt(shaderProgram,"textureMode",0); iv.clear();
                         } else {
-                            drawFlatIcon(iv,0,dx,sy,dx+dw,sy+dh,bc); mGo();
+                            drawFlatIcon(iv,0,dx,sy,dx+dw,sy+dh,bc, mTint); mGo();
                         }
                         return;
                     }
                     if (mShape == SHAPE_TRAPDOOR) {
-                        drawFlatIcon(iv,mTex,sx,sy+b*0.3f,sx+b,sy+b*0.7f,bc); mGo(); return;
+                        drawFlatIcon(iv,mTex,sx,sy+b*0.3f,sx+b,sy+b*0.7f,bc, mTint); mGo(); return;
                     }
                     if (mShape == SHAPE_SLAB) {
-                        drawFlatIcon(iv,mTex,sx,sy,sx+b,sy+b*0.5f,bc); mGo(); return;
+                        drawFlatIcon(iv,mTex,sx,sy,sx+b,sy+b*0.5f,bc, mTint); mGo(); return;
                     }
                     if (mShape == SHAPE_STAIR) {
-                        drawFlatIcon(iv,mTex,sx,     sy,       sx+b, sy+b*0.5f, bc);
-                        drawFlatIcon(iv,mTex,sx+b*0.5f,sy+b*0.5f, sx+b, sy+b,  bc*0.85f);
+                        drawFlatIcon(iv,mTex,sx,     sy,       sx+b, sy+b*0.5f, bc, mTint);
+                        drawFlatIcon(iv,mTex,sx+b*0.5f,sy+b*0.5f, sx+b, sy+b,  bc*0.85f, mTint);
                         mGo(); return;
                     }
                     if (mShape == SHAPE_CARPET) {
-                        drawFlatIcon(iv,mTex,sx,sy,sx+b,sy+b*0.22f,bc); mGo(); return;
+                        drawFlatIcon(iv,mTex,sx,sy,sx+b,sy+b*0.22f,bc, mTint); mGo(); return;
                     }
                     if (mShape == SHAPE_FENCE) {
                         float pw=b*0.22f, cx2=sx+b*0.5f;
-                        drawFlatIcon(iv,mTex,cx2-pw*0.5f,sy,cx2+pw*0.5f,sy+b,bc);
-                        drawFlatIcon(iv,mTex,sx,sy+b*0.3f,sx+b,sy+b*0.3f+pw*0.85f,bc*0.8f);
-                        drawFlatIcon(iv,mTex,sx,sy+b*0.62f,sx+b,sy+b*0.62f+pw*0.85f,bc*0.8f);
+                        drawFlatIcon(iv,mTex,cx2-pw*0.5f,sy,cx2+pw*0.5f,sy+b,bc, mTint);
+                        drawFlatIcon(iv,mTex,sx,sy+b*0.3f,sx+b,sy+b*0.3f+pw*0.85f,bc*0.8f, mTint);
+                        drawFlatIcon(iv,mTex,sx,sy+b*0.62f,sx+b,sy+b*0.62f+pw*0.85f,bc*0.8f, mTint);
                         mGo(); return;
                     }
                     if (mShape == SHAPE_PANE || mShape == SHAPE_FLAT_PANEL) {
                         float pw=b*0.18f, cx2=sx+b*0.5f;
                         glm::vec3 pc = getBlockProps(bType).isTransparent
                             ? glm::mix(bc,glm::vec3(0.6f,0.85f,1.0f),0.5f) : bc;
-                        drawFlatIcon(iv,mTex,cx2-pw*0.5f,sy,cx2+pw*0.5f,sy+b,pc);
-                        drawFlatIcon(iv,mTex,sx,sy+b*0.44f,sx+b,sy+b*0.56f,pc*0.8f);
+                        drawFlatIcon(iv,mTex,cx2-pw*0.5f,sy,cx2+pw*0.5f,sy+b,pc, mTint);
+                        drawFlatIcon(iv,mTex,sx,sy+b*0.44f,sx+b,sy+b*0.56f,pc*0.8f, mTint);
                         mGo(); return;
                     }
                     // default: full flat square
-                    drawFlatIcon(iv, mTex, sx, sy, sx+b, sy+b, bc);
+                    drawFlatIcon(iv, mTex, sx, sy, sx+b, sy+b, bc, mTint);
                     mGo();
                 };
 
@@ -867,8 +981,8 @@ void renderHUD(int screenW, int screenH) {
         }
 
         // Arrow indicator
-        float arrowX = craftOffX + craftRowW + arrowGapL;
-        float arrowCenterY = craftY + slotStep; // vertically centered with middle row
+        float arrowX = craftOffX + craftGridW + arrowGapL;
+        float arrowCenterY = craftY + slotStep; // vertically centered for 3x3
         {
             std::vector<float> av;
             pushQuad(av, arrowX, arrowCenterY + slotSize * 0.35f, arrowX + 20.0f, arrowCenterY + slotSize * 0.65f, glm::vec3(0.7f));
@@ -885,6 +999,56 @@ void renderHUD(int screenW, int screenH) {
             glm::vec3 outBg = (craftingOutput.type != BLOCK_AIR) ? glm::vec3(0.2f, 0.45f, 0.2f) : glm::vec3(0.35f, 0.3f, 0.25f);
             drawSlotBg(outX, outY, outBg);
             drawSlotItem(outX, outY, craftingOutput.type);
+            drawSlotCount(outX, outY, craftingOutput.count);
+            drawSlotHighlight(outX, outY, craftingOutput.type);
+        }
+
+        // Draw item name tooltip on hover
+        if (hoveredItemType != BLOCK_AIR && draggedSlot.type == BLOCK_AIR) {
+            const char* name = getBlockName(hoveredItemType);
+            float tipH = 11.0f;
+            float tipW = hudMeasureString(name, tipH);
+            float tipPad = 4.0f;
+            float tipX = mx - tipW / 2.0f;
+            float tipY = my + slotSize + 4.0f; // above the slot
+            // Clamp to screen
+            if (tipX < 2.0f) tipX = 2.0f;
+            if (tipX + tipW + tipPad * 2 > screenW) tipX = screenW - tipW - tipPad * 2;
+            // Background
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            setFloat(shaderProgram, "alpha", 0.85f);
+            {
+                std::vector<float> tbv;
+                pushQuad(tbv, tipX - tipPad, tipY - tipPad, tipX + tipW + tipPad, tipY + tipH + tipPad,
+                         glm::vec3(0.1f, 0.05f, 0.15f));
+                glBufferSubData(GL_ARRAY_BUFFER, 0, tbv.size() * sizeof(float), tbv.data());
+                setVec3(shaderProgram, "objectColor", glm::vec3(0.1f, 0.05f, 0.15f));
+                glDrawArrays(GL_TRIANGLES, 0, (int)tbv.size() / 11);
+            }
+            // Border
+            setFloat(shaderProgram, "alpha", 1.0f);
+            {
+                std::vector<float> brv;
+                float b = 1.0f;
+                glm::vec3 bc(0.3f, 0.1f, 0.5f);
+                pushQuad(brv, tipX - tipPad, tipY - tipPad, tipX + tipW + tipPad, tipY - tipPad + b, bc);
+                pushQuad(brv, tipX - tipPad, tipY + tipH + tipPad - b, tipX + tipW + tipPad, tipY + tipH + tipPad, bc);
+                pushQuad(brv, tipX - tipPad, tipY - tipPad, tipX - tipPad + b, tipY + tipH + tipPad, bc);
+                pushQuad(brv, tipX + tipW + tipPad - b, tipY - tipPad, tipX + tipW + tipPad, tipY + tipH + tipPad, bc);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, brv.size() * sizeof(float), brv.data());
+                setVec3(shaderProgram, "objectColor", bc);
+                glDrawArrays(GL_TRIANGLES, 0, (int)brv.size() / 11);
+            }
+            // Text
+            {
+                std::vector<float> tv;
+                hudDrawString(tv, name, tipX, tipY, tipH, glm::vec3(1.0f));
+                glBufferSubData(GL_ARRAY_BUFFER, 0, tv.size() * sizeof(float), tv.data());
+                setVec3(shaderProgram, "objectColor", glm::vec3(1.0f));
+                glDrawArrays(GL_TRIANGLES, 0, (int)tv.size() / 11);
+            }
+            glDisable(GL_BLEND);
         }
 
         // Draw Dragged item at mouse cursor
@@ -892,6 +1056,7 @@ void renderHUD(int screenW, int screenH) {
             float mx = lastMouseX;
             float my = screenH - lastMouseY;
             drawSlotItem(mx - slotSize / 2, my - slotSize / 2, draggedSlot.type);
+            drawSlotCount(mx - slotSize / 2, my - slotSize / 2, draggedSlot.count);
         }
     } else {
         // ---- HOTBAR ONLY (not in inventory mode, at bottom of screen) ----
@@ -902,6 +1067,27 @@ void renderHUD(int screenW, int screenH) {
             glm::vec3 bgCol = (i == hotbarSlot) ? glm::vec3(0.9f, 0.9f, 0.3f) : glm::vec3(0.3f, 0.3f, 0.3f);
             drawSlotBg(sx, hbY, bgCol);
             drawSlotItem(sx, hbY, playerInventory[i].type);
+            drawSlotCount(sx, hbY, playerInventory[i].count);
+            // Durability bar (3px tall at bottom of slot)
+            int dur = playerInventory[i].durability;
+            int maxDur = getMaxDurability(playerInventory[i].type);
+            if (dur > 0 && maxDur > 0) {
+                float frac = (float)dur / (float)maxDur;
+                glm::vec3 durCol = (frac > 0.5f) ? glm::vec3(0.1f, 0.85f, 0.1f)
+                                 : (frac > 0.2f) ? glm::vec3(0.9f, 0.8f, 0.1f)
+                                                 : glm::vec3(0.9f, 0.15f, 0.1f);
+                std::vector<float> dv;
+                float barW2 = slotSize - 4.0f;
+                pushQuad(dv, sx + 2, hbY + 2, sx + 2 + barW2, hbY + 5, glm::vec3(0.1f));
+                glBufferSubData(GL_ARRAY_BUFFER, 0, dv.size() * sizeof(float), dv.data());
+                setVec3(shaderProgram, "objectColor", glm::vec3(0.1f));
+                glDrawArrays(GL_TRIANGLES, 0, (int)dv.size() / 11);
+                dv.clear();
+                pushQuad(dv, sx + 2, hbY + 2, sx + 2 + barW2 * frac, hbY + 5, durCol);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, dv.size() * sizeof(float), dv.data());
+                setVec3(shaderProgram, "objectColor", durCol);
+                glDrawArrays(GL_TRIANGLES, 0, (int)dv.size() / 11);
+            }
         }
     }
 

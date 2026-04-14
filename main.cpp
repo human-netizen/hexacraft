@@ -192,6 +192,35 @@ int main() {
     texGoldOre          = loadTexture(FM_BLOCK("gold_ore.png"));
     #undef FM_BLOCK
 
+    // Gold resource pack textures (blocks not in FM Default)
+    #define GOLD_BLOCK(f) "gold/assets/minecraft/textures/block/" f
+    texGrassTop     = loadTexture(GOLD_BLOCK("grass_block_top.png"));
+    texSandGold     = loadTexture(GOLD_BLOCK("sand.png"));
+    texOakLog       = loadTexture(GOLD_BLOCK("oak_log.png"));
+    texOakLeaves    = loadTexture(GOLD_BLOCK("oak_leaves.png"));
+    texSnow         = loadTexture(GOLD_BLOCK("snow.png"));
+    texIceGold      = loadTexture(GOLD_BLOCK("ice.png"));
+    texClayGold     = loadTexture(GOLD_BLOCK("clay.png"));
+    texGravelGold   = loadTexture(GOLD_BLOCK("gravel.png"));
+    texGlowstoneGold= loadTexture(GOLD_BLOCK("glowstone.png"));
+    texDiamondBlock = loadTexture(GOLD_BLOCK("diamond_block.png"));
+    texGoldBlock    = loadTexture(GOLD_BLOCK("gold_block.png"));
+    texIronBlockTex = loadTexture(GOLD_BLOCK("iron_block.png"));
+    texObsidian     = loadTexture(GOLD_BLOCK("obsidian.png"));
+    texSandstoneGold= loadTexture(GOLD_BLOCK("sandstone.png"));
+    texCutSandstone = loadTexture(GOLD_BLOCK("cut_sandstone.png"));
+    texQuartzTop    = loadTexture(GOLD_BLOCK("quartz_block_top.png"));
+    texAndesite     = loadTexture(GOLD_BLOCK("andesite.png"));
+    texDiorite      = loadTexture(GOLD_BLOCK("diorite.png"));
+    texGranite      = loadTexture(GOLD_BLOCK("granite.png"));
+    texPolAndesite  = loadTexture(GOLD_BLOCK("polished_andesite.png"));
+    texPolDiorite   = loadTexture(GOLD_BLOCK("polished_diorite.png"));
+    texPolGranite   = loadTexture(GOLD_BLOCK("polished_granite.png"));
+    texOakTrapdoor  = loadTexture(GOLD_BLOCK("oak_trapdoor.png"));
+    texOakDoorBot   = loadTexture(GOLD_BLOCK("oak_door_bottom.png"));
+    texWaterStill   = loadTexture(GOLD_BLOCK("water_still.png"));
+    #undef GOLD_BLOCK
+
     printf("[World] Generating terrain...\n");
     initBlockGrid();
     printf("[World] Terrain ready! %dx%d grid, %d height layers\n", GRID_W, GRID_D, GRID_H);
@@ -237,8 +266,8 @@ int main() {
         deltaTime = currentTime - lastFrame;
         lastFrame = currentTime;
 
+        updateBlockTarget();   // must run before processInput so target is current
         processInput(window);
-        updateBlockTarget();
         updateMobs(deltaTime, (float)glfwGetTime());
         updateFluids((float)glfwGetTime());
 
@@ -302,6 +331,10 @@ int main() {
         setInt(shaderProgram, "textureMode", 0);    // no texture by default
         setBool(shaderProgram, "useGouraud", useGouraud);
 
+        // Damage tint defaults (reset each frame)
+        setVec3(shaderProgram, "colorTint", glm::vec3(0.0f));
+        setFloat(shaderProgram, "colorTintStrength", 0.0f);
+
         // Directional light (sun angle changes with day)
         glm::vec3 sunDir;
         glm::vec3 sunColor;
@@ -355,7 +388,14 @@ int main() {
             renderSky(curTime, sunDir);
             renderTerrain(curTime);
             renderObjects(curTime);
-            drawBlockHighlight();
+            if (isBreaking && hasTarget) {
+                int _bt = getBlock(targetCol, targetRow, targetHeight);
+                float _hard = getBlockHardness(_bt);
+                float _speed = getToolSpeedMultiplier(playerInventory[hotbarSlot].type, _bt);
+                float _dur = (_hard > 0.0f && _speed > 0.0f) ? _hard / _speed : 0.0f;
+                float _prog = (_dur > 0.0f) ? (breakHoldTime / _dur) : 0.0f;
+                drawBreakOverlay(_prog);
+            }
             uploadPointLights();
             glDisable(GL_SCISSOR_TEST);
         };
@@ -430,7 +470,14 @@ int main() {
             renderSky(curTime, sunDir);
             renderTerrain(curTime);
             renderObjects(curTime);
-            drawBlockHighlight();
+            if (isBreaking && hasTarget) {
+                int _bt = getBlock(targetCol, targetRow, targetHeight);
+                float _hard = getBlockHardness(_bt);
+                float _speed = getToolSpeedMultiplier(playerInventory[hotbarSlot].type, _bt);
+                float _dur = (_hard > 0.0f && _speed > 0.0f) ? _hard / _speed : 0.0f;
+                float _prog = (_dur > 0.0f) ? (breakHoldTime / _dur) : 0.0f;
+                drawBreakOverlay(_prog);
+            }
             uploadPointLights();
         }
 

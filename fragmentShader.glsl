@@ -63,6 +63,10 @@ uniform int textureMode; // 0=no texture, 1=simple (texture only), 2=blended (te
 // Gouraud/Phong toggle
 uniform bool useGouraud;
 
+// Damage tint (red flash on mob hit)
+uniform vec3 colorTint;
+uniform float colorTintStrength;
+
 out vec4 FragColor;
 
 void main()
@@ -127,6 +131,7 @@ void main()
         float dist = length(viewPos - FragPos);
         float fogFactor = clamp(exp(-fogDensity * dist * dist), 0.0, 1.0);
         result = mix(fogColor, result, fogFactor);
+        result = mix(result, colorTint, colorTintStrength);
         FragColor = vec4(result, alpha);
         return;
     }
@@ -210,6 +215,9 @@ void main()
     float fogFactor = exp(-fogDensity * dist * dist);
     fogFactor = clamp(fogFactor, 0.0, 1.0);
     result = mix(fogColor, result, fogFactor);
+
+    // Damage tint (red flash on hit)
+    result = mix(result, colorTint, colorTintStrength);
 
     FragColor = vec4(result, alpha);
 }

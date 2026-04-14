@@ -237,9 +237,27 @@ BlockProperties getBlockProps(int type) {
 
 // Inventory Structures
 struct InventorySlot {
-    int type; // BlockType (0 = AIR)
-    int count; // max 64
+    int type;       // BlockType (0 = AIR)
+    int count;      // max 64
+    int durability; // -1 = infinite (blocks/non-tools), 0 = broken, >0 = uses remaining
 };
+
+// Max durability per tool tier
+int getMaxDurability(int toolType) {
+    switch (toolType) {
+        case ITEM_SWORD_WOOD:    case ITEM_AXE_WOOD:
+        case ITEM_PICKAXE_WOOD:  case ITEM_SHOVEL_WOOD:    return 59;
+        case ITEM_SWORD_STONE:   case ITEM_AXE_STONE:
+        case ITEM_PICKAXE_STONE: case ITEM_SHOVEL_STONE:   return 131;
+        case ITEM_SWORD_IRON:    case ITEM_AXE_IRON:
+        case ITEM_PICKAXE_IRON:  case ITEM_SHOVEL_IRON:    return 250;
+        case ITEM_SWORD_DIAMOND: case ITEM_AXE_DIAMOND:
+        case ITEM_PICKAXE_DIAMOND: case ITEM_SHOVEL_DIAMOND: return 1561;
+        case ITEM_BOW:                                     return 384;
+        case ITEM_STICK:                                   return -1;
+        default:                                           return -1; // blocks/non-tools
+    }
+}
 
 // 0-8: Hotbar. 9-35: Storage Grid
 InventorySlot playerInventory[36];
@@ -258,37 +276,26 @@ struct CraftingRecipe {
 
 // _ = BLOCK_AIR (empty), pattern is row-major: [0-2]=top row, [3-5]=mid, [6-8]=bottom
 const CraftingRecipe recipes[] = {
-    // 1 Wood Log -> 4 Planks (Wood -> Wood x4, simplified)
-    // Single wood in any slot produces planks — we match center
-    {{0,0,0, 0,BLOCK_WOOD,0, 0,0,0}, BLOCK_WOOD, 4},
+    // Wood Log -> 4 Planks
+    {{0,0,0, 0,BLOCK_WOOD,0, 0,0,0}, BLOCK_PLANKS, 4},
 
-    // 4 Stone -> 4 Stone Bricks (Stone Light)
+    // 2 Stone -> Stone Bricks
     {{0,0,0, 0,0,0, BLOCK_STONE,BLOCK_STONE,0}, BLOCK_STONE_LIGHT, 4},
 
     // 4 Sand -> 1 Glass (smelting proxy)
     {{BLOCK_SAND,BLOCK_SAND,0, BLOCK_SAND,BLOCK_SAND,0, 0,0,0}, BLOCK_GLASS, 1},
 
-    // 3 Stone -> 3 Stone Slabs (proxy: gravel)
+    // 3 Stone -> 3 Slabs (proxy: gravel)
     {{BLOCK_STONE,BLOCK_STONE,BLOCK_STONE, 0,0,0, 0,0,0}, BLOCK_GRAVEL, 3},
 
     // 2 Dirt + 1 Leaf -> 1 Grass
     {{0,BLOCK_LEAF,0, 0,BLOCK_DIRT,0, 0,BLOCK_DIRT,0}, BLOCK_GRASS, 1},
 
-    // Snow + Snow -> Ice
+    // 4 Snow -> Ice
     {{0,0,0, BLOCK_SNOW,BLOCK_SNOW,0, BLOCK_SNOW,BLOCK_SNOW,0}, BLOCK_ICE, 1},
 
-    // 9 Diamond Ore -> 1 Diamond Block (proxy: glass)
-    {{BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,
-      BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,
-      BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND,BLOCK_ORE_DIAMOND}, BLOCK_ICE, 1},
-
-    // Clay -> 4 Bricks (proxy: stone light)
-    {{0,0,0, 0,BLOCK_CLAY,0, 0,0,0}, BLOCK_STONE_LIGHT, 4},
-
-    // --- NEW EXPANDED RECIPES --------------------------
-
-    // Wood -> 4 Planks
-    {{0,0,0, 0,BLOCK_WOOD,0, 0,0,0}, BLOCK_PLANKS, 4},
+    // Clay -> 4 Bricks
+    {{0,0,0, 0,BLOCK_CLAY,0, 0,0,0}, BLOCK_BRICKS, 4},
     // Planks x4 -> Crafting Table
     {{0,0,0, BLOCK_PLANKS,BLOCK_PLANKS,0, BLOCK_PLANKS,BLOCK_PLANKS,0}, BLOCK_CRAFTING_TABLE, 1},
     // Sand x4 -> Sandstone
@@ -443,28 +450,69 @@ const CraftingRecipe recipes[] = {
 };
 const int NUM_RECIPES = sizeof(recipes) / sizeof(recipes[0]);
 
+// Get bounding box of non-empty cells in a 3x3 grid
+void gridBounds(const int grid[9], int& minR, int& maxR, int& minC, int& maxC) {
+    minR = 3; maxR = -1; minC = 3; maxC = -1;
+    for (int r = 0; r < 3; r++) {
+        for (int c = 0; c < 3; c++) {
+            if (grid[r * 3 + c] != BLOCK_AIR) {
+                if (r < minR) minR = r;
+                if (r > maxR) maxR = r;
+                if (c < minC) minC = c;
+                if (c > maxC) maxC = c;
+            }
+        }
+    }
+}
+
 void checkCraftingRecipes() {
-    // Compare craftingGrid against each recipe
+    // Get bounding box of what's in the crafting grid
+    int gridTypes[9];
+    for (int i = 0; i < 9; i++) gridTypes[i] = craftingGrid[i].type;
+    int gMinR, gMaxR, gMinC, gMaxC;
+    gridBounds(gridTypes, gMinR, gMaxR, gMinC, gMaxC);
+
+    // Empty grid — no output
+    if (gMaxR < 0) {
+        craftingOutput.type = BLOCK_AIR;
+        craftingOutput.count = 0;
+        return;
+    }
+    int gH = gMaxR - gMinR + 1;
+    int gW = gMaxC - gMinC + 1;
+
     for (int r = 0; r < NUM_RECIPES; r++) {
+        // Get recipe bounding box
+        int rMinR, rMaxR, rMinC, rMaxC;
+        gridBounds((int*)recipes[r].pattern, rMinR, rMaxR, rMinC, rMaxC);
+        if (rMaxR < 0) continue; // empty recipe
+        int rH = rMaxR - rMinR + 1;
+        int rW = rMaxC - rMinC + 1;
+
+        // Dimensions must match
+        if (rH != gH || rW != gW) continue;
+
+        // Compare normalized patterns
         bool match = true;
-        for (int i = 0; i < 9; i++) {
-            int need = recipes[r].pattern[i];
-            int have = craftingGrid[i].type;
-            if (need == BLOCK_AIR) {
-                if (have != BLOCK_AIR) { match = false; break; }
-            } else {
-                if (have != need || craftingGrid[i].count < 1) { match = false; break; }
+        for (int dr = 0; dr < rH && match; dr++) {
+            for (int dc = 0; dc < rW && match; dc++) {
+                int need = recipes[r].pattern[(rMinR + dr) * 3 + (rMinC + dc)];
+                int have = craftingGrid[(gMinR + dr) * 3 + (gMinC + dc)].type;
+                int cnt  = craftingGrid[(gMinR + dr) * 3 + (gMinC + dc)].count;
+                if (need != have || (need != BLOCK_AIR && cnt < 1)) match = false;
             }
         }
         if (match) {
             craftingOutput.type = recipes[r].resultType;
             craftingOutput.count = recipes[r].resultCount;
+            craftingOutput.durability = getMaxDurability(recipes[r].resultType);
             return;
         }
     }
     // No recipe matched
     craftingOutput.type = BLOCK_AIR;
     craftingOutput.count = 0;
+    craftingOutput.durability = -1;
 }
 
 void consumeCraftingInputs() {
@@ -485,6 +533,7 @@ void consumeCraftingInputs() {
 InventorySlot draggedSlot;
 
 bool inventoryOpen = false;
+bool useCraftingTable = false; // true = 3x3 (crafting table), false = 2x2 (personal)
 bool recipeBookOpen = false;
 int recipePage = 0;
 std::string recipeSearchText = "";
@@ -586,6 +635,90 @@ const char* getBlockName(int type) {
         case ITEM_BOW:               return "bow";
         default:                     return "unknown";
     }
+}
+
+// Tool damage values (Minecraft-accurate)
+float getToolDamage(int type) {
+    switch (type) {
+        // Swords
+        case ITEM_SWORD_WOOD:    return 4.0f;
+        case ITEM_SWORD_STONE:   return 5.0f;
+        case ITEM_SWORD_IRON:    return 6.0f;
+        case ITEM_SWORD_DIAMOND: return 7.0f;
+        // Axes (high damage, slow)
+        case ITEM_AXE_WOOD:      return 7.0f;
+        case ITEM_AXE_STONE:     return 9.0f;
+        case ITEM_AXE_IRON:      return 9.0f;
+        case ITEM_AXE_DIAMOND:   return 9.0f;
+        // Pickaxes
+        case ITEM_PICKAXE_WOOD:    return 2.0f;
+        case ITEM_PICKAXE_STONE:   return 3.0f;
+        case ITEM_PICKAXE_IRON:    return 4.0f;
+        case ITEM_PICKAXE_DIAMOND: return 5.0f;
+        // Shovels
+        case ITEM_SHOVEL_WOOD:    return 2.5f;
+        case ITEM_SHOVEL_STONE:   return 3.5f;
+        case ITEM_SHOVEL_IRON:    return 4.5f;
+        case ITEM_SHOVEL_DIAMOND: return 5.5f;
+        default: return 1.0f; // fist / non-tool
+    }
+}
+
+// Check if a tool type is a sword
+bool isSword(int type) {
+    return type == ITEM_SWORD_WOOD || type == ITEM_SWORD_STONE ||
+           type == ITEM_SWORD_IRON || type == ITEM_SWORD_DIAMOND;
+}
+
+// Check if a tool type is an axe
+bool isAxe(int type) {
+    return type == ITEM_AXE_WOOD || type == ITEM_AXE_STONE ||
+           type == ITEM_AXE_IRON || type == ITEM_AXE_DIAMOND;
+}
+
+// Check if a tool type is a pickaxe
+bool isPickaxe(int type) {
+    return type == ITEM_PICKAXE_WOOD || type == ITEM_PICKAXE_STONE ||
+           type == ITEM_PICKAXE_IRON || type == ITEM_PICKAXE_DIAMOND;
+}
+
+// Check if a tool type is a shovel
+bool isShovel(int type) {
+    return type == ITEM_SHOVEL_WOOD || type == ITEM_SHOVEL_STONE ||
+           type == ITEM_SHOVEL_IRON || type == ITEM_SHOVEL_DIAMOND;
+}
+
+// Check if a block is wood-type (axes are effective)
+bool isWoodBlock(int bt) {
+    return bt == BLOCK_WOOD || bt == BLOCK_PLANKS || bt == BLOCK_CRAFTING_TABLE ||
+           bt == BLOCK_FENCE_WOOD || bt == BLOCK_FENCE_GATE || bt == BLOCK_DOOR_OAK ||
+           bt == BLOCK_TRAPDOOR_OAK || bt == BLOCK_LADDER || bt == BLOCK_SIGN ||
+           bt == BLOCK_BANNER || bt == BLOCK_BOOKSHELF;
+}
+
+// Check if a block is stone-type (pickaxes are effective)
+bool isStoneBlock(int bt) {
+    return bt == BLOCK_STONE || bt == BLOCK_COBBLESTONE || bt == BLOCK_STONE_LIGHT ||
+           bt == BLOCK_BRICKS || bt == BLOCK_SANDSTONE || bt == BLOCK_CUT_SANDSTONE ||
+           bt == BLOCK_MOSSY_COBBLESTONE || bt == BLOCK_MOSSY_BRICKS ||
+           bt == BLOCK_POLISHED_DIORITE || bt == BLOCK_POLISHED_GRANITE ||
+           bt == BLOCK_POLISHED_ANDESITE || bt == BLOCK_QUARTZ_BLOCK ||
+           bt == BLOCK_IRON_BLOCK || bt == BLOCK_DIAMOND_BLOCK || bt == BLOCK_GOLD_BLOCK ||
+           bt == BLOCK_OBSIDIAN || bt == BLOCK_ORE_DIAMOND || bt == BLOCK_ORE_GOLD ||
+           bt == BLOCK_COAL_ORE || bt == BLOCK_GRAVEL || bt == BLOCK_IRON_BARS;
+}
+
+// Check if a block is soil-type (shovels are effective)
+bool isSoilBlock(int bt) {
+    return bt == BLOCK_DIRT || bt == BLOCK_GRASS || bt == BLOCK_SAND ||
+           bt == BLOCK_GRAVEL || bt == BLOCK_CLAY || bt == BLOCK_SNOW;
+}
+
+// Can the held tool break this block? (e.g., need pickaxe for ores)
+bool canBreakWith(int toolType, int blockType) {
+    // Anything can be broken with anything (Minecraft lets you, just slower)
+    // But certain blocks require at least a pickaxe to drop items
+    return true;
 }
 
 // Add crafted items directly to player inventory (no grid needed)
@@ -718,6 +851,25 @@ bool hasTarget = false;
 int targetCol, targetRow, targetHeight;
 int placeCol, placeRow, placeHeight; // adjacent cell for placement
 
+// Block breaking state (hold-to-break)
+bool isBreaking = false;
+float breakHoldTime = 0.0f;
+int breakTargetCol = 0, breakTargetRow = 0, breakTargetH = 0;
+
+// Break particles — chips flying out while mining
+struct BreakParticle {
+    glm::vec3 pos;
+    glm::vec3 vel;
+    glm::vec3 color;
+    float lifetime;     // age so far
+    float maxLifetime;  // total duration
+    float spin;         // current rotation (radians)
+    float spinSpeed;    // radians/sec
+};
+std::vector<BreakParticle> breakParticles;
+const int MAX_BREAK_PARTICLES = 120;
+float breakParticleTimer = 0.0f; // throttle emission
+
 // Item drops
 struct ItemDrop {
     glm::vec3 pos;
@@ -734,8 +886,8 @@ const float ITEM_DESPAWN_TIME = 60.0f;
 // =====================================================
 // Mobs
 // =====================================================
-enum MobType { MOB_CHICKEN = 0, MOB_PIG, MOB_ZOMBIE };
-enum MobState { MOB_IDLE, MOB_WANDER, MOB_CHASE, MOB_ATTACK };
+enum MobType { MOB_CHICKEN = 0, MOB_PIG, MOB_SHEEP, MOB_ZOMBIE, MOB_SKELETON };
+enum MobState { MOB_IDLE, MOB_WANDER, MOB_CHASE, MOB_ATTACK, MOB_FLEE };
 
 struct Mob {
     glm::vec3 pos;
@@ -748,10 +900,28 @@ struct Mob {
     float attackCooldown; // for hostile mobs
     float walkTime;      // for walk animation
     bool alive;
+    float hitFlash;      // red tint timer (0.3s on hit, counts down)
+    float deathTimer;    // death animation timer (falls over + fades, -1 = alive)
+    // Pathfinding
+    std::vector<glm::vec3> path; // A* computed waypoints
+    int pathIndex;               // current waypoint index
+    float pathTimer;             // time since last path recalc
 };
 std::vector<Mob> mobs;
-const int MAX_MOBS = 30;
+const int MAX_MOBS = 40;
 float mobSpawnTimer = 0.0f;
+
+// Arrow projectiles (shot by skeletons)
+struct Arrow {
+    glm::vec3 pos;
+    glm::vec3 vel;
+    float lifetime;
+    bool active;
+};
+std::vector<Arrow> arrows;
+
+// Player attack cooldown
+float playerAttackCooldown = 0.0f;
 
 // =====================================================
 // Camera state
@@ -870,6 +1040,15 @@ GLuint texItemBow = 0;
 GLuint texTorchBlock = 0, texSeaLantern = 0;
 GLuint texCraftingTop = 0, texCraftingFront = 0;
 GLuint texBedrock = 0, texCoalOre = 0, texDiamondOre = 0, texGoldOre = 0;
+
+// Textures — Gold resource pack (blocks missing from FM Default)
+GLuint texGrassTop = 0, texSandGold = 0, texOakLog = 0, texOakLeaves = 0;
+GLuint texSnow = 0, texIceGold = 0, texClayGold = 0, texGravelGold = 0;
+GLuint texGlowstoneGold = 0, texDiamondBlock = 0, texGoldBlock = 0, texIronBlockTex = 0;
+GLuint texObsidian = 0, texSandstoneGold = 0, texCutSandstone = 0, texQuartzTop = 0;
+GLuint texAndesite = 0, texDiorite = 0, texGranite = 0;
+GLuint texPolAndesite = 0, texPolDiorite = 0, texPolGranite = 0;
+GLuint texOakTrapdoor = 0, texOakDoorBot = 0, texWaterStill = 0;
 
 // Hex mesh
 GLuint hexVAO, hexVBO;

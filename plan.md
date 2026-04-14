@@ -284,33 +284,33 @@ All items from `gfx_req.md` are now implemented:
 
 ---
 
-## Phase 15: Mobs & Combat
+## Phase 15: Mobs & Combat ✅
 
-### 15A: Passive Mobs
-- Hex-shaped animals: chickens, pigs, sheep (body + legs + head from hex prisms)
-- AI state machine: idle → wander → flee (when attacked)
-- Random walk: pick direction, walk 2–5 seconds, pause, repeat. Avoid cliff edges.
-- Drop raw food/materials on death
-- 2–4 passive mobs spawn in grass/forest biomes
+### 15A: Passive Mobs ✅
+- [x] Hex-shaped animals: chickens, pigs, sheep (body + legs + head from hex prisms)
+- [x] AI state machine: idle → wander → flee (when attacked)
+- [x] Random walk: pick direction, walk 2–5 seconds, pause, repeat. Avoid cliff edges.
+- [x] Drop raw food/materials on death
+- [x] 12 passive mobs spawn in grass/forest biomes
 
-### 15B: Hostile Mobs
-- **Zombie**: Walks toward player within 16 blocks. Melee attack (3 HP damage). 20 HP. Drops rotten flesh.
-- **Skeleton**: Approaches player, shoots arrows at 8–15 block range. 20 HP. Drops bones + arrows.
-- Spawn rules: spawn on solid blocks with low light level, at least 24 blocks from player, at night or in dark areas
-- Torches create safe zones (light level > 7 prevents spawning)
+### 15B: Hostile Mobs ✅
+- [x] **Zombie**: Walks toward player within 16 blocks. Melee attack (3 HP damage). 20 HP. Drops rotten flesh.
+- [x] **Skeleton**: Approaches player, shoots arrows at 8–15 block range. 20 HP. Drops bones + arrows.
+- [x] Spawn rules: spawn on solid blocks with low light level, at least 8 blocks from player, at night or in dark areas
+- [x] Torches create safe zones (light level > 7 prevents spawning)
 
-### 15C: Combat System
-- Melee attack: left-click on mob with sword/tool
-- Damage = weapon damage value, knockback on hit
-- Attack cooldown (0.625s for sword)
-- Damage flash: tint mob red for 0.3s on hit
-- Death animation: entity falls over, fades, drops items
+### 15C: Combat System ✅
+- [x] Melee attack: left-click on mob with sword/tool
+- [x] Damage = weapon damage value, knockback on hit
+- [x] Attack cooldown (0.625s for sword, 1.0s for axe, 0.4s other)
+- [x] Damage flash: tint mob red for 0.3s on hit (colorTint shader uniform)
+- [x] Death animation: entity falls over, fades, drops items
 
-### 15D: Pathfinding
-- Simple A* on the hex block grid for ground mobs
-- Nodes = (col, row, height) positions. Check walkable: solid block below, air at feet level.
-- Heuristic: hex distance. Limit search to 200 nodes.
-- Recalculate path every 1–2 seconds within 32 blocks of player.
+### 15D: Pathfinding ✅
+- [x] Simple A* on the hex block grid for ground mobs
+- [x] Nodes = (col, row, height) positions. Check walkable: solid block below, air at feet level.
+- [x] Heuristic: hex distance. Limit search to 200 nodes.
+- [x] Recalculate path every 1.5–2 seconds within 16–20 blocks of player.
 
 ---
 

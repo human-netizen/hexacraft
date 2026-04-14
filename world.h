@@ -248,6 +248,227 @@ glm::vec3 getBlockColor(int type) {
 }
 
 // =====================================================
+// Block drop table — what item a block drops when broken
+// =====================================================
+int getBlockDrop(int type) {
+    switch (type) {
+        // Grass → dirt (top block breaks to dirt)
+        case BLOCK_GRASS:           return BLOCK_DIRT;
+        // Stone → cobblestone
+        case BLOCK_STONE:           return BLOCK_COBBLESTONE;
+        // Sandstone → sandstone (keeps itself)
+        case BLOCK_SANDSTONE:       return BLOCK_SANDSTONE;
+        // Glass and ice drop nothing (no silk touch)
+        case BLOCK_GLASS:           return BLOCK_AIR;
+        case BLOCK_GLASS_PANE:      return BLOCK_AIR;
+        case BLOCK_ICE:             return BLOCK_AIR;
+        // Leaves drop nothing (no shears)
+        case BLOCK_LEAF:            return BLOCK_AIR;
+        // Bedrock is unbreakable — no drop
+        case BLOCK_BEDROCK:         return BLOCK_AIR;
+        // Water / air — no drop
+        case BLOCK_WATER:           return BLOCK_AIR;
+        case BLOCK_AIR:             return BLOCK_AIR;
+        // Everything else drops itself
+        default:                    return type;
+    }
+}
+
+// =====================================================
+// Block hardness — base seconds to break bare-handed
+// =====================================================
+float getBlockHardness(int type) {
+    switch (type) {
+        case BLOCK_AIR:             return 0.0f;
+        case BLOCK_WATER:           return 0.5f;
+
+        // Soft — dirt/sand/gravel/snow
+        case BLOCK_DIRT:
+        case BLOCK_SAND:
+        case BLOCK_GRAVEL:
+        case BLOCK_SNOW:
+        case BLOCK_CLAY:            return 0.4f;
+
+        case BLOCK_GRASS:           return 0.5f;
+
+        // Wood / leaf
+        case BLOCK_WOOD:
+        case BLOCK_PLANKS:
+        case BLOCK_LEAF:
+        case BLOCK_CRAFTING_TABLE:
+        case BLOCK_BOOKSHELF:
+        case BLOCK_FENCE_WOOD:
+        case BLOCK_FENCE_GATE:
+        case BLOCK_DOOR_OAK:
+        case BLOCK_TRAPDOOR_OAK:
+        case BLOCK_SLAB_WOOD:
+        case BLOCK_STAIRS_WOOD:
+        case BLOCK_LADDER:
+        case BLOCK_SIGN:
+        case BLOCK_BANNER:          return 0.8f;
+
+        // Wool / carpet
+        case BLOCK_WOOL_WHITE: case BLOCK_WOOL_RED: case BLOCK_WOOL_BLUE:
+        case BLOCK_WOOL_GREEN: case BLOCK_WOOL_YELLOW: case BLOCK_WOOL_BLACK:
+        case BLOCK_WOOL_ORANGE: case BLOCK_WOOL_PINK: case BLOCK_WOOL_PURPLE:
+        case BLOCK_WOOL_CYAN: case BLOCK_WOOL_BROWN: case BLOCK_WOOL_GRAY:
+        case BLOCK_WOOL_LIGHT_GRAY: case BLOCK_WOOL_MAGENTA: case BLOCK_WOOL_LIME:
+        case BLOCK_CARPET_WHITE: case BLOCK_CARPET_RED: case BLOCK_CARPET_BLUE:
+                                    return 0.4f;
+
+        // Glass / ice — fragile
+        case BLOCK_GLASS:
+        case BLOCK_GLASS_PANE:
+        case BLOCK_ICE:             return 0.2f;
+
+        // Stone-type
+        case BLOCK_STONE:
+        case BLOCK_COBBLESTONE:
+        case BLOCK_MOSSY_COBBLESTONE:
+        case BLOCK_STONE_LIGHT:
+        case BLOCK_BRICKS:
+        case BLOCK_MOSSY_BRICKS:
+        case BLOCK_SANDSTONE:
+        case BLOCK_CUT_SANDSTONE:
+        case BLOCK_SMOOTH_STONE:
+        case BLOCK_POLISHED_DIORITE:
+        case BLOCK_POLISHED_GRANITE:
+        case BLOCK_POLISHED_ANDESITE:
+        case BLOCK_QUARTZ_BLOCK:
+        case BLOCK_TERRACOTTA:
+        case BLOCK_SLAB_STONE:
+        case BLOCK_SLAB_SANDSTONE:
+        case BLOCK_SLAB_BRICK:
+        case BLOCK_STAIRS_STONE:
+        case BLOCK_IRON_BARS:
+        case BLOCK_DOOR_IRON:       return 2.5f;
+
+        // Ores
+        case BLOCK_COAL_ORE:
+        case BLOCK_ORE_GOLD:
+        case BLOCK_ORE_DIAMOND:     return 4.0f;
+
+        // Heavy metal blocks
+        case BLOCK_IRON_BLOCK:
+        case BLOCK_GOLD_BLOCK:
+        case BLOCK_DIAMOND_BLOCK:   return 6.0f;
+
+        // Glowstone / torches / lanterns
+        case BLOCK_GLOWSTONE:
+        case BLOCK_LANTERN:
+        case BLOCK_TORCH_BLOCK:     return 0.3f;
+
+        // Obsidian — hard even with diamond pick
+        case BLOCK_OBSIDIAN:        return 10.0f;
+
+        // Bedrock — very hard but decomposable
+        case BLOCK_BEDROCK:         return 8.0f;
+
+        default:                    return 1.5f;
+    }
+}
+
+// Returns true if this block type is in the stone/ore/metal category
+bool isStoneType(int bt) {
+    switch (bt) {
+        case BLOCK_STONE: case BLOCK_COBBLESTONE: case BLOCK_MOSSY_COBBLESTONE:
+        case BLOCK_STONE_LIGHT: case BLOCK_BRICKS: case BLOCK_MOSSY_BRICKS:
+        case BLOCK_SANDSTONE: case BLOCK_CUT_SANDSTONE: case BLOCK_SMOOTH_STONE:
+        case BLOCK_POLISHED_DIORITE: case BLOCK_POLISHED_GRANITE: case BLOCK_POLISHED_ANDESITE:
+        case BLOCK_QUARTZ_BLOCK: case BLOCK_TERRACOTTA: case BLOCK_IRON_BLOCK:
+        case BLOCK_GOLD_BLOCK: case BLOCK_DIAMOND_BLOCK: case BLOCK_GLOWSTONE:
+        case BLOCK_SLAB_STONE: case BLOCK_SLAB_SANDSTONE: case BLOCK_SLAB_BRICK:
+        case BLOCK_STAIRS_STONE: case BLOCK_COAL_ORE: case BLOCK_ORE_GOLD:
+        case BLOCK_ORE_DIAMOND: case BLOCK_IRON_BARS: case BLOCK_DOOR_IRON:
+        case BLOCK_OBSIDIAN:        return true;
+        default:                    return false;
+    }
+}
+
+bool isWoodType(int bt) {
+    switch (bt) {
+        case BLOCK_WOOD: case BLOCK_PLANKS: case BLOCK_LEAF:
+        case BLOCK_CRAFTING_TABLE: case BLOCK_BOOKSHELF: case BLOCK_FENCE_WOOD:
+        case BLOCK_FENCE_GATE: case BLOCK_DOOR_OAK: case BLOCK_TRAPDOOR_OAK:
+        case BLOCK_SLAB_WOOD: case BLOCK_STAIRS_WOOD: case BLOCK_LADDER:
+        case BLOCK_SIGN: case BLOCK_BANNER:     return true;
+        default:                                return false;
+    }
+}
+
+bool isDirtType(int bt) {
+    switch (bt) {
+        case BLOCK_DIRT: case BLOCK_GRASS: case BLOCK_SAND: case BLOCK_GRAVEL:
+        case BLOCK_SNOW: case BLOCK_CLAY:  return true;
+        default:                           return false;
+    }
+}
+
+// Speed multiplier: how much faster the held tool breaks the target block
+float getToolSpeedMultiplier(int toolType, int blockType) {
+    // Obsidian: only diamond pickaxe works meaningfully
+    if (blockType == BLOCK_OBSIDIAN) {
+        switch (toolType) {
+            case ITEM_PICKAXE_DIAMOND: return 8.0f;
+            case ITEM_PICKAXE_IRON:    return 3.0f;
+            default:                   return 0.5f; // painfully slow but not 0
+        }
+    }
+
+    bool stone = isStoneType(blockType);
+    bool wood  = isWoodType(blockType);
+    bool dirt  = isDirtType(blockType);
+
+    // --- Right-tool tiers give big bonus ---
+    // Pickaxes best on stone
+    if (stone) {
+        switch (toolType) {
+            case ITEM_PICKAXE_WOOD:    return 3.0f;
+            case ITEM_PICKAXE_STONE:   return 5.0f;
+            case ITEM_PICKAXE_IRON:    return 7.0f;
+            case ITEM_PICKAXE_DIAMOND: return 9.0f;
+            default: break;
+        }
+    }
+    // Axes best on wood
+    if (wood) {
+        switch (toolType) {
+            case ITEM_AXE_WOOD:    return 3.0f;
+            case ITEM_AXE_STONE:   return 5.0f;
+            case ITEM_AXE_IRON:    return 7.0f;
+            case ITEM_AXE_DIAMOND: return 9.0f;
+            default: break;
+        }
+    }
+    // Shovels best on dirt/sand/gravel/snow/clay
+    if (dirt) {
+        switch (toolType) {
+            case ITEM_SHOVEL_WOOD:    return 3.0f;
+            case ITEM_SHOVEL_STONE:   return 5.0f;
+            case ITEM_SHOVEL_IRON:    return 7.0f;
+            case ITEM_SHOVEL_DIAMOND: return 9.0f;
+            default: break;
+        }
+    }
+
+    // --- Any tool (wrong type) gives 1.5× — always noticeable vs bare hand ---
+    bool anyTool = (toolType >= ITEM_STICK && toolType < ITEM_COUNT);
+    if (anyTool && toolType != ITEM_STICK && toolType != ITEM_BOW) return 1.5f;
+
+    return 1.0f; // bare hand / stick
+}
+
+// Compute effective break duration in seconds for current player + target block
+float getBreakDuration(int toolType, int blockType) {
+    float hardness = getBlockHardness(blockType);
+    if (hardness <= 0.0f) return 0.0f;   // instant (air etc.)
+    if (hardness < 0.0f) return -1.0f;   // unbreakable
+    float speed = getToolSpeedMultiplier(toolType, blockType);
+    if (speed <= 0.0f) return -1.0f;     // can't break
+    return hardness / speed;
+}
+
+// =====================================================
 // Biome system: 0=sand, 1=grass, 2=stone, 3=water
 // =====================================================
 int getBiome(int col, int row) {
@@ -1600,8 +1821,6 @@ GLuint getBlockTexture(int type) {
         case BLOCK_SLAB_WOOD:     return texOakPlanks;
         case BLOCK_STAIRS_WOOD:   return texOakPlanks;
         case BLOCK_FENCE_WOOD:    return texOakPlanks;
-        case BLOCK_DOOR_OAK:      return texOakPlanks;
-        case BLOCK_TRAPDOOR_OAK:  return texOakPlanks;
         case BLOCK_FENCE_GATE:    return texOakPlanks;
         case BLOCK_LADDER:        return texLadder;
         case BLOCK_DOOR_IRON:     return texIronDoorBot;
@@ -1615,7 +1834,33 @@ GLuint getBlockTexture(int type) {
         case BLOCK_COAL_ORE:      return texCoalOre;
         case BLOCK_ORE_DIAMOND:   return texDiamondOre;
         case BLOCK_ORE_GOLD:      return texGoldOre;
-        // All wool, carpets, terracotta, concrete — use color only (no FM texture)
+
+        // Gold pack textures
+        case BLOCK_GRASS:         return texGrassTop;
+        case BLOCK_SAND:          return texSandGold;
+        case BLOCK_WOOD:          return texOakLog;
+        case BLOCK_LEAF:          return texOakLeaves;
+        case BLOCK_SNOW:          return texSnow;
+        case BLOCK_ICE:           return texIceGold;
+        case BLOCK_CLAY:          return texClayGold;
+        case BLOCK_GRAVEL:        return texGravelGold;
+        case BLOCK_GLOWSTONE:     return texGlowstoneGold;
+        case BLOCK_DIAMOND_BLOCK: return texDiamondBlock;
+        case BLOCK_GOLD_BLOCK:    return texGoldBlock;
+        case BLOCK_IRON_BLOCK:    return texIronBlockTex;
+        case BLOCK_OBSIDIAN:      return texObsidian;
+        case BLOCK_SANDSTONE:     return texSandstoneGold;
+        case BLOCK_SLAB_SANDSTONE:return texSandstoneGold;
+        case BLOCK_CUT_SANDSTONE: return texCutSandstone;
+        case BLOCK_QUARTZ_BLOCK:  return texQuartzTop;
+        case BLOCK_POLISHED_ANDESITE: return texPolAndesite;
+        case BLOCK_POLISHED_DIORITE:  return texPolDiorite;
+        case BLOCK_POLISHED_GRANITE:  return texPolGranite;
+        case BLOCK_TRAPDOOR_OAK:  return texOakTrapdoor;
+        case BLOCK_DOOR_OAK:      return texOakDoorBot;
+        case BLOCK_WATER:         return texWaterStill;
+
+        // Wool, carpets, dirt — use color only (no texture in pack)
 
         // Tool item sprites
         case ITEM_STICK:           return texItemStick;
@@ -1683,7 +1928,7 @@ void renderTerrain(float time = 0.0f) {
 
     // Render distance: skip columns too far from camera (huge FPS boost)
     // Set larger than fog fade distance so terrain never pops in visibly
-    const float RENDER_DIST = 75.0f;
+    const float RENDER_DIST = 50.0f;
     const float RENDER_DIST_SQ = RENDER_DIST * RENDER_DIST;
 
     // Bound the loops to only check columns within a box of RENDER_DIST around camera
