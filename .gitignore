@@ -1,0 +1,38 @@
+# Compiled binaries / executables
+hexacraft
+hexacraft_dbg
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# Markdown files
+*.md
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+*.nav
+*.snm
+*.vrb
+
+# Archives
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
