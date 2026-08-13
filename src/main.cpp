@@ -31,7 +31,9 @@ GLuint loadTexture(const char* path) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // NEAREST magnification keeps 16x16 pixel-art blocks crisp instead of smeared.
+    // Minification stays trilinear so distant blocks do not shimmer.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     GLenum fmt = (channels == 4) ? GL_RGBA : GL_RGB;
     glTexImage2D(GL_TEXTURE_2D, 0, fmt, w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -358,16 +360,23 @@ int main() {
         setFloat(shaderProgram, "spotCutoff", cosf(glm::radians(18.0f)));
 
         // Point light upload helper (call after torchPositions is populated)
+        // Names are fixed literals rather than an sprintf'd buffer so the uniform
+        // location cache in shaders.h can key on their (stable) addresses.
+        static const char* kPointLightPosNames[8] = {
+            "pointLightPos[0]", "pointLightPos[1]", "pointLightPos[2]", "pointLightPos[3]",
+            "pointLightPos[4]", "pointLightPos[5]", "pointLightPos[6]", "pointLightPos[7]"
+        };
+        static const char* kPointLightColorNames[8] = {
+            "pointLightColor[0]", "pointLightColor[1]", "pointLightColor[2]", "pointLightColor[3]",
+            "pointLightColor[4]", "pointLightColor[5]", "pointLightColor[6]", "pointLightColor[7]"
+        };
         auto uploadPointLights = [&]() {
             int count = (int)torchPositions.size();
             if (count > 8) count = 8;
             setInt(shaderProgram, "numPointLights", count);
             for (int i = 0; i < count; i++) {
-                char buf[64];
-                sprintf(buf, "pointLightPos[%d]", i);
-                setVec3(shaderProgram, buf, torchPositions[i]);
-                sprintf(buf, "pointLightColor[%d]", i);
-                setVec3(shaderProgram, buf, glm::vec3(1.0f, 0.6f, 0.2f));
+                setVec3(shaderProgram, kPointLightPosNames[i], torchPositions[i]);
+                setVec3(shaderProgram, kPointLightColorNames[i], glm::vec3(1.0f, 0.6f, 0.2f));
             }
         };
 

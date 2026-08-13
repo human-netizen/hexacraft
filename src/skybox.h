@@ -179,9 +179,9 @@ void drawSkybox(const glm::mat4& viewMat, const glm::mat4& projMat) {
     glDepthMask(GL_FALSE);    // don't write to depth buffer
 
     glUseProgram(skyboxShader);
-    glUniformMatrix4fv(glGetUniformLocation(skyboxShader, "view"),       1, GL_FALSE, glm::value_ptr(skyView));
-    glUniformMatrix4fv(glGetUniformLocation(skyboxShader, "projection"), 1, GL_FALSE, glm::value_ptr(projMat));
-    glUniform1i(glGetUniformLocation(skyboxShader, "skybox"), 0);
+    setMat4(skyboxShader, "view", skyView);
+    setMat4(skyboxShader, "projection", projMat);
+    setInt(skyboxShader, "skybox", 0);
 
     glBindVertexArray(skyboxVAO);
     glActiveTexture(GL_TEXTURE0);

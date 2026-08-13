@@ -1058,9 +1058,15 @@ void drawHexEmissive(glm::vec3 pos, glm::vec3 emitColor, glm::vec3 scale = glm::
 std::vector<glm::vec3> torchPositions;
 const glm::vec3 COL_TORCH_FLAME(1.0f, 0.6f, 0.1f);
 
-void drawTorch(glm::vec3 base) {
+// Geometry only — does NOT register the point light. Use when the caller has
+// already pushed the light position (so off-screen torches keep lighting the scene).
+void drawTorchMesh(glm::vec3 base) {
     drawHex(base + glm::vec3(0, 0.3f, 0), COL_WOOD, glm::vec3(0.15f, 0.6f, 0.15f));
     drawHexEmissive(base + glm::vec3(0, 0.7f, 0), COL_TORCH_FLAME, glm::vec3(0.2f, 0.25f, 0.2f));
+}
+
+void drawTorch(glm::vec3 base) {
+    drawTorchMesh(base);
     torchPositions.push_back(base + glm::vec3(0, 0.8f, 0));
 }
 
@@ -2242,13 +2248,15 @@ void renderTerrain(float time = 0.0f) {
                 int bt = getBlock(col, row, h);
                 if (bt == BLOCK_AIR) continue;
 
-                // Skip fully occluded blocks (all neighbors solid)
-                if (isBlockOccluded(col, row, h)) continue;
-
                 glm::vec3 p = pos + glm::vec3(0, h * HEX_HEIGHT, 0);
 
-                // Frustum culling
+                // Frustum culling FIRST — it is a handful of dot products, while
+                // isBlockOccluded() does up to 8 getBlock() lookups. Testing the
+                // cheap one first skips ~35k occlusion tests per frame.
                 if (!isInFrustum(p)) continue;
+
+                // Skip fully occluded blocks (all neighbors solid)
+                if (isBlockOccluded(col, row, h)) continue;
 
                 glm::vec3 col3 = getBlockColor(bt);
                 BlockProperties props = getBlockProps(bt);
@@ -2336,8 +2344,10 @@ void renderTerrain(float time = 0.0f) {
         }
     }
 
-    // Draw trees (non-grid decorative objects) — with distance culling
-    const float TREE_RENDER_DIST_SQ = 70.0f * 70.0f;
+    // Draw trees (non-grid decorative objects) — with distance + frustum culling
+    // Radius clamped to RENDER_DIST: drawing trees further out than the terrain
+    // put them above ground that does not exist.
+    const float TREE_RENDER_DIST_SQ = RENDER_DIST_SQ;
     for (auto& ti : treeLocations) {
         glm::vec3 pos = hexGridPos(ti.col, ti.row, 0.0f);
         // Distance cull trees
@@ -2350,14 +2360,17 @@ void renderTerrain(float time = 0.0f) {
             if (getBlock(ti.col, ti.row, h) != BLOCK_AIR) { topH = h; break; }
         }
         glm::vec3 treeBase = pos + glm::vec3(0, (topH + 1) * HEX_HEIGHT, 0);
+        // Frustum cull against a sphere big enough to cover trunk + canopy
+        glm::vec3 treeCenter = treeBase + glm::vec3(0, 3.0f, 0);
+        if (!isInFrustum(treeCenter, ti.large ? 7.0f : 4.5f)) continue;
         if (ti.large)
             drawLargeTree(treeBase);
         else
             drawTree(treeBase, ti.leafColor);
     }
 
-    // Draw torches — with distance culling
-    const float TORCH_RENDER_DIST_SQ = 65.0f * 65.0f;
+    // Draw torches — with distance + frustum culling (radius clamped to RENDER_DIST)
+    const float TORCH_RENDER_DIST_SQ = RENDER_DIST_SQ;
     for (auto& t : torchLocations) {
         glm::vec3 pos = hexGridPos(t.col, t.row, 0.0f);
         float tdx = pos.x - camPos.x;
@@ -2368,7 +2381,12 @@ void renderTerrain(float time = 0.0f) {
         for (int h = GRID_H - 1; h >= 0; h--) {
             if (getBlock(t.col, t.row, h) != BLOCK_AIR) { topH = h; break; }
         }
-        drawTorch(pos + glm::vec3(0, (topH + 1) * HEX_HEIGHT, 0));
+        glm::vec3 torchBase = pos + glm::vec3(0, (topH + 1) * HEX_HEIGHT, 0);
+        // Always register the light — a torch just off-screen must still light what
+        // IS on screen. Only the torch geometry gets frustum-culled.
+        torchPositions.push_back(torchBase + glm::vec3(0, 0.8f, 0));
+        if (!isInFrustum(torchBase, 2.0f)) continue;
+        drawTorchMesh(torchBase);
     }
 
     // Stone Ruins (east, explorable)
