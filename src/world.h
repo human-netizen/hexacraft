@@ -2650,19 +2650,35 @@ void renderTerrain(float time = 0.0f) {
     // RENDER_DIST / RENDER_DIST_SQ now live in globals.h so gatherTorchLights()
     // and the fog density in main.cpp can agree with this loop.
 
-    // Bound the loops to only check columns within a box of RENDER_DIST around camera
-    float zSp = HEX_RADIUS * 1.5f;
-    float xSp = HEX_RADIUS * 2.0f * 0.866025404f;
+    // Bound the loops to the columns that can actually fall within RENDER_DIST.
+    // The old bound was `RENDER_DIST / HEX_RADIUS` on both axes, but HEX_RADIUS
+    // (0.5) is not the grid spacing — rows step by 0.75 and columns by 0.866. That
+    // made the search box ~1.5x too tall and ~1.7x too wide, and every extra column
+    // it walked was thrown straight back out by the distance test below.
+    const float zSp = HEX_RADIUS * 1.5f;           // row spacing
+    const float xSp = HEX_RADIUS * 2.0f * 0.866f;  // column spacing — same constant hexGridPos() uses
     int camRow = (int)roundf(camPos.z / zSp);
-    float xOff = (camRow % 2) * (xSp * 0.5f);
-    int camCol = (int)roundf((camPos.x - xOff) / xSp);
-    int hexLimit = (int)(RENDER_DIST / HEX_RADIUS) + 2;
-    int minRow = std::max(TERRAIN_MIN, camRow - hexLimit);
-    int maxRow = std::min(TERRAIN_MAX, camRow + hexLimit);
-    int minCol = std::max(TERRAIN_MIN, camCol - hexLimit);
-    int maxCol = std::min(TERRAIN_MAX, camCol + hexLimit);
+    int rowLimit = (int)(RENDER_DIST / zSp) + 2;
+    int minRow = std::max(TERRAIN_MIN, camRow - rowLimit);
+    int maxRow = std::min(TERRAIN_MAX, camRow + rowLimit);
 
     for (int row = minRow; row <= maxRow; row++) {
+        // Narrow the column span per row instead of using one square box. At this
+        // row the circle of radius RENDER_DIST leaves only sqrt(R^2 - dz^2) of x
+        // budget, so rows near the near/far edge of the span scan far fewer columns
+        // than the row the camera sits on.
+        float dz = row * zSp - camPos.z;
+        float xBudgetSq = RENDER_DIST_SQ - dz * dz;
+        if (xBudgetSq <= 0.0f) continue;           // row lies entirely outside the circle
+        float xBudget = sqrtf(xBudgetSq);
+        // Odd rows are offset half a column; note (row % 2) is -1 for negative odd
+        // rows in C++, which is exactly what hexGridPos() does, so they agree.
+        float rowXOff = (row % 2) * (xSp * 0.5f);
+        // +/-1 of slack absorbs the 0.866 vs 0.866025404 rounding; the distance
+        // test below is still the authority on what actually gets drawn.
+        int minCol = std::max(TERRAIN_MIN, (int)ceilf((camPos.x - xBudget - rowXOff) / xSp) - 1);
+        int maxCol = std::min(TERRAIN_MAX, (int)floorf((camPos.x + xBudget - rowXOff) / xSp) + 1);
+
         for (int col = minCol; col <= maxCol; col++) {
             glm::vec3 pos = hexGridPos(col, row, 0.0f);
 
