@@ -91,3 +91,14 @@ void setFloat(GLuint prog, const char* name, float val) {
 void setInt(GLuint prog, const char* name, int val) {
     glUniform1i(uniformLoc(prog, name), val);
 }
+void setVec4(GLuint prog, const char* name, const glm::vec4& v) {
+    glUniform4fv(uniformLoc(prog, name), 1, glm::value_ptr(v));
+}
+
+// Sub-rectangle of the bound texture to sample: (scaleU, scaleV, offU, offV).
+// Anything that narrows it MUST call resetUVRect() afterwards — GL uniforms are
+// program state, so a stray value leaks into every later draw.
+void setUVRect(GLuint prog, float su, float sv, float ou, float ov) {
+    setVec4(prog, "uvRect", glm::vec4(su, sv, ou, ov));
+}
+void resetUVRect(GLuint prog) { setUVRect(prog, 1.0f, 1.0f, 0.0f, 0.0f); }

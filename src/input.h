@@ -35,6 +35,37 @@ bool isSolid(int col, int row, int h) {
     return true;
 }
 
+// =====================================================
+// Third-person camera collision (19E-5)
+// =====================================================
+// March from the player's eye toward where the third-person camera wants to sit
+// and stop short of the first solid block. Without this the camera sinks into
+// whatever the player backs up against and you end up looking at the inside of a
+// wall — or through it, since nothing here culls back faces.
+//
+// Returns the (possibly shortened) offset from `pivot`, never a longer one.
+glm::vec3 collideCamera(glm::vec3 pivot, glm::vec3 desiredOffset) {
+    float wanted = glm::length(desiredOffset);
+    if (wanted < 1e-4f) return desiredOffset;
+    glm::vec3 dir = desiredOffset / wanted;
+
+    // Keep the near plane out of the wall it stopped against.
+    const float pad = 0.35f;
+    const float step = 0.15f;
+
+    for (float d = step; d < wanted; d += step) {
+        glm::vec3 p = pivot + dir * d;
+        int col, row, h;
+        worldToGrid(p, col, row, h);
+        if (isSolid(col, row, h)) {
+            float safe = d - pad;
+            if (safe < 0.25f) safe = 0.25f;   // never collapse fully into the head
+            return dir * safe;
+        }
+    }
+    return desiredOffset;
+}
+
 // Check if player can stand at world position (wx, wz) at current height.
 // Samples 9 points around the player's horizontal radius so blocks that
 // are adjacent (but not exactly under the center) are also tested.
@@ -1795,7 +1826,8 @@ void processInput(GLFWwindow* window) {
                 offset.x = -cosf(camYawRad) * cosf(camPitchRad) * thirdPersonDist;
                 offset.y = -sinf(camPitchRad) * thirdPersonDist + thirdPersonHeight;
                 offset.z = -sinf(camYawRad) * cosf(camPitchRad) * thirdPersonDist;
-                camPos = playerWorldPos + glm::vec3(0, eyeHeight, 0) + offset;
+                glm::vec3 pivot = playerWorldPos + glm::vec3(0, eyeHeight, 0);
+                camPos = pivot + collideCamera(pivot, offset);
             } else {
                 // First-person: camera at player eye level
                 camPos = playerWorldPos + glm::vec3(0, eyeHeight, 0);

@@ -1201,6 +1201,56 @@ void drawHexWater(glm::vec3 pos, glm::vec3 color, float time) {
     glDisable(GL_BLEND);
 }
 
+// --- Deferred transparent water pass (19E-2) -------------------------------
+// The terrain loop queues water blocks here instead of drawing them inline, and
+// flushWaterPass() draws the lot once all the opaque geometry is down: sorted
+// back-to-front, with ONE blend-state change for the whole batch instead of a
+// glEnable/glDisable pair per block.
+//
+// Depth writes stay ON deliberately. With correct back-to-front ordering that
+// still blends water over water properly, and it keeps water occluding whatever
+// is drawn after it. Turning writes off would let later opaque geometry paint
+// straight over the surface.
+struct WaterDraw { glm::vec3 pos; glm::vec3 color; float distSq; };
+std::vector<WaterDraw> waterDraws;
+
+void flushWaterPass(float time) {
+    if (waterDraws.empty()) return;
+
+    std::sort(waterDraws.begin(), waterDraws.end(),
+              [](const WaterDraw& a, const WaterDraw& b) { return a.distSq > b.distSq; });
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    setFloat(shaderProgram, "alpha", 0.6f);
+
+    // water_still.png is a vertical strip of WATER_FRAMES stacked 16x16 frames.
+    // It used to be sampled whole, squashing all 32 frames onto every face.
+    // Narrow the UV rect to one frame and walk it down the strip over time —
+    // that is the pack's own animation, played at the speed it was drawn for.
+    const int   WATER_FRAMES = 32;
+    const float WATER_FPS    = 8.0f;
+    int   frame = ((int)(time * WATER_FPS)) % WATER_FRAMES;
+    float fh    = 1.0f / (float)WATER_FRAMES;
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texWaterStill);
+    setInt(shaderProgram, "tex", 0);
+    setInt(shaderProgram, "textureMode", 2);   // texture * water tint
+    setUVRect(shaderProgram, 1.0f, fh, 0.0f, frame * fh);
+
+    for (const WaterDraw& w : waterDraws) {
+        float wave = sinf(w.pos.x * 2.0f + time * 1.5f) * 0.05f
+                   + sinf(w.pos.z * 2.5f + time * 1.2f) * 0.04f;
+        drawHex(w.pos + glm::vec3(0, wave, 0), w.color);
+    }
+
+    resetUVRect(shaderProgram);
+    setInt(shaderProgram, "textureMode", 0);
+    setFloat(shaderProgram, "alpha", 1.0f);
+    glDisable(GL_BLEND);
+    waterDraws.clear();
+}
+
 // =====================================================
 // Emissive hex drawing
 // =====================================================
@@ -1263,7 +1313,12 @@ const int TERRAIN_MIN = -90, TERRAIN_MAX = 90;
 // Store tree/torch locations for rendering non-grid objects
 // `variant` selects which baked mesh (19B) this tree draws — assigned from the
 // placement seed so the forest stays varied without a mesh per tree.
-struct TreeInfo { int col, row; glm::vec3 leafColor; bool large; int variant = 0; };
+// `groundH` is the index of the block the tree stands ON, recorded at world-gen.
+// The draw loop used to rescan the whole 32-block column top-down every frame to
+// work this out, which is both wasted work and wrong: it finds the topmost
+// non-air block, so anything built or floating above the tree lifts it into the
+// sky. -1 means "not resolved yet"; resolveGroundHeights() fills those in.
+struct TreeInfo { int col, row; glm::vec3 leafColor; bool large; int variant = 0; int groundH = -1; };
 std::vector<TreeInfo> treeLocations;
 
 // --- Baked mesh pool -------------------------------------------------------
@@ -1335,6 +1390,9 @@ void destroyTreeMeshes() {
         glDeleteBuffers(1, &g_largeTreeMeshes[i].vbo);
     }
 }
+// `height` is the index of the block the torch stands ON — same meaning as
+// TreeInfo::groundH. It was already being recorded and then ignored by the draw
+// loop, which rescanned the column instead. See resolveGroundHeights().
 struct TorchInfo { int col, row, height; };
 std::vector<TorchInfo> torchLocations;
 
@@ -2212,7 +2270,8 @@ void initBlockGrid() {
 
             // ======== TORCHES ========
             if (biome == 1 && surfaceH >= UNDERGROUND_DEPTH + 1 && (seed % 61 == 0)) {
-                TorchInfo t; t.col = col; t.row = row; t.height = surfaceH + 2;
+                // height = the block the torch stands on, i.e. the surface itself
+                TorchInfo t; t.col = col; t.row = row; t.height = surfaceH;
                 torchLocations.push_back(t);
             }
         }
@@ -2264,16 +2323,122 @@ static const int hexNeighborOdd[6][2] = {
     { 0, +1}, { 0, -1}    // SW, NW (odd row)
 };
 
+// Can a neighbouring block of this type actually hide the face behind it?
+// Only a block that both fills its whole hex cell AND is opaque can. Testing
+// `!= BLOCK_AIR` (the old rule) counted glass, water, ice, panes, fences,
+// slabs, stairs, carpets, ladders and torches as solid walls, so anything
+// behind them was culled and you saw straight through the world.
+// Baked into a table: isBlockOccluded() calls this 8 times per candidate block,
+// and getBlockProps() is a switch over ~150 cases. One pass at startup, then a
+// byte load per query.
+static bool g_blocksSight[BLOCK_COUNT];
+
+void initSightTable() {
+    int opaque = 0;
+    for (int bt = 0; bt < BLOCK_COUNT; bt++) {
+        BlockProperties p = getBlockProps(bt);
+        g_blocksSight[bt] = (bt != BLOCK_AIR)
+                         && (bt != BLOCK_LEAF)          // canopy is full of gaps
+                         && !p.isTransparent            // glass, pane, water, ice
+                         && p.shape == SHAPE_FULL_HEX;  // slab/stair/carpet/fence/door/...
+        if (g_blocksSight[bt]) opaque++;
+    }
+    printf("[World] Sight table: %d of %d block types occlude\n", opaque, (int)BLOCK_COUNT);
+}
+
+inline bool blocksSight(int bt) {
+    return (bt >= 0 && bt < BLOCK_COUNT) ? g_blocksSight[bt] : false;
+}
+
+// Index of the highest block in this column that something can stand on.
+// Uses blocksSight() rather than "not air", so leaves, torches, glass and
+// water do not read as ground. Starts from columnMaxH so it does not walk
+// empty sky. Returns -1 for a column with nothing solid in it.
+int findGroundH(int col, int row) {
+    int gi = col + GRID_OFF_X, gj = row + GRID_OFF_Z;
+    if (gi < 0 || gi >= GRID_W || gj < 0 || gj >= GRID_D) return -1;
+    for (int h = columnMaxH[gi][gj]; h >= 0; h--) {
+        if (blocksSight(getBlock(col, row, h))) return h;
+    }
+    return -1;
+}
+
+// Pick a spawn point that is actually outdoors (19E-4).
+// The old spawn was hard-coded to grid (3,5), which lands inside the KUET hill
+// build, so the first thing the player ever sees is the dark inside of a
+// structure. A column is a good spawn when its highest block IS its ground —
+// nothing built over the player's head — and that ground is dry land.
+// Searches outward from (0,0) in rings and takes the first column that passes.
+bool findSpawnColumn(int& outCol, int& outRow) {
+    for (int ring = 0; ring < 80; ring++) {
+        for (int dc = -ring; dc <= ring; dc++) {
+            for (int dr = -ring; dr <= ring; dr++) {
+                if (std::max(abs(dc), abs(dr)) != ring) continue; // perimeter only
+                int c = dc, r = dr;
+                int gi = c + GRID_OFF_X, gj = r + GRID_OFF_Z;
+                if (gi < 1 || gi >= GRID_W - 1 || gj < 1 || gj >= GRID_D - 1) continue;
+
+                int g = findGroundH(c, r);
+                if (g < UNDERGROUND_DEPTH) continue;      // underwater or in a pit
+                if (columnMaxH[gi][gj] != g) continue;    // something is overhead
+
+                int surface = getBlock(c, r, g);
+                if (surface == BLOCK_WATER || surface == BLOCK_ICE) continue;
+
+                // Head-height clearance in all six directions, so the player is
+                // not wedged against a wall on the first frame.
+                bool boxed = false;
+                for (int i = 0; i < 6 && !boxed; i++) {
+                    bool odd = (((r % 2) + 2) % 2) == 1;
+                    const int (*nb)[2] = odd ? hexNeighborOdd : hexNeighborEven;
+                    if (getBlock(c + nb[i][0], r + nb[i][1], g + 2) != BLOCK_AIR) boxed = true;
+                }
+                if (boxed) continue;
+
+                outCol = c; outRow = r;
+                printf("[Player] Spawn search: grid (%d,%d), ground h=%d, ring %d\n",
+                       c, r, g, ring);
+                return true;
+            }
+        }
+    }
+    printf("[Player] Spawn search failed — falling back to (3,5)\n");
+    outCol = 3; outRow = 5;
+    return false;
+}
+
+// Resolve every tree that was placed without a recorded ground height. Runs once
+// after world-gen; before this, the draw loop did the same scan per tree PER
+// FRAME. Trees whose column turns out to be empty are dropped rather than left
+// hovering at y=1.
+void resolveGroundHeights() {
+    int resolved = 0, dropped = 0;
+    for (int i = (int)treeLocations.size() - 1; i >= 0; i--) {
+        TreeInfo& ti = treeLocations[i];
+        if (ti.groundH >= 0) continue;
+        int g = findGroundH(ti.col, ti.row);
+        if (g < 0) {
+            treeLocations.erase(treeLocations.begin() + i);
+            dropped++;
+        } else {
+            ti.groundH = g;
+            resolved++;
+        }
+    }
+    printf("[World] Ground heights: %d trees resolved, %d dropped (no ground), %d torches\n",
+           resolved, dropped, (int)torchLocations.size());
+}
+
 bool isBlockOccluded(int col, int row, int h) {
     // Check top and bottom
-    if (getBlock(col, row, h + 1) == BLOCK_AIR) return false;
-    if (h == 0 || getBlock(col, row, h - 1) == BLOCK_AIR) return false;
+    if (!blocksSight(getBlock(col, row, h + 1))) return false;
+    if (h == 0 || !blocksSight(getBlock(col, row, h - 1))) return false;
 
     // Check 6 hex neighbors
     bool odd = (((row % 2) + 2) % 2) == 1; // handle negative rows
     const int (*nb)[2] = odd ? hexNeighborOdd : hexNeighborEven;
     for (int i = 0; i < 6; i++) {
-        if (getBlock(col + nb[i][0], row + nb[i][1], h) == BLOCK_AIR)
+        if (!blocksSight(getBlock(col + nb[i][0], row + nb[i][1], h)))
             return false;
     }
     return true;
@@ -2463,11 +2628,9 @@ void gatherTorchLights() {
         float tdz = pos.z - camPos.z;
         if (tdx * tdx + tdz * tdz > RENDER_DIST_SQ) continue;
 
-        int topH = 0;
-        for (int h = GRID_H - 1; h >= 0; h--) {
-            if (getBlock(t.col, t.row, h) != BLOCK_AIR) { topH = h; break; }
-        }
-        torchPositions.push_back(pos + glm::vec3(0, (topH + 1) * HEX_HEIGHT + 0.8f, 0));
+        // Same cached ground height the draw loop uses, so the light sits exactly
+        // where the torch mesh is instead of tracking a rescanned column top.
+        torchPositions.push_back(pos + glm::vec3(0, (t.height + 1) * HEX_HEIGHT + 0.8f, 0));
     }
     auto distSqToCam = [](const glm::vec3& p) {
         glm::vec3 d = p - camPos;
@@ -2482,6 +2645,7 @@ void gatherTorchLights() {
 void renderTerrain(float time = 0.0f) {
     extractFrustum(currentVP);
     setFloat(shaderProgram, "alpha", 1.0f);
+    waterDraws.clear();   // queue for the deferred transparent pass below
 
     // RENDER_DIST / RENDER_DIST_SQ now live in globals.h so gatherTorchLights()
     // and the fog density in main.cpp can agree with this loop.
@@ -2535,8 +2699,12 @@ void renderTerrain(float time = 0.0f) {
 
                 // Dispatch by shape
                 if (bt == BLOCK_WATER) {
-                    setInt(shaderProgram, "textureMode", 0);
-                    drawHexWater(p, col3, time);
+                    // Deferred to the transparent pass at the end of this
+                    // function. Drawing water inline meant a glEnable/glDisable
+                    // (GL_BLEND) pair PER BLOCK, with depth writes left on and
+                    // blocks arriving in grid order — so whichever water hex
+                    // happened to be drawn first blocked the ones behind it.
+                    waterDraws.push_back({p, col3, distSq + (p.y - camPos.y) * (p.y - camPos.y)});
                 } else if (props.isEmissive) {
                     drawHexEmissive(p, col3);
                 } else if (props.shape == SHAPE_SLAB) {
@@ -2623,11 +2791,9 @@ void renderTerrain(float time = 0.0f) {
         float tdz = pos.z - camPos.z;
         if (tdx * tdx + tdz * tdz > TREE_RENDER_DIST_SQ) continue;
 
-        int topH = 0;
-        for (int h = GRID_H - 1; h >= 0; h--) {
-            if (getBlock(ti.col, ti.row, h) != BLOCK_AIR) { topH = h; break; }
-        }
-        glm::vec3 treeBase = pos + glm::vec3(0, (topH + 1) * HEX_HEIGHT, 0);
+        // groundH was resolved once at startup (resolveGroundHeights); this used
+        // to be a 32-step column rescan here, every frame, for every tree.
+        glm::vec3 treeBase = pos + glm::vec3(0, (ti.groundH + 1) * HEX_HEIGHT, 0);
         // Frustum cull against a sphere big enough to cover trunk + canopy
         glm::vec3 treeCenter = treeBase + glm::vec3(0, 3.0f, 0);
         if (!isInFrustum(treeCenter, ti.large ? 7.0f : 4.5f)) continue;
@@ -2666,11 +2832,11 @@ void renderTerrain(float time = 0.0f) {
         float tdz = pos.z - camPos.z;
         if (tdx * tdx + tdz * tdz > TORCH_RENDER_DIST_SQ) continue;
 
-        int topH = 0;
-        for (int h = GRID_H - 1; h >= 0; h--) {
-            if (getBlock(t.col, t.row, h) != BLOCK_AIR) { topH = h; break; }
-        }
-        glm::vec3 torchBase = pos + glm::vec3(0, (topH + 1) * HEX_HEIGHT, 0);
+        // t.height is the block the torch stands on, recorded at world-gen. The
+        // old code rescanned the column and used the topmost NON-AIR block, so a
+        // torch whose own flame block (or any later structure) sat above it got
+        // pushed one step higher every time — that is the mid-air torch bug.
+        glm::vec3 torchBase = pos + glm::vec3(0, (t.height + 1) * HEX_HEIGHT, 0);
         // The light itself is registered by gatherTorchLights(), which runs before
         // the draw pass; this loop only draws geometry, so it may frustum-cull.
         if (!isInFrustum(torchBase, 2.0f)) continue;
@@ -2681,11 +2847,10 @@ void renderTerrain(float time = 0.0f) {
     {
         int rc = 55, rr = -10;
         glm::vec3 rp = hexGridPos(rc, rr, 0.0f);
-        int topH = 0;
-        for (int h = GRID_H - 1; h >= 0; h--) {
-            if (getBlock(rc, rr, h) != BLOCK_AIR) { topH = h; break; }
-        }
-        drawRuins(rp + glm::vec3(0, (topH + 1) * HEX_HEIGHT, 0));
+        // Resolved once, not rescanned every frame.
+        static int ruinsGroundH = -1;
+        if (ruinsGroundH < 0) ruinsGroundH = std::max(findGroundH(rc, rr), 0);
+        drawRuins(rp + glm::vec3(0, (ruinsGroundH + 1) * HEX_HEIGHT, 0));
     }
 
     // Ambulance
@@ -2693,15 +2858,30 @@ void renderTerrain(float time = 0.0f) {
         if (!ambInitialized) {
             int ac = 13, ar = -14;
             ambPos = hexGridPos(ac, ar, 0.0f);
-            int topH = 0;
-            for (int h = GRID_H - 1; h >= 0; h--) {
-                if (getBlock(ac, ar, h) != BLOCK_AIR) { topH = h; break; }
-            }
-            ambPos.y = (topH + 1) * HEX_HEIGHT;
+            // The body is ~2 hexes across and ~5 long, so one column's height is
+            // not enough — rest it on the HIGHEST ground under the footprint or
+            // the uphill wheels hang in the air.
+            int groundH = -1;
+            for (int dc = -2; dc <= 2; dc++)
+                for (int dr = -6; dr <= 6; dr++)
+                    groundH = std::max(groundH, findGroundH(ac + dc, ar + dr));
+            if (groundH < 0) groundH = UNDERGROUND_DEPTH;
+            // A block at index h is drawn CENTRED at h*HEX_HEIGHT and spans +/-0.5,
+            // so its top surface is h*HEX_HEIGHT + HEX_HEIGHT/2. The old code used
+            // (h+1)*HEX_HEIGHT — half a block too high. The model's lowest voxel
+            // row is also centred on its own origin, so half a voxel has to come
+            // back down too. Together that is the gap under the ambulance.
+            const float wheelDrop = (HEX_RADIUS * 0.32f / HEX_HEIGHT * 1.15f) * 0.5f;
+            ambPos.y = groundH * HEX_HEIGHT + HEX_HEIGHT * 0.5f + wheelDrop;
             ambInitialized = true;
+            printf("[Ambulance] Grounded at grid (%d,%d): groundH=%d y=%.2f\n",
+                   ac, ar, groundH, ambPos.y);
         }
         drawAmbulance(ambPos, ambYaw);
     }
+
+    // Transparent geometry last, once everything opaque has written depth.
+    flushWaterPass(time);
 }
 
 // =====================================================

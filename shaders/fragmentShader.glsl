@@ -161,10 +161,24 @@ void main()
     // --- Phong shading (per-fragment, default) ---
     vec3 result = vec3(0.0);
 
-    // --- Ambient ---
+    // --- Ambient (hemispheric) ---
+    // 19E-7: the "black holes in the terrain" were never holes. Ambient used to
+    // be one flat constant, so every face the sun cannot reach landed on exactly
+    // the same value — and for a hex prism that is always three of the six side
+    // faces, because their normals are horizontal and the noon sun is nearly
+    // straight down. A one-block step in flat ground therefore showed a couple of
+    // uniformly near-black quads, which read as a gap in the surface rather than
+    // as a shaded wall. Measured: 41/255 on those faces against 114/255 on the
+    // lit tops, a 0.37 ratio; Minecraft never lets a face fall below ~0.6.
+    //
+    // Split the ambient into a sky term from above and a weaker bounce term from
+    // below, so brightness varies with how much sky a face can actually see.
     if (ambientOn) {
         vec3 ambColor = mix(vec3(0.05, 0.05, 0.1), vec3(0.25, 0.27, 0.3), dayFactor);
-        result += ambColor * objColor;
+        float upness  = norm.y * 0.5 + 0.5;   // 1 = up, 0.5 = vertical, 0 = down
+        vec3 skyAmb   = ambColor * 2.0;
+        vec3 gndAmb   = ambColor * 1.0;
+        result += mix(gndAmb, skyAmb, upness) * objColor;
     }
 
     // --- Directional light (sun/moon) ---
@@ -172,7 +186,11 @@ void main()
         vec3 ldir = normalize(-dirLightDir);
         if (diffuseOn) {
             float diff = max(dot(norm, ldir), 0.0);
-            result += dirLightColor * diff * objColor;
+            // Bounce fill from the anti-sun direction. A cheap stand-in for one
+            // light bounce: it keeps a fully back-facing surface from collapsing
+            // to bare ambient, which is the other half of the 19E-7 fix.
+            float fill = max(dot(norm, -ldir), 0.0) * 0.25;
+            result += dirLightColor * (diff + fill) * objColor;
         }
         if (specularOn) {
             vec3 viewDir = normalize(viewPos - FragPos);

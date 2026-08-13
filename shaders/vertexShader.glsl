@@ -30,6 +30,14 @@ uniform int colorMode;
 uniform vec3 woodColor;
 uniform vec3 leafColor;
 
+// Sub-rectangle of the bound texture to sample, as (scaleU, scaleV, offU, offV).
+// Identity is (1,1,0,0). Several pack textures are vertical ANIMATION STRIPS —
+// water_still.png is 16x512, i.e. 32 stacked 16x16 frames — and sampling them
+// whole squashes all 32 frames onto every face. Setting uvRect to one frame's
+// slice picks a single frame, and advancing the offset over time plays the
+// animation. See flushWaterPass() in src/world.h.
+uniform vec4 uvRect;
+
 out vec3 FragPos;
 out vec3 Normal;
 out vec3 vertexColor;
@@ -40,7 +48,7 @@ void main() {
     FragPos = vec3(model * vec4(aPos, 1.0));
     Normal = mat3(transpose(inverse(model))) * aNormal;
     vertexColor = aColor;
-    TexCoord = aTexCoord;
+    TexCoord = aTexCoord * uvRect.xy + uvRect.zw;
 
     gl_Position = projection * view * vec4(FragPos, 1.0);
 

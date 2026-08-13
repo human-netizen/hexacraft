@@ -116,6 +116,25 @@ int main() {
     GLFWwindow* window = glfwCreateWindow(WIN_W, WIN_H, "HexaCraft", NULL, NULL);
     if (!window) { printf("Window creation failed\n"); glfwTerminate(); return -1; }
     glfwMakeContextCurrent(window);
+    // Vsync. Nothing was calling glfwSwapInterval() at all, so the swap chain ran
+    // free and the image could tear.
+    //
+    // Prefer ADAPTIVE vsync: sync when the frame makes the refresh deadline, tear
+    // rather than wait when it misses. Plain vsync would round a 37 ms frame up to
+    // a full 50 ms on a 60 Hz display — a real frame-rate loss to fix tearing.
+    // HEXA_NOVSYNC=1 turns it off entirely so the frame profiler can still measure
+    // uncapped frame times.
+    if (getenv("HEXA_NOVSYNC")) {
+        glfwSwapInterval(0);
+        printf("[Boot] Vsync disabled (HEXA_NOVSYNC)\n");
+    } else if (glfwExtensionSupported("GLX_EXT_swap_control_tear") ||
+               glfwExtensionSupported("WGL_EXT_swap_control_tear")) {
+        glfwSwapInterval(-1);
+        printf("[Boot] Adaptive vsync enabled\n");
+    } else {
+        glfwSwapInterval(1);
+        printf("[Boot] Adaptive vsync unavailable; plain vsync enabled\n");
+    }
     glfwSetKeyCallback(window, keyCallback);
     glfwSetCharCallback(window, charCallback);
     glfwSetCursorPosCallback(window, mouseCallback);
@@ -147,6 +166,10 @@ int main() {
     }
 
     shaderProgram = loadShaders("shaders/vertexShader.glsl", "shaders/fragmentShader.glsl");
+    // uvRect defaults to all-zero in GL, which would collapse every UV to a
+    // single texel. Establish identity before anything draws.
+    glUseProgram(shaderProgram);
+    resetUVRect(shaderProgram);
     initSkybox();
     initHexMesh();
     initBoxMesh();
@@ -239,16 +262,22 @@ int main() {
     texWaterStill   = loadTexture("assets/srcs/water_still.png");
 
     printf("[World] Generating terrain...\n");
+    initSightTable();
     initBlockGrid();
     buildKUETHill();
+    // Must run after every structure is built — it snapshots where the ground is
+    // so the render loop never has to scan a column again.
+    resolveGroundHeights();
     printf("[World] Terrain ready! %dx%d grid, %d height layers\n", GRID_W, GRID_D, GRID_H);
 
     // Bake tree meshes once — needs the grid (tree list) and a GL context.
     initTreeMeshes();
 
     // Initialize player on terrain
-    glm::vec3 spawnGrid = hexGridPos(3, 5, 0.0f);
-    playerWorldPos = glm::vec3(spawnGrid.x, getGroundY(3, 5), spawnGrid.z);
+    int spawnCol, spawnRow;
+    findSpawnColumn(spawnCol, spawnRow);
+    glm::vec3 spawnGrid = hexGridPos(spawnCol, spawnRow, 0.0f);
+    playerWorldPos = glm::vec3(spawnGrid.x, getGroundY(spawnCol, spawnRow), spawnGrid.z);
     printf("[Player] Spawned at (%.1f, %.1f, %.1f)\n", playerWorldPos.x, playerWorldPos.y, playerWorldPos.z);
 
     // Spawn initial mobs and birds
@@ -358,6 +387,15 @@ int main() {
         setBool(shaderProgram, "specularOn", specularOn);
         setBool(shaderProgram, "isEmissive", false);
         setBool(shaderProgram, "isHUD", false);
+        // dayFactor is what the sky, the mob spawner and the star field key off.
+        // It used to be a second global written ONLY by the T key, so anything
+        // that changed dayMode by another route (a script, a future day/night
+        // timer) left the sky lit for noon over pitch-dark terrain. Derive it
+        // from dayMode every frame so the two cannot drift apart.
+        {
+            static const float DAY_FACTORS[4] = {0.0f, 0.4f, 1.0f, 0.3f}; // night,dawn,noon,dusk
+            dayFactor = DAY_FACTORS[((dayMode % 4) + 4) % 4];
+        }
         setFloat(shaderProgram, "dayFactor", dayFactor);
 
         // Texture and shading defaults
