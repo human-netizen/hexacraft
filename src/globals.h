@@ -1061,6 +1061,10 @@ GLuint texOakTrapdoor = 0, texOakDoorBot = 0, texWaterStill = 0;
 GLuint hexVAO, hexVBO;
 int hexVertexCount = 0;
 
+// Phase 19B: draw trees from pre-baked VBOs (one draw call each) instead of
+// re-running the fractal every frame. Toggle with F7 to A/B the old path.
+bool useBakedTrees = true;
+
 // =====================================================
 // Custom myRotate (Rodrigues' rotation formula)
 // Replaces glm::rotate

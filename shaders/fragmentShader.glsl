@@ -60,6 +60,15 @@ uniform float fogDensity;
 uniform sampler2D texture1;
 uniform int textureMode; // 0=no texture, 1=simple (texture only), 2=blended (texture * color)
 
+// Base-colour source.
+// 0 = objectColor uniform (everything).
+// 1 = baked tree mesh: aColor packs (blend, shade) instead of an RGB colour, so
+//     one baked mesh can be drawn with any leaf colour. Every colour a tree used
+//     to produce was mix(wood, leaf, blend) * shade, so this is exact.
+uniform int colorMode;
+uniform vec3 woodColor;
+uniform vec3 leafColor;
+
 // Gouraud/Phong toggle
 uniform bool useGouraud;
 
@@ -74,14 +83,17 @@ void main()
     vec3 norm = normalize(Normal);
 
     // Determine base color: apply texture if needed
-    vec3 objColor = objectColor;
+    vec3 baseColor = (colorMode == 1)
+                   ? mix(woodColor, leafColor, vertexColor.r) * vertexColor.g
+                   : objectColor;
+    vec3 objColor = baseColor;
     if (textureMode == 1) {
         // Simple texture: texture color only, no surface color mixing
         objColor = texture(texture1, TexCoord).rgb;
     } else if (textureMode == 2) {
         // Blended texture: texture color mixed with surface color
         vec3 texColor = texture(texture1, TexCoord).rgb;
-        objColor = texColor * objectColor;
+        objColor = texColor * baseColor;
     }
 
     // HUD objects: no lighting, no fog.

@@ -25,6 +25,11 @@ uniform float spotCutoff;
 uniform vec3 viewPos;
 uniform float dayFactor;
 
+// Baked-tree base colour — see the matching block in fragmentShader.glsl
+uniform int colorMode;
+uniform vec3 woodColor;
+uniform vec3 leafColor;
+
 out vec3 FragPos;
 out vec3 Normal;
 out vec3 vertexColor;
@@ -44,10 +49,13 @@ void main() {
         vec3 norm = normalize(Normal);
         vec3 viewDir = normalize(viewPos - FragPos);
         vec3 result = vec3(0.0);
+        vec3 objColor = (colorMode == 1)
+                      ? mix(woodColor, leafColor, aColor.r) * aColor.g
+                      : objectColor;
 
         // Ambient
         vec3 ambientColor = mix(vec3(0.05, 0.05, 0.1), vec3(0.15, 0.15, 0.2), dayFactor);
-        if (ambientOn) result += ambientColor * objectColor;
+        if (ambientOn) result += ambientColor * objColor;
 
         // Directional light
         if (dirLightOn) {
@@ -55,7 +63,7 @@ void main() {
             float diff = max(dot(norm, ld), 0.0);
             vec3 ref = reflect(-ld, norm);
             float spec = pow(max(dot(viewDir, ref), 0.0), 32.0);
-            if (diffuseOn) result += diff * dirLightColor * objectColor;
+            if (diffuseOn) result += diff * dirLightColor * objColor;
             if (specularOn) result += spec * dirLightColor * 0.5;
         }
 
@@ -69,7 +77,7 @@ void main() {
                 float diff = max(dot(norm, ldir), 0.0);
                 vec3 ref = reflect(-ldir, norm);
                 float spec = pow(max(dot(viewDir, ref), 0.0), 32.0);
-                if (diffuseOn) result += diff * pointLightColor[i] * objectColor * atten;
+                if (diffuseOn) result += diff * pointLightColor[i] * objColor * atten;
                 if (specularOn) result += spec * pointLightColor[i] * 0.3 * atten;
             }
         }
@@ -82,7 +90,7 @@ void main() {
                 float diff = max(dot(norm, slDir), 0.0);
                 float dist = length(spotLightPos - FragPos);
                 float atten = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
-                if (diffuseOn) result += diff * spotLightColor * objectColor * atten;
+                if (diffuseOn) result += diff * spotLightColor * objColor * atten;
             }
         }
 

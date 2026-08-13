@@ -80,6 +80,9 @@ void printControls() {
     printf("  Day-Night:\n");
     printf("    T           - Cycle: Night > Dawn > Noon > Dusk\n");
     printf("\n");
+    printf("  Debug:\n");
+    printf("    F7          - Toggle baked tree meshes (off = live fractal, slower)\n");
+    printf("\n");
     printf("  Interactive Objects:\n");
     printf("    G           - Toggle rotating fan\n");
     printf("    O           - Toggle door open/close\n");
@@ -225,6 +228,9 @@ int main() {
     initBlockGrid();
     buildKUETHill();
     printf("[World] Terrain ready! %dx%d grid, %d height layers\n", GRID_W, GRID_D, GRID_H);
+
+    // Bake tree meshes once — needs the grid (tree list) and a GL context.
+    initTreeMeshes();
 
     // Initialize player on terrain
     glm::vec3 spawnGrid = hexGridPos(3, 5, 0.0f);
@@ -520,6 +526,7 @@ int main() {
     glDeleteBuffers(1, &ruledVBO);
     glDeleteVertexArrays(1, &hexVAO);
     glDeleteBuffers(1, &hexVBO);
+    destroyTreeMeshes();
     glDeleteProgram(shaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();

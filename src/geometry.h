@@ -103,6 +103,35 @@ void drawHex(glm::vec3 pos, glm::vec3 color, glm::vec3 scale = glm::vec3(1.0f)) 
     glDrawArrays(GL_TRIANGLES, 0, hexVertexCount);
 }
 
+// =====================================================
+// Bake a hex prism into a vertex list instead of drawing it.
+// Same transform drawHex() applies (translate * scale), but folded into the
+// vertices so a whole object can be one static VBO and one draw call.
+// The caller draws the result with a translation-only model matrix.
+// =====================================================
+const std::vector<Vertex>& hexPrismTemplate() {
+    static std::vector<Vertex> tmpl = generateHexPrism();
+    return tmpl;
+}
+
+void bakeHex(std::vector<Vertex>& out, glm::vec3 pos, glm::vec3 attr,
+             glm::vec3 scale = glm::vec3(1.0f)) {
+    const std::vector<Vertex>& tmpl = hexPrismTemplate();
+    // Non-uniform scale: normals transform by the inverse-transpose, which for a
+    // pure diagonal scale is just componentwise division. The shader's
+    // transpose(inverse(model)) is identity here since model is translation only.
+    glm::vec3 invScale(1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z);
+    out.reserve(out.size() + tmpl.size());
+    for (const Vertex& v : tmpl) {
+        Vertex o;
+        o.pos      = pos + v.pos * scale;
+        o.normal   = glm::normalize(v.normal * invScale);
+        o.color    = attr;
+        o.texCoord = v.texCoord;
+        out.push_back(o);
+    }
+}
+
 void drawHexRotated(glm::vec3 pos, glm::vec3 color, float angle, glm::vec3 axis, glm::vec3 scale = glm::vec3(1.0f)) {
     glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
     model = myRotate(model, angle, axis);

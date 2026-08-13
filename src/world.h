@@ -702,6 +702,165 @@ void drawLargeTree(glm::vec3 base) {
 }
 
 // =====================================================
+// Baked trees (Phase 19B)
+// The draw* functions above rebuild a 3–5 level fractal every frame, which cost
+// ~65,000 draw calls/frame — 78% of the frame. The build* functions below emit
+// the identical geometry into a vertex list once, so each tree becomes one
+// glDrawArrays.
+//
+// Colours are not baked as RGB. Every colour the fractal produced has the form
+// mix(COL_WOOD_DARK, leafColor, blend) * shade, so the vertex colour attribute
+// carries (blend, shade, 0) and the shader reconstitutes it with the leaf colour
+// of whichever tree is being drawn (colorMode = 1). That decouples shape from
+// colour, so one baked mesh serves every tree that shares its shape.
+//
+// Geometry is built in tree-local space (base at the origin) so the mesh is
+// position-independent and the draw only needs a translation.
+// =====================================================
+
+// Number of distinct baked shapes. Trees pick one by seed, so the forest still
+// looks varied, but 55 trees cost this many meshes instead of 55.
+const int NUM_TREE_VARIANTS       = 16;
+const int NUM_LARGE_TREE_VARIANTS = 8;
+
+void buildFractalBranch(std::vector<Vertex>& out,
+                        glm::vec3 pos, glm::vec3 dir, float length,
+                        float thickness, int depth, int maxDepth,
+                        unsigned int seed) {
+
+    float segLen = HEX_HEIGHT * 0.45f;
+    int segments = std::max(2, (int)(length / segLen));
+    glm::vec3 step = dir * (length / (float)segments);
+
+    bool isTwig = (depth <= 1);
+
+    for (int i = 0; i < segments; i++) {
+        glm::vec3 p = pos + step * (float)i;
+        float v = 0.85f + 0.15f * hashNoise((int)(p.x * 10 + seed), (int)(p.y * 7));
+
+        // blend = 0 pure wood, 1 pure leaf; shade = the brightness multiplier
+        float blend = isTwig ? (float)i / (float)segments : 0.0f;
+        bakeHex(out, p, glm::vec3(blend, v, 0.0f), glm::vec3(thickness, 0.7f, thickness));
+    }
+
+    glm::vec3 tip = pos + dir * length;
+
+    if (depth <= 0) {
+        seed = seed * 1103515245 + 12345;
+        int numLeaves = 2 + (int)((seed >> 16) % 3);
+        for (int i = 0; i < numLeaves; i++) {
+            seed = seed * 1103515245 + 12345;
+            float ox = ((float)((seed >> 4) % 60) - 30.0f) * 0.012f;
+            float oy = ((float)((seed >> 8) % 40) - 10.0f) * 0.012f;
+            float oz = ((float)((seed >> 12) % 60) - 30.0f) * 0.012f;
+            float bright = 0.8f + 0.4f * ((seed >> 16) % 100) / 100.0f;
+            bakeHex(out, tip + glm::vec3(ox, oy, oz), glm::vec3(1.0f, bright, 0.0f),
+                    glm::vec3(0.25f, 0.25f, 0.25f));
+        }
+        return;
+    }
+
+    seed = seed * 1103515245 + 12345;
+    int numChildren = 2 + (int)((seed >> 16) % 2);
+
+    float baseAzimuth = (float)((seed >> 8) % 360) * PI / 180.0f;
+
+    for (int c = 0; c < numChildren; c++) {
+        seed = seed * 1103515245 + 12345;
+
+        float azimuth = baseAzimuth + c * (2.0f * PI / numChildren)
+                        + ((float)((seed >> 12) % 50) - 25.0f) * PI / 180.0f;
+
+        float spreadAngle = 0.6f + 0.4f * (1.0f - (float)depth / (float)maxDepth);
+        float elevJitter = ((float)((seed >> 4) % 30) - 15.0f) * PI / 180.0f;
+        float elevation = (PI / 2.0f) - spreadAngle + elevJitter;
+
+        glm::vec3 childDir;
+        childDir.x = cosf(elevation) * cosf(azimuth);
+        childDir.y = sinf(elevation);
+        childDir.z = cosf(elevation) * sinf(azimuth);
+
+        float parentBlend = 0.15f;
+        childDir = glm::normalize(childDir + dir * parentBlend);
+
+        float childLength    = length * (0.6f + 0.1f * ((seed >> 20) % 100) / 100.0f);
+        float childThickness = thickness * (0.6f + 0.1f * ((seed >> 24) % 100) / 100.0f);
+
+        buildFractalBranch(out, tip, childDir, childLength, childThickness,
+                           depth - 1, maxDepth, seed);
+    }
+}
+
+// Mirror of drawTree(), emitting into `out` with the base at the origin.
+void buildTree(std::vector<Vertex>& out, unsigned int seed) {
+    int trunkH = 5;
+    for (int i = 0; i < trunkH; i++) {
+        glm::vec3 p = glm::vec3(0, i * HEX_HEIGHT, 0);
+        float v = 0.85f + 0.15f * hashNoise((int)seed, i);
+        bakeHex(out, p, glm::vec3(0.0f, v, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f));
+        if (i < 2) {
+            bakeHex(out, p + glm::vec3(0.25f, 0, 0),     glm::vec3(0.0f, v, 0.0f), glm::vec3(0.25f, 0.6f, 0.25f));
+            bakeHex(out, p + glm::vec3(-0.2f, 0, 0.2f),  glm::vec3(0.0f, v, 0.0f), glm::vec3(0.25f, 0.6f, 0.25f));
+            bakeHex(out, p + glm::vec3(0.0f, 0, -0.2f),  glm::vec3(0.0f, v, 0.0f), glm::vec3(0.2f, 0.5f, 0.2f));
+        }
+    }
+
+    glm::vec3 trunkTop = glm::vec3(0, trunkH * HEX_HEIGHT, 0);
+    int   fracDepth = 3;
+    float branchLen = 2.5f;
+    float branchThk = 0.35f;
+
+    buildFractalBranch(out, trunkTop, glm::vec3(0.0f, 1.0f, 0.0f), branchLen * 0.9f,
+                       branchThk * 0.9f, fracDepth, fracDepth, seed * 7 + 1);
+
+    seed = seed * 1103515245 + 12345;
+    int laterals = 2 + (int)((seed >> 16) % 2);
+    float az0 = (float)((seed >> 8) % 360) * PI / 180.0f;
+    for (int b = 0; b < laterals; b++) {
+        float az = az0 + b * (2.0f * PI / laterals);
+        glm::vec3 bdir = glm::normalize(glm::vec3(cosf(az) * 0.7f, 0.65f, sinf(az) * 0.7f));
+        seed = seed * 1103515245 + 12345;
+        buildFractalBranch(out, trunkTop, bdir, branchLen, branchThk,
+                           fracDepth, fracDepth, seed);
+    }
+}
+
+// Mirror of drawLargeTree(), emitting into `out` with the base at the origin.
+void buildLargeTree(std::vector<Vertex>& out, unsigned int seed) {
+    int trunkH = 7;
+    for (int i = 0; i < trunkH; i++) {
+        glm::vec3 p = glm::vec3(0, i * HEX_HEIGHT, 0);
+        float v = 0.85f + 0.15f * hashNoise((int)seed, i);
+        bakeHex(out, p, glm::vec3(0.0f, v, 0.0f), glm::vec3(0.7f, 1.0f, 0.7f));
+        if (i < 3) {
+            bakeHex(out, p + glm::vec3(0.35f, 0, 0.15f),  glm::vec3(0.0f, v, 0.0f), glm::vec3(0.35f, 0.7f, 0.35f));
+            bakeHex(out, p + glm::vec3(-0.3f, 0, -0.2f),  glm::vec3(0.0f, v, 0.0f), glm::vec3(0.35f, 0.7f, 0.35f));
+            bakeHex(out, p + glm::vec3(-0.05f, 0, 0.35f), glm::vec3(0.0f, v, 0.0f), glm::vec3(0.3f, 0.6f, 0.3f));
+        }
+    }
+
+    glm::vec3 trunkTop = glm::vec3(0, trunkH * HEX_HEIGHT, 0);
+    int   fracDepth = 5;
+    float branchLen = 3.2f;
+    float branchThk = 0.45f;
+
+    buildFractalBranch(out, trunkTop, glm::vec3(0.0f, 1.0f, 0.0f), branchLen * 1.0f,
+                       branchThk * 0.9f, fracDepth, fracDepth, seed * 13 + 3);
+
+    seed = seed * 1103515245 + 12345;
+    int laterals = 3 + (int)((seed >> 16) % 2);
+    float az0 = (float)((seed >> 8) % 360) * PI / 180.0f;
+    for (int b = 0; b < laterals; b++) {
+        float az = az0 + b * (2.0f * PI / laterals);
+        glm::vec3 bdir = glm::normalize(glm::vec3(cosf(az) * 0.75f, 0.6f, sinf(az) * 0.75f));
+        seed = seed * 1103515245 + 12345;
+        buildFractalBranch(out, trunkTop, bdir, branchLen, branchThk,
+                           fracDepth, fracDepth, seed);
+    }
+}
+
+
+// =====================================================
 // Stone Ruins (archway structure)
 // =====================================================
 void drawRuins(glm::vec3 base) {
@@ -1102,8 +1261,80 @@ int isWaterPond(int col, int row) {
 const int TERRAIN_MIN = -90, TERRAIN_MAX = 90;
 
 // Store tree/torch locations for rendering non-grid objects
-struct TreeInfo { int col, row; glm::vec3 leafColor; bool large; };
+// `variant` selects which baked mesh (19B) this tree draws — assigned from the
+// placement seed so the forest stays varied without a mesh per tree.
+struct TreeInfo { int col, row; glm::vec3 leafColor; bool large; int variant = 0; };
 std::vector<TreeInfo> treeLocations;
+
+// --- Baked mesh pool -------------------------------------------------------
+struct TreeMesh { GLuint vao = 0, vbo = 0; int count = 0; };
+static TreeMesh g_treeMeshes[NUM_TREE_VARIANTS];
+static TreeMesh g_largeTreeMeshes[NUM_LARGE_TREE_VARIANTS];
+static bool g_treeMeshesReady = false;
+
+static void uploadTreeMesh(TreeMesh& m, const std::vector<Vertex>& verts) {
+    m.count = (int)verts.size();
+    glGenVertexArrays(1, &m.vao);
+    glGenBuffers(1, &m.vbo);
+    glBindVertexArray(m.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m.vbo);
+    glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(Vertex), verts.data(), GL_STATIC_DRAW);
+    setupVertexAttribs();
+    glBindVertexArray(0);
+}
+
+// Bake the tree variants once. Call after initBlockGrid(), with a GL context.
+// Only variants the world actually placed get baked — a large-tree mesh is ~5 MB,
+// so baking all of them regardless would waste most of the VRAM.
+void initTreeMeshes() {
+    bool usedSmall[NUM_TREE_VARIANTS]       = {false};
+    bool usedLarge[NUM_LARGE_TREE_VARIANTS] = {false};
+    int smallTrees = 0, largeTrees = 0;
+
+    for (const TreeInfo& ti : treeLocations) {
+        if (ti.large) { usedLarge[ti.variant % NUM_LARGE_TREE_VARIANTS] = true; largeTrees++; }
+        else          { usedSmall[ti.variant % NUM_TREE_VARIANTS]       = true; smallTrees++; }
+    }
+
+    size_t totalVerts = 0;
+    int bakedSmall = 0, bakedLarge = 0;
+    std::vector<Vertex> verts;
+
+    for (int i = 0; i < NUM_TREE_VARIANTS; i++) {
+        if (!usedSmall[i]) continue;
+        verts.clear();
+        buildTree(verts, gridSeed(i * 977 + 13, i * 613 + 7));
+        uploadTreeMesh(g_treeMeshes[i], verts);
+        totalVerts += verts.size();
+        bakedSmall++;
+    }
+    for (int i = 0; i < NUM_LARGE_TREE_VARIANTS; i++) {
+        if (!usedLarge[i]) continue;
+        verts.clear();
+        buildLargeTree(verts, gridSeed(i * 1543 + 29, i * 811 + 17));
+        uploadTreeMesh(g_largeTreeMeshes[i], verts);
+        totalVerts += verts.size();
+        bakedLarge++;
+    }
+
+    g_treeMeshesReady = true;
+    printf("[Trees] %d trees (%d small, %d large) -> %d small + %d large baked meshes\n",
+           smallTrees + largeTrees, smallTrees, largeTrees, bakedSmall, bakedLarge);
+    printf("[Trees] %zu verts, %.1f MB VRAM (was ~%d draw calls/frame, now 1 per tree)\n",
+           totalVerts, totalVerts * sizeof(Vertex) / (1024.0 * 1024.0),
+           smallTrees * 380 + largeTrees * 1651);
+}
+
+void destroyTreeMeshes() {
+    for (int i = 0; i < NUM_TREE_VARIANTS; i++) {
+        glDeleteVertexArrays(1, &g_treeMeshes[i].vao);
+        glDeleteBuffers(1, &g_treeMeshes[i].vbo);
+    }
+    for (int i = 0; i < NUM_LARGE_TREE_VARIANTS; i++) {
+        glDeleteVertexArrays(1, &g_largeTreeMeshes[i].vao);
+        glDeleteBuffers(1, &g_largeTreeMeshes[i].vbo);
+    }
+}
 struct TorchInfo { int col, row, height; };
 std::vector<TorchInfo> torchLocations;
 
@@ -1583,8 +1814,8 @@ void buildMedievalCastle(int c0, int r0) {
     fillRect(wellC-1, wellC+1, wellR-1, wellR+1, G+4, G+4, BLOCK_WOOD);
 
     // Courtyard trees (2 decorative trees)
-    treeLocations.push_back({c0+W/2 - 8, r1-10, glm::vec3(0.2f,0.65f,0.15f), false});
-    treeLocations.push_back({c0+W/2 + 8, r1-12, glm::vec3(0.15f,0.55f,0.12f), false});
+    treeLocations.push_back({c0+W/2 - 8, r1-10, glm::vec3(0.2f,0.65f,0.15f), false, 3});
+    treeLocations.push_back({c0+W/2 + 8, r1-12, glm::vec3(0.15f,0.55f,0.12f), false, 11});
 
     printf("[Castle] Built Medieval Castle at col %d..%d, row %d..%d\n", c0, c1, r0, r1);
 }
@@ -1956,6 +2187,7 @@ void initBlockGrid() {
                     ti.col = col; ti.row = row;
                     ti.leafColor = TREE_COLORS[seed % NUM_TREE_COLORS];
                     ti.large = (seed % 3 == 0);
+                    ti.variant = (int)((seed >> 5) % (ti.large ? NUM_LARGE_TREE_VARIANTS : NUM_TREE_VARIANTS));
                     treeLocations.push_back(ti);
                 }
             } else if (biome == 1 && surfaceH >= UNDERGROUND_DEPTH + 1
@@ -1964,6 +2196,7 @@ void initBlockGrid() {
                 ti.col = col; ti.row = row;
                 ti.leafColor = TREE_COLORS[seed % NUM_TREE_COLORS];
                 ti.large = (seed % 3 == 0);
+                ti.variant = (int)((seed >> 5) % (ti.large ? NUM_LARGE_TREE_VARIANTS : NUM_TREE_VARIANTS));
                 treeLocations.push_back(ti);
             }
             // Sparse trees on stone biome at mid-altitude
@@ -1973,6 +2206,7 @@ void initBlockGrid() {
                 ti.col = col; ti.row = row;
                 ti.leafColor = glm::vec3(0.12f, 0.4f, 0.1f); // dark green pine
                 ti.large = false;
+                ti.variant = (int)((seed >> 5) % NUM_TREE_VARIANTS);
                 treeLocations.push_back(ti);
             }
 
@@ -1990,6 +2224,7 @@ void initBlockGrid() {
         for (auto& lm : landmarks) {
             TreeInfo ti; ti.col = lm[0]; ti.row = lm[1];
             ti.leafColor = glm::vec3(0); ti.large = true;
+            ti.variant = (int)(&lm - &landmarks[0]) % NUM_LARGE_TREE_VARIANTS;
             treeLocations.push_back(ti);
         }
     }
@@ -2348,6 +2583,8 @@ void renderTerrain(float time = 0.0f) {
     // Radius clamped to RENDER_DIST: drawing trees further out than the terrain
     // put them above ground that does not exist.
     const float TREE_RENDER_DIST_SQ = RENDER_DIST_SQ;
+    // Set colorMode/woodColor lazily, only once a tree actually survives culling.
+    bool bakedTreesActive = false;
     for (auto& ti : treeLocations) {
         glm::vec3 pos = hexGridPos(ti.col, ti.row, 0.0f);
         // Distance cull trees
@@ -2363,11 +2600,32 @@ void renderTerrain(float time = 0.0f) {
         // Frustum cull against a sphere big enough to cover trunk + canopy
         glm::vec3 treeCenter = treeBase + glm::vec3(0, 3.0f, 0);
         if (!isInFrustum(treeCenter, ti.large ? 7.0f : 4.5f)) continue;
-        if (ti.large)
+
+        if (useBakedTrees && g_treeMeshesReady) {
+            // One draw call per tree instead of ~1,190. The mesh is colour-free;
+            // the leaf colour arrives as a uniform (see colorMode in the shaders).
+            const TreeMesh& m = ti.large
+                ? g_largeTreeMeshes[ti.variant % NUM_LARGE_TREE_VARIANTS]
+                : g_treeMeshes[ti.variant % NUM_TREE_VARIANTS];
+            // drawLargeTree() hardcodes its green and ignores TreeInfo::leafColor,
+            // so baked large trees must use that same colour.
+            setVec3(shaderProgram, "leafColor",
+                    ti.large ? glm::vec3(0.15f, 0.55f, 0.12f) : ti.leafColor);
+            setMat4(shaderProgram, "model", glm::translate(glm::mat4(1.0f), treeBase));
+            if (!bakedTreesActive) {
+                setInt(shaderProgram, "colorMode", 1);
+                setVec3(shaderProgram, "woodColor", COL_WOOD_DARK);
+                bakedTreesActive = true;
+            }
+            glBindVertexArray(m.vao);
+            glDrawArrays(GL_TRIANGLES, 0, m.count);
+        } else if (ti.large) {
             drawLargeTree(treeBase);
-        else
+        } else {
             drawTree(treeBase, ti.leafColor);
+        }
     }
+    if (bakedTreesActive) setInt(shaderProgram, "colorMode", 0);
 
     // Draw torches — with distance + frustum culling (radius clamped to RENDER_DIST)
     const float TORCH_RENDER_DIST_SQ = RENDER_DIST_SQ;

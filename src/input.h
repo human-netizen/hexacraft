@@ -2537,6 +2537,12 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             break;
         }
 
+        // Phase 19B A/B: baked tree VBOs vs. the old per-frame fractal walk
+        case GLFW_KEY_F7:
+            useBakedTrees = !useBakedTrees;
+            printf("[Trees] Baked meshes %s\n", useBakedTrees ? "ON" : "OFF (live fractal)");
+            break;
+
         // Interactive objects
         case GLFW_KEY_G:
             fanOn = !fanOn;
