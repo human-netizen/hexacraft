@@ -37,8 +37,31 @@ static const char* skyboxFragSrc = R"GLSL(
 in vec3 TexCoords;
 out vec4 FragColor;
 uniform samplerCube skybox;
+
+// Time of day. The cubemap art is painted at full noon brightness, so without
+// these the sky stayed broad daylight while the terrain went dark at night.
+// nightColor is the scene's own fog/clear colour, so the horizon where terrain
+// fades into fog matches the sky it fades into.
+uniform float dayFactor;   // 0 = night, 1 = noon
+uniform vec3  nightColor;
+
 void main() {
-    FragColor = texture(skybox, TexCoords);
+    vec3 c = texture(skybox, TexCoords).rgb;
+    float light = clamp(dayFactor, 0.0, 1.0);
+
+    // Drain saturation as the light goes: a painted blue sky merely dimmed still
+    // reads as "blue", not as "dark". Never go fully grey, or dawn loses its warmth.
+    float lum = dot(c, vec3(0.299, 0.587, 0.114));
+    vec3 desat = mix(vec3(lum), c, 0.35 + 0.65 * light);
+
+    // Dim toward, but not to, black.
+    vec3 lit = desat * mix(0.07, 1.0, light);
+
+    // Pull toward the scene's own sky/fog colour so the horizon matches what
+    // terrain fades into. Only a partial pull: pulling all the way flattened
+    // dawn and dusk into a single wash with no clouds left in it.
+    vec3 result = mix(lit, nightColor, (1.0 - light) * 0.55);
+    FragColor = vec4(result, 1.0);
 }
 )GLSL";
 
@@ -169,7 +192,10 @@ void initSkybox() {
 // Draw the skybox.  Call BEFORE the main scene each frame.
 // viewMat  — full camera view matrix (translation will be stripped here)
 // projMat  — same projection used for the main scene
-void drawSkybox(const glm::mat4& viewMat, const glm::mat4& projMat) {
+// skyTint — the scene's own sky/fog colour for this time of day, so the cubemap
+//           and the distance fog meet at the same colour on the horizon.
+void drawSkybox(const glm::mat4& viewMat, const glm::mat4& projMat,
+                float dayF = 1.0f, glm::vec3 skyTint = glm::vec3(1.0f)) {
     if (!skyboxShader || !skyboxVAO || !skyboxCubemap) return;
 
     // Strip translation so the box stays centred on the camera
@@ -182,6 +208,8 @@ void drawSkybox(const glm::mat4& viewMat, const glm::mat4& projMat) {
     setMat4(skyboxShader, "view", skyView);
     setMat4(skyboxShader, "projection", projMat);
     setInt(skyboxShader, "skybox", 0);
+    setFloat(skyboxShader, "dayFactor", dayF);
+    setVec3(skyboxShader, "nightColor", skyTint);
 
     glBindVertexArray(skyboxVAO);
     glActiveTexture(GL_TEXTURE0);

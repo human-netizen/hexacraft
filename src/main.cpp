@@ -133,6 +133,19 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.02f, 0.02f, 0.06f, 1.0f);
 
+    // Paint one frame before the ~300 ms of texture and terrain loading below.
+    // Without this the window sits blank (whatever the compositor last had there)
+    // from creation until the first swap, which reads as a hang on startup.
+    // Nothing is loaded yet — no shader, no mesh — so this is a bare clear, which
+    // is exactly what a loading screen can be at this point in startup.
+    {
+        double t0 = glfwGetTime();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+        printf("[Boot] Loading frame shown at %.0f ms\n", t0 * 1000.0);
+    }
+
     shaderProgram = loadShaders("shaders/vertexShader.glsl", "shaders/fragmentShader.glsl");
     initSkybox();
     initHexMesh();
@@ -316,10 +329,24 @@ int main() {
         }
         glClearColor(sky.r, sky.g, sky.b, 1.0f);
 
-        // Fog (blends to sky color — objects fade before render cutoff at 75 units)
+        // Fog (blends to sky color). Density is derived from RENDER_DIST rather
+        // than hardcoded: the old fixed 0.0002 left terrain 61% visible at the
+        // 50-unit cutoff, so blocks visibly popped out of existence at the edge.
+        // Fog is held off until fogStart and reaches ~99% right at the cutoff,
+        // which hides the edge without hazing over the near field.
         setVec3(shaderProgram, "fogColor", sky);
-        float fogDens = (dayMode == 1 || dayMode == 3) ? 0.0004f : 0.0002f; // thicker fog at dawn/dusk
+        const float FOG_START_FRAC = 0.45f;  // clear out to 45% of the render radius
+        float fogStart = RENDER_DIST * FOG_START_FRAC;
+        float fogSpan  = RENDER_DIST - fogStart;
+        // exp(-k) = 0.01 at the cutoff -> k = 4.6
+        float fogDens  = 4.6f / (fogSpan * fogSpan);
+        // Slightly thicker haze at dawn/dusk. This used to be a flat 2x, which was
+        // harmless when the base density was far too low but now saturates the fog
+        // by ~35 units and turns dawn into an orange wash.
+        if (dayMode == 1 || dayMode == 3) fogDens *= 1.25f;
+        setFloat(shaderProgram, "fogStart", fogStart);
         setFloat(shaderProgram, "fogDensity", fogDens);
+        currentFogDensity = fogDens;
 
         // Lighting toggles
         setBool(shaderProgram, "lightOn", lightOn);
@@ -395,12 +422,16 @@ int main() {
             glScissor(vx, vy, vw, vh);
             glClear(GL_DEPTH_BUFFER_BIT);
             // Draw skybox first (behind everything)
-            drawSkybox(vMat, pMat);
+            drawSkybox(vMat, pMat, dayFactor, sky);
             glUseProgram(shaderProgram);
             setMat4(shaderProgram, "view", vMat);
             setMat4(shaderProgram, "projection", pMat);
             setVec3(shaderProgram, "viewPos", eye);
             currentVP = pMat * vMat;
+            // Lights first: the uniforms must be live before anything is shaded,
+            // otherwise the frame is lit by the previous frame's torch set.
+            gatherTorchLights();
+            uploadPointLights();
             renderSky(curTime, sunDir);
             renderTerrain(curTime);
             renderObjects(curTime);
@@ -412,7 +443,6 @@ int main() {
                 float _prog = (_dur > 0.0f) ? (breakHoldTime / _dur) : 0.0f;
                 drawBreakOverlay(_prog);
             }
-            uploadPointLights();
             glDisable(GL_SCISSOR_TEST);
         };
 
@@ -480,12 +510,15 @@ int main() {
             }
 
             // Draw skybox first (behind everything)
-            drawSkybox(view, proj);
+            drawSkybox(view, proj, dayFactor, sky);
             glUseProgram(shaderProgram);
             setMat4(shaderProgram, "view", view);
             setMat4(shaderProgram, "projection", proj);
             setVec3(shaderProgram, "viewPos", eye);
             currentVP = proj * view;
+            // Lights first — see the note in renderViewport above.
+            gatherTorchLights();
+            uploadPointLights();
             renderSky(curTime, sunDir);
             renderTerrain(curTime);
             renderObjects(curTime);
@@ -497,7 +530,6 @@ int main() {
                 float _prog = (_dur > 0.0f) ? (breakHoldTime / _dur) : 0.0f;
                 drawBreakOverlay(_prog);
             }
-            uploadPointLights();
         }
 
         // Render HUD (always on top, after all viewports)

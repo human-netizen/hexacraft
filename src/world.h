@@ -2445,15 +2445,46 @@ int bindBlockTexture(int type) {
 // =====================================================
 // Render terrain from voxel grid (with occlusion + frustum culling)
 // =====================================================
-void renderTerrain(float time = 0.0f) {
+// =====================================================
+// Collect the torch lights for this frame.
+// Must run BEFORE the draw pass: torchPositions used to be filled *during*
+// renderTerrain() while the uniforms were uploaded *after* it, so every frame
+// was lit by the previous frame's light set (a visible one-frame lag when
+// moving). Lights are also not frustum-culled — a torch behind the camera still
+// illuminates the wall in front of it — and the list is sorted nearest-first so
+// that truncating to MAX_POINT_LIGHTS keeps the 8 that matter instead of the
+// first 8 in grid order (which made lights pop in and out as the player walked).
+// =====================================================
+void gatherTorchLights() {
     torchPositions.clear();
+    for (auto& t : torchLocations) {
+        glm::vec3 pos = hexGridPos(t.col, t.row, 0.0f);
+        float tdx = pos.x - camPos.x;
+        float tdz = pos.z - camPos.z;
+        if (tdx * tdx + tdz * tdz > RENDER_DIST_SQ) continue;
+
+        int topH = 0;
+        for (int h = GRID_H - 1; h >= 0; h--) {
+            if (getBlock(t.col, t.row, h) != BLOCK_AIR) { topH = h; break; }
+        }
+        torchPositions.push_back(pos + glm::vec3(0, (topH + 1) * HEX_HEIGHT + 0.8f, 0));
+    }
+    auto distSqToCam = [](const glm::vec3& p) {
+        glm::vec3 d = p - camPos;
+        return d.x * d.x + d.y * d.y + d.z * d.z;
+    };
+    std::sort(torchPositions.begin(), torchPositions.end(),
+              [&](const glm::vec3& a, const glm::vec3& b) {
+                  return distSqToCam(a) < distSqToCam(b);
+              });
+}
+
+void renderTerrain(float time = 0.0f) {
     extractFrustum(currentVP);
     setFloat(shaderProgram, "alpha", 1.0f);
 
-    // Render distance: skip columns too far from camera (huge FPS boost)
-    // Set larger than fog fade distance so terrain never pops in visibly
-    const float RENDER_DIST = 50.0f;
-    const float RENDER_DIST_SQ = RENDER_DIST * RENDER_DIST;
+    // RENDER_DIST / RENDER_DIST_SQ now live in globals.h so gatherTorchLights()
+    // and the fog density in main.cpp can agree with this loop.
 
     // Bound the loops to only check columns within a box of RENDER_DIST around camera
     float zSp = HEX_RADIUS * 1.5f;
@@ -2640,9 +2671,8 @@ void renderTerrain(float time = 0.0f) {
             if (getBlock(t.col, t.row, h) != BLOCK_AIR) { topH = h; break; }
         }
         glm::vec3 torchBase = pos + glm::vec3(0, (topH + 1) * HEX_HEIGHT, 0);
-        // Always register the light — a torch just off-screen must still light what
-        // IS on screen. Only the torch geometry gets frustum-culled.
-        torchPositions.push_back(torchBase + glm::vec3(0, 0.8f, 0));
+        // The light itself is registered by gatherTorchLights(), which runs before
+        // the draw pass; this loop only draws geometry, so it may frustum-cull.
         if (!isInFrustum(torchBase, 2.0f)) continue;
         drawTorchMesh(torchBase);
     }
@@ -2847,6 +2877,12 @@ void renderSky(float time, glm::vec3 sunDir) {
 
     float skyDist = 150.0f; // distance from camera to sky objects
 
+    // Celestial bodies are drawn at skyDist, three times the fog cutoff, so
+    // distance fog erases them completely — the moon and stars simply never
+    // appeared at night. They are meant to read as infinitely far away, which is
+    // exactly the thing fog should not be applied to.
+    setFloat(shaderProgram, "fogDensity", 0.0f);
+
     // ============ SUN ============
     if (dayFactor > 0.1f) {
         // Sun position: opposite of light direction, far away
@@ -2913,53 +2949,16 @@ void renderSky(float time, glm::vec3 sunDir) {
     }
 
     // ============ CLOUDS ============
-    {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // Removed in 19D-6. There were two cloud systems visible at the same time:
+    // these drifting hex blobs and the painted clouds in the skybox cubemap
+    // (docs/bug_evidence/08_skybox_seams_double_clouds.png). The hex clouds were
+    // the worse of the two — drawn with isEmissive off, so their undersides lit
+    // dark and they read as floating rocks rather than cloud — so the cubemap
+    // won. The cubemap is now generated seamlessly by tools/gen_skybox.py, which
+    // is also where the clouds live. Sun, moon and stars stay here: they are not
+    // duplicated in the cubemap and they need to parallax against it.
 
-        float cloudAlpha = (dayFactor > 0.3f) ? 0.6f : 0.2f;
-        setFloat(shaderProgram, "alpha", cloudAlpha);
-
-        // Cloud color: white in day, dark blue-gray at night
-        glm::vec3 cloudDay(0.95f, 0.95f, 0.98f);
-        glm::vec3 cloudNight(0.15f, 0.15f, 0.25f);
-        glm::vec3 cloudColor = cloudNight + dayFactor * (cloudDay - cloudNight);
-
-        setBool(shaderProgram, "isEmissive", false);
-        float cloudY = camPos.y + 50.0f; // clouds always above camera
-        float cloudDrift = time * 0.8f; // slow drift
-
-        // Generate cloud clusters using noise
-        for (int cx = -3; cx <= 3; cx++) {
-            for (int cz = -3; cz <= 3; cz++) {
-                float worldX = camPos.x + cx * 20.0f + cloudDrift;
-                float worldZ = camPos.z + cz * 20.0f;
-                // Snap to grid for stable clouds
-                float snapX = floorf(worldX / 20.0f) * 20.0f;
-                float snapZ = floorf(worldZ / 20.0f) * 20.0f;
-
-                float n = fbmNoise(snapX * 0.02f, snapZ * 0.02f, 2);
-                if (n < 0.1f) continue; // skip if no cloud here
-
-                // Cloud cluster: several hex blobs
-                float cloudSize = 3.0f + n * 4.0f;
-                glm::vec3 base(snapX - cloudDrift + cloudDrift, cloudY, snapZ);
-
-                // Main cloud body
-                drawHex(base, cloudColor, glm::vec3(cloudSize, 1.5f, cloudSize * 0.8f));
-                // Puffs
-                if (n > 0.3f) {
-                    drawHex(base + glm::vec3(cloudSize * 0.5f, 0.5f, 0), cloudColor,
-                            glm::vec3(cloudSize * 0.6f, 1.0f, cloudSize * 0.5f));
-                    drawHex(base + glm::vec3(-cloudSize * 0.4f, 0.3f, cloudSize * 0.3f), cloudColor,
-                            glm::vec3(cloudSize * 0.5f, 0.8f, cloudSize * 0.4f));
-                }
-            }
-        }
-        setFloat(shaderProgram, "alpha", 1.0f);
-        glDisable(GL_BLEND);
-    }
-
+    setFloat(shaderProgram, "fogDensity", currentFogDensity); // restore scene fog
     setBool(shaderProgram, "isEmissive", false);
     glDepthMask(GL_TRUE);
 }

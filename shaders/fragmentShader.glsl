@@ -55,6 +55,16 @@ uniform float alpha;
 // Fog
 uniform vec3 fogColor;
 uniform float fogDensity;
+// Distance at which fog starts. Plain exp(-density*dist^2) fog reaching full
+// opacity by the render cutoff also hazes over the near field; holding it off
+// until fogStart keeps the near field crisp and confines the fade to the band
+// just before terrain stops being drawn. Driven from RENDER_DIST in main.cpp.
+uniform float fogStart;
+
+float fogAmount(float dist) {
+    float d = max(dist - fogStart, 0.0);
+    return clamp(exp(-fogDensity * d * d), 0.0, 1.0);
+}
 
 // Texture
 uniform sampler2D texture1;
@@ -114,7 +124,7 @@ void main()
         float pulse = 0.8 + 0.2 * sin(time * 3.0);
         vec3 emResult = emissiveColor * pulse;
         float dist = length(viewPos - FragPos);
-        float fogFactor = clamp(exp(-fogDensity * dist * dist), 0.0, 1.0);
+        float fogFactor = fogAmount(dist);
         emResult = mix(fogColor, emResult, fogFactor);
         FragColor = vec4(emResult, alpha);
         return;
@@ -124,7 +134,7 @@ void main()
     if (!lightOn) {
         vec3 dimResult = objColor * 0.05;
         float dist = length(viewPos - FragPos);
-        float fogFactor = clamp(exp(-fogDensity * dist * dist), 0.0, 1.0);
+        float fogFactor = fogAmount(dist);
         dimResult = mix(fogColor, dimResult, fogFactor);
         FragColor = vec4(dimResult, 1.0);
         return;
@@ -141,7 +151,7 @@ void main()
         }
         result = result / (result + vec3(1.0)); // tone mapping
         float dist = length(viewPos - FragPos);
-        float fogFactor = clamp(exp(-fogDensity * dist * dist), 0.0, 1.0);
+        float fogFactor = fogAmount(dist);
         result = mix(fogColor, result, fogFactor);
         result = mix(result, colorTint, colorTintStrength);
         FragColor = vec4(result, alpha);
@@ -224,8 +234,7 @@ void main()
 
     // Distance fog
     float dist = length(viewPos - FragPos);
-    float fogFactor = exp(-fogDensity * dist * dist);
-    fogFactor = clamp(fogFactor, 0.0, 1.0);
+    float fogFactor = fogAmount(dist);
     result = mix(fogColor, result, fogFactor);
 
     // Damage tint (red flash on hit)

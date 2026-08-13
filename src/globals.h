@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -993,6 +994,18 @@ bool specularOn = true;
 // Day-night: 0=night, 1=dawn, 2=noon, 3=dusk
 int dayMode = 2;
 float dayFactor = 1.0f;
+
+// Terrain render radius in world units. Trees, torches and fog all key off this:
+// fog density is derived from it in main.cpp so that geometry is fully fogged out
+// by the time it reaches the cutoff, instead of vanishing mid-air. Raising it
+// costs frame time roughly with the square — see the 19D notes in plan.md.
+const float RENDER_DIST = 50.0f;
+const float RENDER_DIST_SQ = RENDER_DIST * RENDER_DIST;
+
+// The fog density actually uploaded this frame. renderSky() needs it so it can
+// switch fog off for the sun/moon/stars and put it back afterwards: those sit at
+// skyDist = 150, far beyond the fog cutoff, so distance fog erases them outright.
+float currentFogDensity = 0.0f;
 
 // Interactive objects
 bool fanOn = false;          // G toggle
