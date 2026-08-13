@@ -425,17 +425,41 @@ const char* getMobName(MobType t) {
     }
 }
 
+// Draw one body part in mob-local space.
+// `base` already carries the mob's position and yaw, so every offset below is
+// local: +X is forward (the way the mob is facing), +Z is its left, +Y is up.
+void drawPart(const glm::mat4& base, glm::vec3 local, glm::vec3 color, glm::vec3 scale) {
+    glm::mat4 m = glm::translate(base, local);
+    drawBoxModel(glm::scale(m, scale), color);
+}
+
 void drawMob(const Mob& m, float time) {
+    // Mob-local frame: +X forward, +Z left, +Y up.
+    // The AI walks the mob along (cos yaw, 0, sin yaw) — see the
+    // moveMobWithCollision() calls in updateMobs() — and a Y rotation by -yaw
+    // maps local +X onto exactly that vector, so -yaw is the angle that makes
+    // the model face where it is going. (drawPlayer() uses PI/2 - yaw instead
+    // because its model is built facing +Z rather than +X.)
+    // Every part below is expressed relative to this frame; nothing may use
+    // m.pos directly, or it will not turn with the mob.
+    glm::mat4 base = glm::translate(glm::mat4(1.0f), m.pos);
+    base = myRotate(base, -m.yaw, glm::vec3(0, 1, 0));
+
     // Death animation: mob is dying (falling over + fading)
     if (m.deathTimer >= 0.0f) {
         float t = m.deathTimer;
         float fadeAlpha = 1.0f - (t / 1.0f); // fade over 1 second
         if (fadeAlpha <= 0.0f) return;
+        // Blending has to be enabled for the `alpha` uniform to do anything —
+        // without it the corpse stayed fully opaque and then popped out of
+        // existence when the timer expired. Same pattern as drawHexWater().
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         setFloat(shaderProgram, "alpha", fadeAlpha);
-        // Tilt the mob to fall over (rotate around Z axis)
+        // Tilt the mob to fall over (rotate around its local Z axis, so it
+        // topples sideways relative to its own facing)
         float tiltAngle = t * 1.57f; // 90 degrees over ~1s
         if (tiltAngle > 1.57f) tiltAngle = 1.57f;
-        glm::vec3 p = m.pos;
         // Draw a simplified falling body
         glm::vec3 col;
         if (m.type == MOB_ZOMBIE) col = glm::vec3(0.3f, 0.5f, 0.2f);
@@ -443,8 +467,11 @@ void drawMob(const Mob& m, float time) {
         else if (m.type == MOB_PIG) col = glm::vec3(0.9f, 0.6f, 0.6f);
         else if (m.type == MOB_SHEEP) col = glm::vec3(0.95f, 0.95f, 0.9f);
         else col = glm::vec3(0.9f, 0.9f, 0.85f);
-        drawHexRotated(p + glm::vec3(0, 0.5f, 0), col, tiltAngle, glm::vec3(0, 0, 1), glm::vec3(0.4f, 0.6f, 0.3f));
+        glm::mat4 fall = glm::translate(base, glm::vec3(0, 0.5f, 0));
+        fall = myRotate(fall, tiltAngle, glm::vec3(0, 0, 1));
+        drawBoxModel(glm::scale(fall, glm::vec3(0.4f, 0.6f, 0.3f)), col);
         setFloat(shaderProgram, "alpha", 1.0f);
+        glDisable(GL_BLEND);
         return;
     }
 
@@ -456,58 +483,94 @@ void drawMob(const Mob& m, float time) {
         setFloat(shaderProgram, "colorTintStrength", m.hitFlash / 0.3f);
     }
 
-    glm::vec3 p = m.pos;
-
     if (m.type == MOB_CHICKEN) {
         float bob = sinf(m.walkTime * 4.0f) * 0.05f;
-        drawHex(p + glm::vec3(0, 0.3f + bob, 0), glm::vec3(0.9f, 0.9f, 0.85f), glm::vec3(0.3f, 0.3f, 0.3f));
-        drawHex(p + glm::vec3(0, 0.6f + bob, 0), glm::vec3(0.9f, 0.9f, 0.85f), glm::vec3(0.2f, 0.2f, 0.2f));
-        drawHex(p + glm::vec3(0.15f, 0.6f + bob, 0), glm::vec3(0.9f, 0.7f, 0.1f), glm::vec3(0.08f, 0.05f, 0.05f));
-        drawHex(p + glm::vec3(0, 0.75f + bob, 0), glm::vec3(0.8f, 0.1f, 0.1f), glm::vec3(0.08f, 0.1f, 0.08f));
-        drawHex(p + glm::vec3(0.08f, 0.1f, 0), glm::vec3(0.9f, 0.7f, 0.1f), glm::vec3(0.04f, 0.15f, 0.04f));
-        drawHex(p + glm::vec3(-0.08f, 0.1f, 0), glm::vec3(0.9f, 0.7f, 0.1f), glm::vec3(0.04f, 0.15f, 0.04f));
+        glm::vec3 feather(0.9f, 0.9f, 0.85f);
+        glm::vec3 beak(0.9f, 0.7f, 0.1f);
+        // Body
+        drawPart(base, {0.0f, 0.32f + bob, 0.0f}, feather, {0.34f, 0.30f, 0.26f});
+        // Head — forward of the body and overlapping its top, instead of
+        // floating straight above it with a visible air gap
+        // (docs/bug_evidence/06_chicken_head_detached.png)
+        drawPart(base, {0.15f, 0.50f + bob, 0.0f}, feather, {0.20f, 0.20f, 0.18f});
+        // Beak
+        drawPart(base, {0.29f, 0.48f + bob, 0.0f}, beak, {0.10f, 0.06f, 0.06f});
+        // Comb
+        drawPart(base, {0.14f, 0.62f + bob, 0.0f}, glm::vec3(0.8f, 0.1f, 0.1f), {0.07f, 0.09f, 0.05f});
+        // Wattle (under the beak)
+        drawPart(base, {0.25f, 0.42f + bob, 0.0f}, glm::vec3(0.8f, 0.1f, 0.1f), {0.05f, 0.07f, 0.05f});
+        // Tail
+        drawPart(base, {-0.19f, 0.42f + bob, 0.0f}, feather, {0.12f, 0.16f, 0.10f});
+        // Wings, tucked against the sides
+        drawPart(base, {0.0f, 0.34f + bob,  0.15f}, feather, {0.24f, 0.18f, 0.05f});
+        drawPart(base, {0.0f, 0.34f + bob, -0.15f}, feather, {0.24f, 0.18f, 0.05f});
+        // Legs — swing along the forward axis so it walks instead of sliding
+        float legSwing = sinf(m.walkTime * 6.0f) * 0.06f;
+        drawPart(base, { legSwing, 0.10f,  0.07f}, beak, {0.05f, 0.20f, 0.05f});
+        drawPart(base, {-legSwing, 0.10f, -0.07f}, beak, {0.05f, 0.20f, 0.05f});
     } else if (m.type == MOB_PIG) {
         float bob = sinf(m.walkTime * 3.0f) * 0.03f;
         glm::vec3 pink(0.9f, 0.6f, 0.6f);
         glm::vec3 darkPink(0.8f, 0.5f, 0.5f);
-        drawHex(p + glm::vec3(0, 0.35f + bob, 0), pink, glm::vec3(0.4f, 0.35f, 0.35f));
-        drawHex(p + glm::vec3(0.3f, 0.4f + bob, 0), pink, glm::vec3(0.25f, 0.25f, 0.25f));
-        drawHex(p + glm::vec3(0.45f, 0.38f + bob, 0), darkPink, glm::vec3(0.08f, 0.08f, 0.08f));
-        drawHex(p + glm::vec3(0.15f, 0.1f, 0.15f), darkPink, glm::vec3(0.06f, 0.15f, 0.06f));
-        drawHex(p + glm::vec3(0.15f, 0.1f, -0.15f), darkPink, glm::vec3(0.06f, 0.15f, 0.06f));
-        drawHex(p + glm::vec3(-0.15f, 0.1f, 0.15f), darkPink, glm::vec3(0.06f, 0.15f, 0.06f));
-        drawHex(p + glm::vec3(-0.15f, 0.1f, -0.15f), darkPink, glm::vec3(0.06f, 0.15f, 0.06f));
+        // Body — long along the forward axis, the way a quadruped is shaped
+        drawPart(base, {0.0f, 0.42f + bob, 0.0f}, pink, {0.70f, 0.38f, 0.42f});
+        // Head
+        drawPart(base, {0.44f, 0.42f + bob, 0.0f}, pink, {0.30f, 0.34f, 0.34f});
+        // Snout
+        drawPart(base, {0.61f, 0.38f + bob, 0.0f}, darkPink, {0.10f, 0.12f, 0.14f});
+        // Ears
+        drawPart(base, {0.40f, 0.60f + bob,  0.11f}, darkPink, {0.09f, 0.08f, 0.06f});
+        drawPart(base, {0.40f, 0.60f + bob, -0.11f}, darkPink, {0.09f, 0.08f, 0.06f});
+        // Curly tail
+        drawPart(base, {-0.37f, 0.50f + bob, 0.0f}, darkPink, {0.07f, 0.07f, 0.07f});
+        // Legs — diagonal pairs move together, as a quadruped's gait does
+        float legSwing = sinf(m.walkTime * 4.0f) * 0.07f;
+        drawPart(base, { 0.22f + legSwing, 0.13f,  0.15f}, darkPink, {0.11f, 0.26f, 0.11f});
+        drawPart(base, { 0.22f - legSwing, 0.13f, -0.15f}, darkPink, {0.11f, 0.26f, 0.11f});
+        drawPart(base, {-0.22f - legSwing, 0.13f,  0.15f}, darkPink, {0.11f, 0.26f, 0.11f});
+        drawPart(base, {-0.22f + legSwing, 0.13f, -0.15f}, darkPink, {0.11f, 0.26f, 0.11f});
     } else if (m.type == MOB_SHEEP) {
         // White woolly body, dark face and legs
         float bob = sinf(m.walkTime * 3.0f) * 0.03f;
         glm::vec3 wool(0.95f, 0.95f, 0.9f);
         glm::vec3 face(0.35f, 0.3f, 0.25f);
         // Body (big woolly block)
-        drawHex(p + glm::vec3(0, 0.4f + bob, 0), wool, glm::vec3(0.45f, 0.4f, 0.4f));
-        // Head (dark)
-        drawHex(p + glm::vec3(0.35f, 0.5f + bob, 0), face, glm::vec3(0.2f, 0.22f, 0.2f));
+        drawPart(base, {0.0f, 0.55f + bob, 0.0f}, wool, {0.72f, 0.44f, 0.46f});
+        // Neck ruff, then the head clear of the body. The head used to sit at
+        // x=0.35 y=0.5 with the body 0.45 wide and 0.4 tall, which put it
+        // inside the body's silhouette so only the ears showed
+        // (docs/bug_evidence/05_sheep_head_inside_body.png).
+        drawPart(base, {0.40f, 0.62f + bob, 0.0f}, wool, {0.20f, 0.22f, 0.24f});
+        drawPart(base, {0.57f, 0.55f + bob, 0.0f}, face, {0.22f, 0.26f, 0.22f});
         // Ears
-        drawHex(p + glm::vec3(0.35f, 0.65f + bob, 0.1f), face, glm::vec3(0.06f, 0.06f, 0.06f));
-        drawHex(p + glm::vec3(0.35f, 0.65f + bob, -0.1f), face, glm::vec3(0.06f, 0.06f, 0.06f));
-        // Legs (dark)
-        float legSwing = sinf(m.walkTime * 3.0f) * 0.06f;
-        drawHex(p + glm::vec3(0.15f, 0.1f, 0.15f + legSwing), face, glm::vec3(0.06f, 0.15f, 0.06f));
-        drawHex(p + glm::vec3(0.15f, 0.1f, -0.15f - legSwing), face, glm::vec3(0.06f, 0.15f, 0.06f));
-        drawHex(p + glm::vec3(-0.15f, 0.1f, 0.15f - legSwing), face, glm::vec3(0.06f, 0.15f, 0.06f));
-        drawHex(p + glm::vec3(-0.15f, 0.1f, -0.15f + legSwing), face, glm::vec3(0.06f, 0.15f, 0.06f));
+        drawPart(base, {0.52f, 0.68f + bob,  0.13f}, face, {0.07f, 0.05f, 0.09f});
+        drawPart(base, {0.52f, 0.68f + bob, -0.13f}, face, {0.07f, 0.05f, 0.09f});
+        // Legs (dark) — swing along the forward axis, diagonal pairs together
+        float legSwing = sinf(m.walkTime * 3.5f) * 0.07f;
+        drawPart(base, { 0.22f + legSwing, 0.17f,  0.16f}, face, {0.10f, 0.34f, 0.10f});
+        drawPart(base, { 0.22f - legSwing, 0.17f, -0.16f}, face, {0.10f, 0.34f, 0.10f});
+        drawPart(base, {-0.22f - legSwing, 0.17f,  0.16f}, face, {0.10f, 0.34f, 0.10f});
+        drawPart(base, {-0.22f + legSwing, 0.17f, -0.16f}, face, {0.10f, 0.34f, 0.10f});
     } else if (m.type == MOB_ZOMBIE) {
         float bob = sinf(m.walkTime * 3.5f) * 0.04f;
         glm::vec3 zGreen(0.3f, 0.5f, 0.2f);
         glm::vec3 zDark(0.2f, 0.35f, 0.15f);
         glm::vec3 zShirt(0.25f, 0.4f, 0.3f);
-        drawHex(p + glm::vec3(0, 0.975f + bob, 0), zShirt, glm::vec3(0.40f, 0.65f, 0.25f));
-        drawHex(p + glm::vec3(0, 1.55f + bob, 0), zDark, glm::vec3(0.35f, 0.45f, 0.35f));
-        float armSwing = sinf(m.walkTime * 3.5f) * 0.15f;
-        drawHex(p + glm::vec3(0.35f, 0.85f + bob, 0.2f + armSwing), zGreen, glm::vec3(0.14f, 0.55f, 0.14f));
-        drawHex(p + glm::vec3(-0.35f, 0.85f + bob, 0.2f - armSwing), zGreen, glm::vec3(0.14f, 0.55f, 0.14f));
-        float legSwing = sinf(m.walkTime * 3.5f) * 0.12f;
-        drawHex(p + glm::vec3(0.12f, 0.325f, legSwing), zDark, glm::vec3(0.15f, 0.55f, 0.15f));
-        drawHex(p + glm::vec3(-0.12f, 0.325f, -legSwing), zDark, glm::vec3(0.15f, 0.55f, 0.15f));
+        // Torso — shoulders run across Z now that +X is forward
+        drawPart(base, {0.0f, 0.975f + bob, 0.0f}, zShirt, {0.28f, 0.65f, 0.50f});
+        // Head
+        drawPart(base, {0.0f, 1.52f + bob, 0.0f}, zDark, {0.42f, 0.45f, 0.42f});
+        // Eyes on the front face, so its facing reads at a glance
+        drawPart(base, {0.21f, 1.57f + bob,  0.11f}, glm::vec3(0.55f, 0.1f, 0.1f), {0.03f, 0.07f, 0.09f});
+        drawPart(base, {0.21f, 1.57f + bob, -0.11f}, glm::vec3(0.55f, 0.1f, 0.1f), {0.03f, 0.07f, 0.09f});
+        // Arms held out in front (the zombie pose), swinging forward/back
+        float armSwing = sinf(m.walkTime * 3.5f) * 0.12f;
+        drawPart(base, {0.28f + armSwing, 0.98f + bob,  0.34f}, zGreen, {0.55f, 0.16f, 0.16f});
+        drawPart(base, {0.28f - armSwing, 0.98f + bob, -0.34f}, zGreen, {0.55f, 0.16f, 0.16f});
+        // Legs
+        float legSwing = sinf(m.walkTime * 3.5f) * 0.14f;
+        drawPart(base, { legSwing, 0.325f,  0.11f}, zDark, {0.16f, 0.65f, 0.16f});
+        drawPart(base, {-legSwing, 0.325f, -0.11f}, zDark, {0.16f, 0.65f, 0.16f});
     } else if (m.type == MOB_SKELETON) {
         // Gray/white bony humanoid with bow
         float bob = sinf(m.walkTime * 3.5f) * 0.04f;
@@ -515,30 +578,32 @@ void drawMob(const Mob& m, float time) {
         glm::vec3 dark(0.15f, 0.15f, 0.15f); // eye sockets
         glm::vec3 bowCol(0.5f, 0.3f, 0.15f);
         // Body (ribcage — thinner than zombie)
-        drawHex(p + glm::vec3(0, 0.975f + bob, 0), bone, glm::vec3(0.30f, 0.60f, 0.18f));
+        drawPart(base, {0.0f, 0.975f + bob, 0.0f}, bone, {0.24f, 0.62f, 0.40f});
         // Head (skull)
-        drawHex(p + glm::vec3(0, 1.55f + bob, 0), bone, glm::vec3(0.30f, 0.38f, 0.30f));
-        // Eye sockets
-        drawHex(p + glm::vec3(0.12f, 1.6f + bob, 0.15f), dark, glm::vec3(0.06f, 0.06f, 0.04f));
-        drawHex(p + glm::vec3(0.12f, 1.6f + bob, -0.15f), dark, glm::vec3(0.06f, 0.06f, 0.04f));
-        // Arms (one holds bow)
-        float armSwing = sinf(m.walkTime * 3.5f) * 0.1f;
-        drawHex(p + glm::vec3(0.28f, 0.85f + bob, 0.15f + armSwing), bone, glm::vec3(0.08f, 0.50f, 0.08f));
-        drawHex(p + glm::vec3(-0.28f, 0.85f + bob, -0.15f - armSwing), bone, glm::vec3(0.08f, 0.50f, 0.08f));
-        // Bow in right hand
-        drawHex(p + glm::vec3(0.35f, 0.7f + bob, 0.15f + armSwing), bowCol, glm::vec3(0.04f, 0.25f, 0.04f));
+        drawPart(base, {0.0f, 1.50f + bob, 0.0f}, bone, {0.40f, 0.42f, 0.40f});
+        // Eye sockets, sunk into the front of the skull
+        drawPart(base, {0.19f, 1.54f + bob,  0.10f}, dark, {0.04f, 0.09f, 0.10f});
+        drawPart(base, {0.19f, 1.54f + bob, -0.10f}, dark, {0.04f, 0.09f, 0.10f});
+        // Arms, held forward
+        float armSwing = sinf(m.walkTime * 3.5f) * 0.10f;
+        drawPart(base, {0.22f + armSwing, 0.98f + bob,  0.26f}, bone, {0.46f, 0.12f, 0.12f});
+        drawPart(base, {0.22f - armSwing, 0.98f + bob, -0.26f}, bone, {0.46f, 0.12f, 0.12f});
+        // Bow, held upright at the end of the right arm
+        drawPart(base, {0.46f, 0.98f + bob, -0.26f}, bowCol, {0.05f, 0.50f, 0.05f});
         // Legs (thin)
-        float legSwing = sinf(m.walkTime * 3.5f) * 0.12f;
-        drawHex(p + glm::vec3(0.08f, 0.325f, legSwing), bone, glm::vec3(0.08f, 0.50f, 0.08f));
-        drawHex(p + glm::vec3(-0.08f, 0.325f, -legSwing), bone, glm::vec3(0.08f, 0.50f, 0.08f));
+        float legSwing = sinf(m.walkTime * 3.5f) * 0.14f;
+        drawPart(base, { legSwing, 0.34f,  0.09f}, bone, {0.13f, 0.68f, 0.13f});
+        drawPart(base, {-legSwing, 0.34f, -0.09f}, bone, {0.13f, 0.68f, 0.13f});
     }
 
-    // Health bar above head if damaged (all mobs)
+    // Health bar above head if damaged (all mobs). Drawn in world axes, not
+    // mob-local — a bar that swings around with the mob's facing is harder to
+    // read than one that always hangs straight above it.
     if (m.health < m.maxHealth && m.alive) {
         float hFrac = m.health / m.maxHealth;
         float headY = (m.type == MOB_ZOMBIE || m.type == MOB_SKELETON) ? 2.0f :
-                       (m.type == MOB_SHEEP || m.type == MOB_PIG) ? 0.9f : 0.9f;
-        drawHex(p + glm::vec3(0, headY, 0), glm::vec3(0.8f, 0.1f, 0.1f), glm::vec3(0.3f * hFrac, 0.04f, 0.04f));
+                       (m.type == MOB_SHEEP || m.type == MOB_PIG) ? 0.95f : 0.8f;
+        drawHex(m.pos + glm::vec3(0, headY, 0), glm::vec3(0.8f, 0.1f, 0.1f), glm::vec3(0.3f * hFrac, 0.04f, 0.04f));
     }
 
     // Reset tint
@@ -596,11 +661,17 @@ void updateArrows(float dt) {
 void drawArrows() {
     for (auto& a : arrows) {
         if (!a.active) continue;
-        // Arrow: thin brown stick
+        // Arrow: thin brown stick, shaft along local +X so it uses the same
+        // frame as the mobs. The old call rotated a Z-aligned shaft by +yaw and
+        // never applied `pitch` at all, so arrows flew broadside-on and stayed
+        // level while their actual path arced.
         glm::vec3 dir = glm::normalize(a.vel);
         float yaw = atan2f(dir.z, dir.x);
         float pitch = asinf(dir.y);
-        drawHexRotated(a.pos, glm::vec3(0.5f, 0.35f, 0.15f), yaw, glm::vec3(0, 1, 0), glm::vec3(0.03f, 0.03f, 0.4f));
+        glm::mat4 m = glm::translate(glm::mat4(1.0f), a.pos);
+        m = myRotate(m, -yaw, glm::vec3(0, 1, 0));
+        m = myRotate(m, pitch, glm::vec3(0, 0, 1));
+        drawBoxModel(glm::scale(m, glm::vec3(0.5f, 0.035f, 0.035f)), glm::vec3(0.5f, 0.35f, 0.15f));
     }
 }
 
@@ -969,6 +1040,7 @@ void initBirds() {
         b.wingPhase = (float)(rand() % 1000) / 1000.0f * 6.28f;
         b.speed = 3.0f + (rand() % 20) * 0.1f;
         b.color = glm::vec3(0.15f + (rand()%30)*0.01f, 0.12f + (rand()%20)*0.01f, 0.1f + (rand()%15)*0.01f);
+        b.yaw = 0.0f; // set on the first updateBirds() tick from actual motion
         birds.push_back(b);
     }
     printf("[Birds] Spawned %d birds\n", (int)birds.size());
@@ -993,32 +1065,43 @@ void updateBirds(float dt, float time) {
         int i1 = (b.currentWP + 1) % 6;
         int i2 = (b.currentWP + 2) % 6;
         int i3 = (b.currentWP + 3) % 6;
+        glm::vec3 prev = b.pos;
         b.pos = catmullRom(b.waypoints[i0], b.waypoints[i1], b.waypoints[i2], b.waypoints[i3], b.t);
+        // Heading from actual motion along the spline, so the bird points the
+        // way it is flying instead of always facing -Z. Same convention as the
+        // mobs: yaw = atan2(dz, dx), forward is (cos yaw, 0, sin yaw).
+        glm::vec3 step = b.pos - prev;
+        if (step.x * step.x + step.z * step.z > 1e-8f) b.yaw = atan2f(step.z, step.x);
         b.wingPhase += dt * 12.0f; // wing flap speed
     }
 }
 
 void drawBird(const Bird& b, float time) {
-    glm::vec3 p = b.pos;
+    // Same local frame as the mobs: +X forward, +Z left, +Y up. The wings used
+    // to hinge around Z with the body's long axis on Z, so a bird flying along
+    // X flew sideways with its wings edge-on to the direction of travel.
+    glm::mat4 base = glm::translate(glm::mat4(1.0f), b.pos);
+    base = myRotate(base, -b.yaw, glm::vec3(0, 1, 0));
     // Body
-    drawHex(p, b.color, glm::vec3(0.15f, 0.1f, 0.3f));
-    // Head
-    drawHex(p + glm::vec3(0.0f, 0.05f, -0.25f), b.color * 1.1f, glm::vec3(0.08f, 0.08f, 0.08f));
-    // Wings — flap using sin(wingPhase), rotate with myRotate
+    drawPart(base, {0.0f, 0.0f, 0.0f}, b.color, {0.34f, 0.12f, 0.14f});
+    // Head and beak
+    drawPart(base, {0.21f, 0.05f, 0.0f}, b.color * 1.1f, {0.12f, 0.12f, 0.12f});
+    drawPart(base, {0.31f, 0.04f, 0.0f}, glm::vec3(0.9f, 0.7f, 0.1f), {0.09f, 0.04f, 0.04f});
+    // Tail
+    drawPart(base, {-0.23f, 0.02f, 0.0f}, b.color, {0.14f, 0.025f, 0.12f});
+    // Wings — flap using sin(wingPhase), hinged at the shoulder with myRotate
     float wingAngle = sinf(b.wingPhase) * 0.7f; // radians
     glm::vec3 wingColor = b.color + glm::vec3(0.1f, 0.1f, 0.15f);
-    // Left wing
-    glm::mat4 modelL = glm::translate(glm::mat4(1.0f), p + glm::vec3(-0.15f, 0.0f, 0.0f));
-    modelL = myRotate(modelL, wingAngle, glm::vec3(0, 0, 1));
-    modelL = glm::translate(modelL, glm::vec3(-0.15f, 0, 0));
-    modelL = glm::scale(modelL, glm::vec3(0.25f, 0.03f, 0.15f));
-    drawHexModel(modelL, wingColor);
-    // Right wing
-    glm::mat4 modelR = glm::translate(glm::mat4(1.0f), p + glm::vec3(0.15f, 0.0f, 0.0f));
-    modelR = myRotate(modelR, -wingAngle, glm::vec3(0, 0, 1));
-    modelR = glm::translate(modelR, glm::vec3(0.15f, 0, 0));
-    modelR = glm::scale(modelR, glm::vec3(0.25f, 0.03f, 0.15f));
-    drawHexModel(modelR, wingColor);
+    // Left wing (+Z)
+    glm::mat4 wingL = glm::translate(base, glm::vec3(0.0f, 0.03f, 0.06f));
+    wingL = myRotate(wingL, wingAngle, glm::vec3(1, 0, 0));
+    wingL = glm::translate(wingL, glm::vec3(0, 0, 0.16f));
+    drawBoxModel(glm::scale(wingL, glm::vec3(0.22f, 0.025f, 0.30f)), wingColor);
+    // Right wing (-Z), mirrored so both wings rise and fall together
+    glm::mat4 wingR = glm::translate(base, glm::vec3(0.0f, 0.03f, -0.06f));
+    wingR = myRotate(wingR, -wingAngle, glm::vec3(1, 0, 0));
+    wingR = glm::translate(wingR, glm::vec3(0, 0, -0.16f));
+    drawBoxModel(glm::scale(wingR, glm::vec3(0.22f, 0.025f, 0.30f)), wingColor);
 }
 
 // =====================================================

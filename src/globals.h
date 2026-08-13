@@ -1017,6 +1017,7 @@ struct Bird {
     float wingPhase;         // wing flap phase
     float speed;
     glm::vec3 color;
+    float yaw;               // heading, derived from motion along the spline
 };
 std::vector<Bird> birds;
 

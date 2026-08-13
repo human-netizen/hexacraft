@@ -132,6 +132,65 @@ void bakeHex(std::vector<Vertex>& out, glm::vec3 pos, glm::vec3 attr,
     }
 }
 
+// =====================================================
+// Box Mesh — a unit cube centred on the origin (spans +/-0.5 on every axis)
+// At limb scale the hex prism reads as a 6-sided drum, which is why the mobs
+// look like stacks of barrels. Mob body parts use this instead. Same Vertex
+// layout and same shader path as the hex prism, so it is a drop-in swap.
+// =====================================================
+GLuint boxVAO = 0, boxVBO = 0;
+int boxVertexCount = 0;
+
+std::vector<Vertex> generateBox() {
+    std::vector<Vertex> verts;
+    glm::vec3 white(1.0f);
+    const float h = 0.5f;
+
+    // One face per axis direction: (normal, right, up) spanning the face.
+    glm::vec3 norms[6] = {{ 0, 0, 1}, { 0, 0,-1}, { 1, 0, 0},
+                          {-1, 0, 0}, { 0, 1, 0}, { 0,-1, 0}};
+    glm::vec3 rights[6] = {{ 1, 0, 0}, {-1, 0, 0}, { 0, 0,-1},
+                           { 0, 0, 1}, { 1, 0, 0}, { 1, 0, 0}};
+    glm::vec3 ups[6] = {{ 0, 1, 0}, { 0, 1, 0}, { 0, 1, 0},
+                        { 0, 1, 0}, { 0, 0,-1}, { 0, 0, 1}};
+
+    for (int f = 0; f < 6; f++) {
+        glm::vec3 n = norms[f], r = rights[f] * h, u = ups[f] * h;
+        glm::vec3 c = n * h;
+        // Corners counter-clockwise seen from outside, so the winding matches
+        // the hex prism's (GL_CCW front faces).
+        glm::vec3 p0 = c - r - u, p1 = c + r - u, p2 = c + r + u, p3 = c - r + u;
+        verts.push_back({p0, n, white, glm::vec2(0.0f, 0.0f)});
+        verts.push_back({p1, n, white, glm::vec2(1.0f, 0.0f)});
+        verts.push_back({p2, n, white, glm::vec2(1.0f, 1.0f)});
+        verts.push_back({p0, n, white, glm::vec2(0.0f, 0.0f)});
+        verts.push_back({p2, n, white, glm::vec2(1.0f, 1.0f)});
+        verts.push_back({p3, n, white, glm::vec2(0.0f, 1.0f)});
+    }
+    return verts;
+}
+
+void initBoxMesh() {
+    std::vector<Vertex> verts = generateBox();
+    boxVertexCount = (int)verts.size();
+
+    glGenVertexArrays(1, &boxVAO);
+    glGenBuffers(1, &boxVBO);
+    glBindVertexArray(boxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, boxVBO);
+    glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(Vertex), verts.data(), GL_STATIC_DRAW);
+    setupVertexAttribs();
+    glBindVertexArray(0);
+    printf("[Mesh] Box mesh ready (%d verts)\n", boxVertexCount);
+}
+
+void drawBoxModel(glm::mat4 model, glm::vec3 color) {
+    setMat4(shaderProgram, "model", model);
+    setVec3(shaderProgram, "objectColor", color);
+    glBindVertexArray(boxVAO);
+    glDrawArrays(GL_TRIANGLES, 0, boxVertexCount);
+}
+
 void drawHexRotated(glm::vec3 pos, glm::vec3 color, float angle, glm::vec3 axis, glm::vec3 scale = glm::vec3(1.0f)) {
     glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
     model = myRotate(model, angle, axis);

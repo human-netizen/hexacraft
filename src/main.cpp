@@ -136,6 +136,7 @@ int main() {
     shaderProgram = loadShaders("shaders/vertexShader.glsl", "shaders/fragmentShader.glsl");
     initSkybox();
     initHexMesh();
+    initBoxMesh();
     initSphere();
     initCone();
     initBezier();
@@ -526,6 +527,8 @@ int main() {
     glDeleteBuffers(1, &ruledVBO);
     glDeleteVertexArrays(1, &hexVAO);
     glDeleteBuffers(1, &hexVBO);
+    glDeleteVertexArrays(1, &boxVAO);
+    glDeleteBuffers(1, &boxVBO);
     destroyTreeMeshes();
     glDeleteProgram(shaderProgram);
     glfwDestroyWindow(window);
