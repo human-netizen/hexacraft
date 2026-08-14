@@ -12,12 +12,23 @@
 #include "hud.h"
 #include "input.h"
 #include "skybox.h"
+#include "horizon.h"
+// After world.h (findGroundH) and objects.h (worldToGrid).
+#include "weather.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-// Load a texture from file and return GL texture ID
-GLuint loadTexture(const char* path) {
+// Load a texture from file and return GL texture ID.
+//
+// `pixelArt` picks the magnification filter. It defaults to true because all 88
+// original textures here are 16x16 Minecraft art, where GL_LINEAR turns a block
+// face into a smear. The gfx_b3 imports (car paint, road, roof, world map) are
+// photographs several hundred pixels across, and NEAREST on those is worse in
+// exactly the opposite way: a road stretched over several blocks magnifies past
+// one texel per pixel and comes out visibly chunky. So they pass false.
+// Minification is trilinear either way — distant blocks must not shimmer.
+GLuint loadTexture(const char* path, bool pixelArt = true) {
     int w, h, channels;
     stbi_set_flip_vertically_on_load(true);
     unsigned char* data = stbi_load(path, &w, &h, &channels, 0);
@@ -31,15 +42,38 @@ GLuint loadTexture(const char* path) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    // NEAREST magnification keeps 16x16 pixel-art blocks crisp instead of smeared.
-    // Minification stays trilinear so distant blocks do not shimmer.
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                    pixelArt ? GL_NEAREST : GL_LINEAR);
     GLenum fmt = (channels == 4) ? GL_RGBA : GL_RGB;
     glTexImage2D(GL_TEXTURE_2D, 0, fmt, w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
     printf("[Texture] Loaded: %s (%dx%d, %d channels)\n", path, w, h, channels);
     return tex;
+}
+
+// =====================================================
+// Offscreen frame capture (development aid)
+// =====================================================
+// HEXA_SHOT=<path.ppm> grabs the framebuffer once, after HEXA_SHOT_DELAY seconds
+// (default 6, enough for terrain generation to finish), then closes the window.
+// Exists because the desktop screenshot tools do not work under this Wayland
+// session, and rendering changes cannot be reviewed without seeing a frame.
+// PPM because it needs no image library — the project vendors stb_image for
+// reading but not stb_image_write, and one more dependency is not worth it for a
+// debugging path. Convert with ImageMagick or ffmpeg.
+void captureFrame(const char* path, int w, int h) {
+    std::vector<unsigned char> px((size_t)w * h * 3);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, px.data());
+    FILE* f = fopen(path, "wb");
+    if (!f) { printf("[Shot] Cannot write %s\n", path); return; }
+    fprintf(f, "P6\n%d %d\n255\n", w, h);
+    // glReadPixels returns bottom-up; PPM is top-down.
+    for (int y = h - 1; y >= 0; y--)
+        fwrite(&px[(size_t)y * w * 3], 1, (size_t)w * 3, f);
+    fclose(f);
+    printf("[Shot] Wrote %s (%dx%d)\n", path, w, h);
 }
 
 // =====================================================
@@ -79,6 +113,7 @@ void printControls() {
     printf("\n");
     printf("  Day-Night:\n");
     printf("    T           - Cycle: Night > Dawn > Noon > Dusk\n");
+    printf("    N           - Toggle rain\n");
     printf("\n");
     printf("  Debug:\n");
     printf("    F7          - Toggle baked tree meshes (off = live fractal, slower)\n");
@@ -92,14 +127,227 @@ void printControls() {
     printf("    Arrow Keys  - Drive (UP/DOWN = accel, LEFT/RIGHT = steer)\n");
     printf("\n");
     printf("  Block Building:\n");
-    printf("    Left Click               - Break block (bedrock unbreakable)\n");
-    printf("    Right Click              - Place block\n");
+    // These two were the wrong way round: mouse_button_callback places on left
+    // and hold-to-breaks on right.
+    printf("    Left Click               - Place block / use sculpt tool\n");
+    printf("    Right Click (hold)       - Break block (bedrock unbreakable)\n");
+    printf("    Hill / Pond tool         - Left Click reshapes terrain in an area\n");
+    printf("    K                        - Grab / set down the targeted block\n");
     printf("    Scroll                   - Cycle hotbar slot\n");
     printf("    Ctrl + Scroll            - Zoom in/out\n");
     printf("    Numpad 1-9               - Quick-select hotbar\n");
     printf("\n");
+    printf("  Build Tab (inventory screen):\n");
+    printf("    House button             - Below the Recipe Book button\n");
+    printf("    Click a recipe           - Builds it 3m ahead, facing you\n");
+    printf("    House/Tree/Torch/Fireplace - Costs come out of your inventory\n");
+    printf("\n");
     printf("  ESC           - Quit\n");
     printf("========================================\n");
+}
+
+// =====================================================
+// HEXA_BUILD_TEST — assertion harness for plan_2 Step 4
+// =====================================================
+// Runs in-process after world generation, because everything under test reads
+// real terrain: the flatness gate, the ground snap and the light gathering all
+// need a generated world, and a stub grid would only prove the stub works.
+static int  g_btPass = 0, g_btFail = 0;
+static void CHK(bool cond, const char* what) {
+    if (cond) { g_btPass++; printf("  ok    %s\n", what); }
+    else      { g_btFail++; printf("  FAIL  %s\n", what); }
+}
+
+static void setSlot(int i, int type, int count) {
+    playerInventory[i].type = type;
+    playerInventory[i].count = count;
+}
+static void clearInventory() {
+    for (int i = 0; i < 36; i++) setSlot(i, BLOCK_AIR, 0);
+}
+
+static void runBuildTests() {
+    printf("\n=== plan_2 Step 4 — craft-and-place structures ===\n");
+
+    // ---- Find genuinely level ground. Spawn is in the mountains, and every
+    // ---- placement assertion below is meaningless on a slope.
+    glm::vec3 site(0.0f);
+    bool found = false;
+    for (int c = -70; c <= 70 && !found; c += 2) {
+        for (int r = -70; r <= 70 && !found; r += 2) {
+            glm::vec3 p = hexGridPos(c, r, 0.0f);
+            float lo = 1e9f, hi = -1e9f, gc = getGroundYWorld(p.x, p.z);
+            lo = hi = gc;
+            for (int i = 0; i < 12; i++) {
+                float a = (float)i / 12.0f * 6.2831853f;
+                float g = getGroundYWorld(p.x + cosf(a) * 5.0f, p.z + sinf(a) * 5.0f);
+                if (g < lo) lo = g;
+                if (g > hi) hi = g;
+            }
+            if (hi - lo < 0.51f) { site = glm::vec3(p.x, gc, p.z); found = true; }
+        }
+    }
+    CHK(found, "found a level test site");
+    printf("  [site] %.2f, %.2f, %.2f\n", site.x, site.y, site.z);
+
+    playerWorldPos = site;
+    camPos = site + glm::vec3(0, 1.62f, 0);
+    camFront = glm::vec3(0.0f, 0.0f, -1.0f);
+
+    // ---- Inventory tally and spend --------------------------------------
+    clearInventory();
+    setSlot(0, BLOCK_DIRT, 3);
+    setSlot(7, BLOCK_DIRT, 4);
+    CHK(countInInventory(BLOCK_DIRT) == 7, "countInInventory sums across split stacks");
+    CHK(countInInventory(BLOCK_STONE) == 0, "countInInventory reports 0 for an absent type");
+
+    CHK(removeFromInventory(BLOCK_DIRT, 5) == 5, "removeFromInventory takes the full amount");
+    CHK(countInInventory(BLOCK_DIRT) == 2, "removeFromInventory leaves the remainder");
+    CHK(playerInventory[0].type == BLOCK_AIR && playerInventory[0].count == 0,
+        "emptied slot is cleared to AIR, not left as a 0-count ghost");
+
+    CHK(removeFromInventory(BLOCK_DIRT, 5) == 2, "removeFromInventory reports a short take");
+    CHK(countInInventory(BLOCK_DIRT) == 0, "a short take still drains what was there");
+
+    // ---- Affordability gate ---------------------------------------------
+    craftedHouses.clear(); craftedTrees.clear();
+    craftedLights.clear(); craftedFireplaces.clear();
+
+    clearInventory();
+    CHK(!craftStructure(0), "house refused with an empty inventory");
+    CHK(craftedHouses.empty(), "a refused build places nothing");
+
+    // The no-partial-spend guarantee: removeFromInventory has no rollback, so
+    // craftStructure must test BOTH ingredients before removing EITHER.
+    clearInventory();
+    setSlot(0, BLOCK_DIRT, 5);          // enough dirt, no stone at all
+    CHK(!craftStructure(0), "house refused when only the first ingredient is present");
+    CHK(countInInventory(BLOCK_DIRT) == 5, "a refused build spends nothing (no partial take)");
+
+    // ---- A successful build ---------------------------------------------
+    clearInventory();
+    setSlot(0, BLOCK_DIRT, 9);
+    setSlot(1, BLOCK_STONE, 4);
+    CHK(craftStructure(0), "house built when both ingredients are present");
+    CHK(craftedHouses.size() == 1, "house appended to craftedHouses");
+    CHK(countInInventory(BLOCK_DIRT) == 4 && countInInventory(BLOCK_STONE) == 1,
+        "house cost exactly 5 dirt + 3 stone");
+
+    if (craftedHouses.size() == 1) {
+        const PlacedStructure& h = craftedHouses[0];
+        float r = HOUSE_D * HOUSE_CS * 0.5f;
+        float dxz = sqrtf((h.pos.x - site.x) * (h.pos.x - site.x) +
+                          (h.pos.z - site.z) * (h.pos.z - site.z));
+        CHK(fabsf(dxz - (3.0f + r)) < 0.01f,
+            "house centre offset by 3m + footprint radius, so the near wall is 3m out");
+        CHK(h.pos.z < site.z, "house is in front of the player, not behind");
+
+        // Ground snap: the stored y is the LOW sample of the footprint, which is
+        // what buildSpotOk returns.
+        glm::vec3 c(h.pos.x, 0.0f, h.pos.z);
+        float g = 0.0f;
+        CHK(buildSpotOk(c, r, g), "the chosen site passes its own flatness gate");
+        CHK(fabsf(h.pos.y - g) < 0.001f, "house y snapped to the lowest footprint sample");
+
+        // Yaw: local -Z must come back pointing at the player, i.e. at -fwd.
+        // myRotate about +Y sends (0,0,-1) to (-sin, 0, -cos). Looking along -Z
+        // puts the player on the house's +Z side, so its front faces +Z.
+        glm::vec3 facing(-sinf(h.yaw), 0.0f, -cosf(h.yaw));
+        CHK(facing.z > 0.99f, "house door faces back toward a player looking along -Z");
+    }
+
+    // Yaw again from a diagonal heading — the case a fixed-axis test would miss.
+    craftedHouses.clear();
+    clearInventory();
+    setSlot(0, BLOCK_DIRT, 5);
+    setSlot(1, BLOCK_STONE, 3);
+    camFront = glm::normalize(glm::vec3(1.0f, -0.3f, -1.0f));
+    if (craftStructure(0) && craftedHouses.size() == 1) {
+        glm::vec3 fwd = glm::normalize(glm::vec3(camFront.x, 0.0f, camFront.z));
+        float yaw = craftedHouses[0].yaw;
+        glm::vec3 facing(-sinf(yaw), 0.0f, -cosf(yaw));
+        CHK(glm::length(facing - (-fwd)) < 0.001f,
+            "house front faces back toward the player on a diagonal heading");
+    } else {
+        CHK(false, "diagonal-heading house built");
+    }
+    camFront = glm::vec3(0.0f, 0.0f, -1.0f);
+
+    // ---- Flatness rejection ----------------------------------------------
+    // Raise a stone tower inside the next footprint. gfx_b3 needs no such gate —
+    // its world is a flat plate — so this is the port's own failure mode.
+    {
+        glm::vec3 fwd(0.0f, 0.0f, -1.0f);
+        glm::vec3 c = site + fwd * (3.0f + 0.7f);
+        int tc, tr;
+        worldToColRow(c.x, c.z, tc, tr);
+        int base = (int)(site.y / HEX_HEIGHT);
+        for (int h = base; h < base + 6; h++) setBlock(tc, tr, h, BLOCK_STONE);
+
+        float g = 0.0f;
+        CHK(!buildSpotOk(c, 0.7f, g), "flatness gate rejects a 6-block step in the footprint");
+
+        clearInventory();
+        setSlot(0, BLOCK_STONE, 2);
+        setSlot(1, BLOCK_WOOD, 1);
+        int before = (int)craftedFireplaces.size();
+        CHK(!craftStructure(3), "fireplace refused on broken ground");
+        CHK((int)craftedFireplaces.size() == before, "a ground-refused build places nothing");
+        CHK(countInInventory(BLOCK_STONE) == 2 && countInInventory(BLOCK_WOOD) == 1,
+            "a ground-refused build spends nothing");
+
+        for (int h = base; h < base + 6; h++) setBlock(tc, tr, h, BLOCK_AIR);
+    }
+
+    // ---- Lights ----------------------------------------------------------
+    craftedLights.clear(); craftedFireplaces.clear();
+    clearInventory();
+    setSlot(0, BLOCK_WOOD, 3);
+    setSlot(1, BLOCK_STONE, 3);
+    CHK(craftStructure(2), "torch built");
+    CHK(craftStructure(3), "fireplace built");
+    CHK(craftedLights.size() == 1 && craftedFireplaces.size() == 1,
+        "torch and fireplace stored in their own lists");
+
+    if (craftedLights.size() == 1 && craftedFireplaces.size() == 1) {
+        // Stand right on top of them so they are unambiguously the nearest two
+        // and survive the nearest-8 truncation whatever else is around.
+        camPos = craftedLights[0] + glm::vec3(0, 1.0f, 0);
+        gatherTorchLights();
+
+        glm::vec3 wantTorch = craftedLights[0] + glm::vec3(0, 0.8f, 0);
+        glm::vec3 wantFire  = craftedFireplaces[0].pos + glm::vec3(0, 0.35f, 0);
+        int nTorch = 0, nFire = 0, iTorch = -1, iFire = -1;
+        for (size_t i = 0; i < torchPositions.size(); i++) {
+            const PointLightSrc& l = torchPositions[i];
+            if (glm::length(l.pos - wantTorch) < 0.001f &&
+                glm::length(l.color - COL_TORCH_FLAME) < 0.001f) { nTorch++; iTorch = (int)i; }
+            if (glm::length(l.pos - wantFire) < 0.001f &&
+                glm::length(l.color - COL_FIRE_HEARTH) < 0.001f) { nFire++; iFire = (int)i; }
+        }
+        CHK(nTorch == 1, "crafted torch registers exactly one point light (not zero, not two)");
+        CHK(nFire == 1, "crafted fireplace registers exactly one point light");
+        // gatherTorchLights does not shrink the list — it partial_sorts so the
+        // nearest 8 sit at the front, and uploadPointLights in the render loop
+        // takes that prefix. Standing on top of these two, they must be in it or
+        // they light nothing.
+        CHK(iTorch >= 0 && iTorch < 8, "crafted torch survives into the uploaded 8");
+        CHK(iFire  >= 0 && iFire  < 8, "crafted fireplace survives into the uploaded 8");
+    }
+
+    // ---- Recipe table sanity ---------------------------------------------
+    {
+        bool allOk = true;
+        for (int i = 0; i < NUM_BUILD_RECIPES; i++) {
+            const BuildRecipe& br = buildRecipes[i];
+            if (br.c1 <= 0 || br.c2 <= 0) allOk = false;
+            if (strcmp(getBlockName(br.t1), "unknown") == 0) allOk = false;
+            if (strcmp(getBlockName(br.t2), "unknown") == 0) allOk = false;
+        }
+        CHK(allOk, "every build recipe costs a positive amount of a real block type");
+    }
+
+    printf("=== %d passed, %d failed ===\n", g_btPass, g_btFail);
 }
 
 // =====================================================
@@ -112,6 +360,11 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+    // 4x MSAA. Must be requested before the window exists — the default
+    // framebuffer's sample count is fixed at creation and cannot be changed
+    // afterwards. A voxel world is nothing but hard silhouette edges, so this
+    // buys more here than it would in a scene made of organic shapes.
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
     GLFWwindow* window = glfwCreateWindow(WIN_W, WIN_H, "HexaCraft", NULL, NULL);
     if (!window) { printf("Window creation failed\n"); glfwTerminate(); return -1; }
@@ -150,6 +403,16 @@ int main() {
     printControls();
 
     glEnable(GL_DEPTH_TEST);
+    // The GLFW_SAMPLES hint only asks for a multisampled framebuffer; rasterising
+    // into it still has to be switched on. Report what the driver actually gave
+    // us — a request for 4 can silently come back as 0 on some configurations,
+    // and without this the only symptom is "the edges still look jagged".
+    glEnable(GL_MULTISAMPLE);
+    {
+        GLint samples = 0;
+        glGetIntegerv(GL_SAMPLES, &samples);
+        printf("[Boot] MSAA: %d samples\n", samples);
+    }
     glClearColor(0.02f, 0.02f, 0.06f, 1.0f);
 
     // Paint one frame before the ~300 ms of texture and terrain loading below.
@@ -175,6 +438,7 @@ int main() {
     initBoxMesh();
     initSphere();
     initCone();
+    initCylinder();
     initBezier();
     initSpline();
     initRuledSurface();
@@ -182,6 +446,8 @@ int main() {
     initSlabMesh();
     initPanelMesh();
     initHUD();
+    // After the mesh helpers: the ring is built with the shared Vertex layout.
+    initHorizon();
 
     // Load textures — local
     texBrick = loadTexture("assets/srcs/brick.png");
@@ -261,6 +527,17 @@ int main() {
     texOakDoorBot   = loadTexture("assets/srcs/oak_door_bottom.png");
     texWaterStill   = loadTexture("assets/srcs/water_still.png");
 
+    // gfx_b3 imports — photographs, so pixelArt = false (see loadTexture).
+    // Four of these shipped as .jpg in gfx_b3 but are actually PNG; renamed on
+    // import. stb_image sniffs magic bytes so the wrong name never broke
+    // anything there, but a .jpg that is a PNG is a trap for the next reader.
+    texCarBody   = loadTexture("assets/srcs/car_body.png", false);
+    texCarWindow = loadTexture("assets/srcs/car_window.png", false);
+    texRoad      = loadTexture("assets/srcs/road.png", false);
+    texRoof      = loadTexture("assets/srcs/roof.png", false);
+    texWorldMap  = loadTexture("assets/srcs/world_map_texture.jpg", false);
+    texHillIcon  = loadTexture("assets/srcs/double_layer_mud_grass.png", false);
+
     printf("[World] Generating terrain...\n");
     initSightTable();
     initBlockGrid();
@@ -283,6 +560,7 @@ int main() {
     // Spawn initial mobs and birds
     spawnInitialMobs();
     initBirds();
+    initRain();   // after the spawn point is chosen — the first fill is camera-relative
     // Initialize Inventory slots
     for (int i=0; i<36; i++) { playerInventory[i].type = BLOCK_AIR; playerInventory[i].count = 0; }
     // Hotbar (slots 0-8)
@@ -304,12 +582,133 @@ int main() {
     playerInventory[14].type = BLOCK_WOOL_BLUE;   playerInventory[14].count = 64;
     playerInventory[15].type = BLOCK_GLOWSTONE;   playerInventory[15].count = 64; // bookshelf, lantern
     playerInventory[16].type = BLOCK_SANDSTONE;   playerInventory[16].count = 64; // sandstone slab
-    playerInventory[17].type = BLOCK_BRICKS;      playerInventory[17].count = 64; // brick slab
+    playerInventory[17].type = BLOCK_BRICKS;      playerInventory[17].count = 64;
+    // Sculpt tools (plan_2 Step 3). count = 1 so the HUD draws no stack number
+    // — drawSlotCount skips <= 1 — and nothing decrements them, because the
+    // left-click handler returns before placeBlock() ever sees the slot.
+    playerInventory[18].type = ITEM_TOOL_HILL;    playerInventory[18].count = 1;
+    playerInventory[19].type = ITEM_TOOL_POND;    playerInventory[19].count = 1;
+
+// brick slab
 
     // Set camera behind player initially
     camYaw = -90.0f;
     camPitch = -15.0f;
     updateCameraVectors();
+
+    // HEXA_SHOT_CAM="x,y,z,yaw,pitch" drops the camera into free-fly at a fixed
+    // pose. Pairs with HEXA_SHOT: together they make a given view reproducible
+    // from the command line, which is the only way to compare a rendering change
+    // against a before-shot without a human at the keyboard.
+    if (const char* camEnv = getenv("HEXA_SHOT_CAM")) {
+        float x, y, z, yaw, pitch;
+        if (sscanf(camEnv, "%f,%f,%f,%f,%f", &x, &y, &z, &yaw, &pitch) == 5) {
+            cameraMode = 2;             // free-fly
+            camPos = glm::vec3(x, y, z);
+            camYaw = yaw;
+            camPitch = pitch;
+            updateCameraVectors();
+            printf("[Shot] Camera (%.1f, %.1f, %.1f) yaw %.0f pitch %.0f\n", x, y, z, yaw, pitch);
+        }
+    }
+
+    // Shading, weather and time overrides. Same reason as HEXA_SHOT_CAM: an A/B
+    // pair is only worth reading if both halves share a pose, and pressing H, N
+    // or T by hand between two runs cannot guarantee that.
+    if (getenv("HEXA_GOURAUD")) {
+        useGouraud = true;
+        printf("[Shot] Shading: Gouraud\n");
+    }
+    if (getenv("HEXA_RAIN")) {
+        rainOn = true;
+        printf("[Shot] Rain: ON\n");
+    }
+    // 0=Night 1=Dawn 2=Noon 3=Dusk — the same table the T key cycles through.
+    if (const char* dayEnv = getenv("HEXA_DAY")) {
+        const float factors[4] = {0.0f, 0.4f, 1.0f, 0.3f};
+        const char*  names[4]  = {"Night", "Dawn", "Noon", "Dusk"};
+        int m = atoi(dayEnv) & 3;
+        dayMode = m;
+        dayFactor = factors[m];
+        printf("[Shot] Time: %s\n", names[m]);
+    }
+
+    // HEXA_BUILD_DEMO=1 — build one of each recipe on level ground and park the
+    // camera in front of them, so HEXA_SHOT can capture evidence without a human
+    // walking there and clicking four buttons. HEXA_BUILD_DEMO_NIGHT=1 does the
+    // same at night, which is the only way to see the torch and fireplace light.
+    if (getenv("HEXA_BUILD_DEMO")) {
+        glm::vec3 site(0.0f);
+        bool found = false;
+        for (int c = -70; c <= 70 && !found; c += 2) {
+            for (int r = -70; r <= 70 && !found; r += 2) {
+                glm::vec3 p = hexGridPos(c, r, 0.0f);
+                float gc = getGroundYWorld(p.x, p.z), lo = gc, hi = gc;
+                for (int i = 0; i < 12; i++) {
+                    float a = (float)i / 12.0f * 6.2831853f;
+                    float g = getGroundYWorld(p.x + cosf(a) * 9.0f, p.z + sinf(a) * 9.0f);
+                    if (g < lo) lo = g;
+                    if (g > hi) hi = g;
+                }
+                if (hi - lo < 0.51f) { site = glm::vec3(p.x, gc, p.z); found = true; }
+            }
+        }
+        if (found) {
+            // Each recipe is built from the same spot but a different heading, so
+            // they fan out around the site instead of stacking on each other —
+            // and each one goes through craftStructure(), the real path.
+            const float headings[4] = { 0.0f, 1.9f, 3.4f, 4.6f };  // radians
+            for (int i = 0; i < NUM_BUILD_RECIPES; i++) {
+                playerWorldPos = site;
+                camFront = glm::vec3(sinf(headings[i]), 0.0f, -cosf(headings[i]));
+                for (int s = 0; s < 36; s++) { playerInventory[s].type = BLOCK_AIR; playerInventory[s].count = 0; }
+                playerInventory[0].type = buildRecipes[i].t1; playerInventory[0].count = buildRecipes[i].c1;
+                playerInventory[1].type = buildRecipes[i].t2; playerInventory[1].count = buildRecipes[i].c2;
+                craftStructure(i);
+            }
+            playerWorldPos = site;
+            printf("[Demo] Site %.2f, %.2f, %.2f — %zu house, %zu tree, %zu torch, %zu fire\n",
+                   site.x, site.y, site.z, craftedHouses.size(), craftedTrees.size(),
+                   craftedLights.size(), craftedFireplaces.size());
+
+            // HEXA_SHOT_CAM (handled above) wins if it was given — the demo only
+            // supplies a default framing, and close-ups need a hand-picked one.
+            if (!getenv("HEXA_SHOT_CAM")) {
+                cameraMode = 2;
+                camPos = site + glm::vec3(0.0f, 6.0f, 12.0f);
+                // Look back at the site from the +Z side.
+                glm::vec3 dir = glm::normalize(site + glm::vec3(0, 1.0f, 0) - camPos);
+                camPitch = glm::degrees(asinf(dir.y));
+                camYaw   = glm::degrees(atan2f(dir.z, dir.x));
+                updateCameraVectors();
+            }
+        } else {
+            printf("[Demo] no level site found\n");
+        }
+        if (getenv("HEXA_BUILD_DEMO_NIGHT")) { dayMode = 0; dayFactor = 0.0f; }
+
+        // HEXA_BUILD_DEMO_UI=1 opens the crafting screen on the Build tab with a
+        // deliberately partial inventory, so the shot shows both the affordable
+        // and the unaffordable readout.
+        if (getenv("HEXA_BUILD_DEMO_UI")) {
+            for (int s = 0; s < 36; s++) { playerInventory[s].type = BLOCK_AIR; playerInventory[s].count = 0; }
+            playerInventory[0].type = BLOCK_DIRT;  playerInventory[0].count = 12;
+            playerInventory[1].type = BLOCK_STONE; playerInventory[1].count = 5;
+            playerInventory[2].type = BLOCK_WOOD;  playerInventory[2].count = 1;
+            inventoryOpen = true;
+            buildTabOpen  = true;
+        }
+    }
+
+    // HEXA_BUILD_TEST=1 — plan_2 Step 4 assertions. Runs here, after world
+    // generation and inventory setup, then exits without entering the render
+    // loop. It mutates the inventory and (briefly) the terrain, so it must never
+    // run alongside a normal session.
+    if (getenv("HEXA_BUILD_TEST")) {
+        runBuildTests();
+        glfwTerminate();
+        return g_btFail == 0 ? 0 : 1;
+    }
 
     while (!glfwWindowShouldClose(window)) {
         float currentTime = (float)glfwGetTime();
@@ -319,6 +718,7 @@ int main() {
         updateBlockTarget();   // must run before processInput so target is current
         processInput(window);
         updateMobs(deltaTime, (float)glfwGetTime());
+        updateCarry();   // returns a held block to the world if the player died
         updateFluids((float)glfwGetTime());
 
         // Animate fan: continuous rotation at ~180 deg/s (≈ π rad/s)
@@ -336,6 +736,9 @@ int main() {
 
         // Update birds
         updateBirds(deltaTime, (float)glfwGetTime());
+
+        // Rain steps once per frame, before any viewport draws — see updateRain().
+        updateRain(deltaTime, (float)glfwGetTime());
 
         int w, h;
         glfwGetFramebufferSize(window, &w, &h);
@@ -387,6 +790,11 @@ int main() {
         setBool(shaderProgram, "specularOn", specularOn);
         setBool(shaderProgram, "isEmissive", false);
         setBool(shaderProgram, "isHUD", false);
+        // Off by default; renderTerrain turns it on for its block pass only.
+        setBool(shaderProgram, "proceduralTint", false);
+        // Likewise wind: nothing sways unless a draw asks for it. Goes through
+        // setSway so the redundant-upload cache stays in step with the uniform.
+        setSway(0.0f);
         // dayFactor is what the sky, the mob spawner and the star field key off.
         // It used to be a second global written ONLY by the T key, so anything
         // that changed dayMode by another route (a script, a future day/night
@@ -409,21 +817,45 @@ int main() {
         // Directional light (sun angle changes with day)
         glm::vec3 sunDir;
         glm::vec3 sunColor;
+        // The moon is now its own directional light rather than the sun wearing a
+        // blue tint. Its colour carries the whole day/night fade — the shader does
+        // not scale it by dayFactor again — so setting it to black is what turns
+        // the moon off at noon. Night's sun drops to almost nothing in exchange,
+        // since the moon has taken over lighting the scene.
+        glm::vec3 moonDir;
+        glm::vec3 moonColor;
         if (dayMode == 0) { // night
             sunDir = glm::vec3(0.2f, -0.5f, 0.3f);
-            sunColor = glm::vec3(0.15f, 0.15f, 0.25f);
+            sunColor = glm::vec3(0.03f, 0.03f, 0.05f);
+            moonDir = glm::vec3(-0.35f, -0.8f, 0.25f);
+            moonColor = glm::vec3(0.14f, 0.16f, 0.28f);
         } else if (dayMode == 1) { // dawn
             sunDir = glm::vec3(-0.8f, -0.3f, -0.2f);
             sunColor = glm::vec3(0.8f, 0.5f, 0.3f);
+            moonDir = glm::vec3(0.7f, -0.5f, 0.2f);
+            moonColor = glm::vec3(0.05f, 0.06f, 0.11f);
         } else if (dayMode == 2) { // noon
             sunDir = glm::vec3(-0.3f, -1.0f, -0.5f);
             sunColor = glm::vec3(0.95f, 0.9f, 0.8f);
+            moonDir = glm::vec3(0.3f, -1.0f, 0.5f);
+            moonColor = glm::vec3(0.0f);
         } else { // dusk
             sunDir = glm::vec3(0.8f, -0.3f, 0.2f);
             sunColor = glm::vec3(0.8f, 0.35f, 0.2f);
+            moonDir = glm::vec3(-0.7f, -0.5f, -0.2f);
+            moonColor = glm::vec3(0.07f, 0.08f, 0.15f);
         }
         setVec3(shaderProgram, "dirLightDir", sunDir);
         setVec3(shaderProgram, "dirLightColor", sunColor);
+        setVec3(shaderProgram, "moonLightDir", moonDir);
+        setVec3(shaderProgram, "moonLightColor", moonColor);
+
+        // Specular defaults. bindBlockTexture() overrides these per block family;
+        // everything else (mobs, props, HUD-adjacent geometry) inherits the old
+        // uniform response, so nothing changes look without opting in.
+        // Goes through resetBlockSpecular() rather than setFloat directly so the
+        // redundant-upload cache in world.h stays in step with the real uniform.
+        resetBlockSpecular();
 
         // Spot light (follows camera like a flashlight)
         setVec3(shaderProgram, "spotLightPos", camPos);
@@ -447,8 +879,15 @@ int main() {
             if (count > 8) count = 8;
             setInt(shaderProgram, "numPointLights", count);
             for (int i = 0; i < count; i++) {
-                setVec3(shaderProgram, kPointLightPosNames[i], torchPositions[i]);
-                setVec3(shaderProgram, kPointLightColorNames[i], glm::vec3(1.0f, 0.6f, 0.2f));
+                setVec3(shaderProgram, kPointLightPosNames[i], torchPositions[i].pos);
+                setVec3(shaderProgram, kPointLightColorNames[i], torchPositions[i].color);
+            }
+            // Zero the slots past `count`. The loop in the shader stops at
+            // numPointLights so these are not read today, but leaving a previous
+            // frame's light sitting in the array is one edit away from becoming a
+            // light that follows the player around with no source.
+            for (int i = count; i < 8; i++) {
+                setVec3(shaderProgram, kPointLightColorNames[i], glm::vec3(0.0f));
             }
         };
 
@@ -461,6 +900,7 @@ int main() {
             glClear(GL_DEPTH_BUFFER_BIT);
             // Draw skybox first (behind everything)
             drawSkybox(vMat, pMat, dayFactor, sky);
+            drawHorizon(vMat, pMat, eye, dayFactor, sky);
             glUseProgram(shaderProgram);
             setMat4(shaderProgram, "view", vMat);
             setMat4(shaderProgram, "projection", pMat);
@@ -471,6 +911,7 @@ int main() {
             gatherTorchLights();
             uploadPointLights();
             renderSky(curTime, sunDir);
+            drawClouds(curTime, eye, dayFactor);
             renderTerrain(curTime);
             renderObjects(curTime);
             if (isBreaking && hasTarget) {
@@ -481,6 +922,9 @@ int main() {
                 float _prog = (_dur > 0.0f) ? (breakHoldTime / _dur) : 0.0f;
                 drawBreakOverlay(_prog);
             }
+            // Last in the pass: rain is alpha-blended and has to composite over
+            // the solid world.
+            drawRain(curTime);
             glDisable(GL_SCISSOR_TEST);
         };
 
@@ -549,6 +993,7 @@ int main() {
 
             // Draw skybox first (behind everything)
             drawSkybox(view, proj, dayFactor, sky);
+            drawHorizon(view, proj, eye, dayFactor, sky);
             glUseProgram(shaderProgram);
             setMat4(shaderProgram, "view", view);
             setMat4(shaderProgram, "projection", proj);
@@ -558,6 +1003,7 @@ int main() {
             gatherTorchLights();
             uploadPointLights();
             renderSky(curTime, sunDir);
+            drawClouds(curTime, eye, dayFactor);
             renderTerrain(curTime);
             renderObjects(curTime);
             if (isBreaking && hasTarget) {
@@ -568,6 +1014,7 @@ int main() {
                 float _prog = (_dur > 0.0f) ? (breakHoldTime / _dur) : 0.0f;
                 drawBreakOverlay(_prog);
             }
+            drawRain(curTime);   // last — see the note in renderViewport
         }
 
         // Render HUD (always on top, after all viewports)
@@ -578,11 +1025,48 @@ int main() {
             renderHUD(fw, fh);
         }
 
+        // Development capture — see captureFrame(). Grabs before the swap so the
+        // back buffer still holds the frame just drawn.
+        if (const char* shotPath = getenv("HEXA_SHOT")) {
+            const char* delayEnv = getenv("HEXA_SHOT_DELAY");
+            float delay = delayEnv ? (float)atof(delayEnv) : 6.0f;
+            // Frame rate, measured only after a warm-up. World generation and
+            // texture loading take several seconds before the first frame ever
+            // draws, and averaging that in hid a real difference when this was
+            // used to A/B the cost of a render pass.
+            //
+            // The warm-up is counted in FRAMES, not wall-clock. An earlier
+            // version started timing at delay*0.5, which silently degrades to
+            // "measure everything" whenever world gen happens to run past that
+            // mark — and gen time varies enough run to run that two A/B samples
+            // were not measuring the same thing.
+            const int SHOT_WARMUP = 30;
+            static int   shotFrames = -SHOT_WARMUP;
+            static float warmT = 0.0f;
+            shotFrames++;
+            if (shotFrames <= 0) warmT = currentTime;   // still warming up
+            if (currentTime >= delay) {
+                int sw, sh;
+                glfwGetFramebufferSize(window, &sw, &sh);
+                captureFrame(shotPath, sw, sh);
+                float span = currentTime - warmT;
+                if (shotFrames > 0 && span > 0.5f)
+                    printf("[Shot] %d frames in %.1fs = %.1f fps\n",
+                           shotFrames, span, shotFrames / span);
+                else
+                    printf("[Shot] fps not measured — only %d frames past warm-up; "
+                           "raise HEXA_SHOT_DELAY\n", shotFrames);
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+            }
+        }
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     destroySkybox();
+    destroyHorizon();
+    destroyRain();
     glDeleteVertexArrays(1, &hudVAO);
     glDeleteBuffers(1, &hudVBO);
     glDeleteVertexArrays(1, &sphereVAO);
