@@ -7,8 +7,9 @@ hexacraft_dbg
 *.out
 *.app
 
-# Markdown files
+# Markdown files (notes and plans stay local; the README is tracked)
 *.md
+!README.md
 
 # LaTeX build artifacts
 *.aux
