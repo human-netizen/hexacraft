@@ -65,8 +65,16 @@ void initHUD() {
     glGenBuffers(1, &hudVBO);
     glBindVertexArray(hudVAO);
     glBindBuffer(GL_ARRAY_BUFFER, hudVBO);
-    // Will be filled dynamically
-    glBufferData(GL_ARRAY_BUFFER, 8192 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+    // Will be filled dynamically.
+    //
+    // Was 8192 floats = 124 quads per glBufferSubData. The 5x7 bitmap font emits
+    // one quad per lit pixel — up to 35 per character — so a string of roughly
+    // nine or more capitals overruns it, and glBufferSubData rejects an oversized
+    // write outright rather than truncating: the string silently does not draw.
+    // Caught on the Build tab (plan_2 Step 4), where "FIREPLACE" and the panel's
+    // subtitle both vanished while every shorter label rendered. Any long HUD
+    // string had the same latent limit.
+    glBufferData(GL_ARRAY_BUFFER, 65536 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     // pos(3) + normal(3) + color(3) + texCoord(2) = 11 floats
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -977,6 +985,103 @@ void renderHUD(int screenW, int screenH) {
             // "No results" indicator — red bar across middle
             if (isSearching && filtered.empty()) {
                 drawRect(rbX + 10, rbY + rbH * 0.5f - 3.0f, rbW - 20, 6.0f, glm::vec3(0.7f, 0.1f, 0.1f));
+            }
+        }
+
+        // ==== BUILD TAB (plan_2 Step 4) ====
+        // A tab on the crafting screen rather than its own full-screen menu, as
+        // plan_2 asks: this screen already owns the cursor, the dim overlay and
+        // the hit-testing, and a second menu with its own cursor state is where
+        // input bugs come from.
+        float buildBtnX = craftOffX - 40.0f;
+        float buildBtnY = craftY + slotStep - 30.0f;   // directly under the recipe-book button
+        {
+            std::vector<float> bv;
+            glm::vec3 col = buildTabOpen ? glm::vec3(0.75f, 0.45f, 0.15f)
+                                         : glm::vec3(0.35f, 0.28f, 0.20f);
+            pushQuad(bv, buildBtnX, buildBtnY, buildBtnX + 24.0f, buildBtnY + 24.0f, col);
+            // A tiny house glyph, so the two square buttons are distinguishable.
+            glm::vec3 ink(0.95f, 0.90f, 0.80f);
+            pushQuad(bv, buildBtnX + 6, buildBtnY + 5, buildBtnX + 18, buildBtnY + 14, ink);
+            pushQuad(bv, buildBtnX + 4, buildBtnY + 14, buildBtnX + 20, buildBtnY + 17, ink);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, bv.size() * sizeof(float), bv.data());
+            setInt(shaderProgram, "textureMode", 0);
+            glDrawArrays(GL_TRIANGLES, 0, (int)bv.size() / 11);
+        }
+
+        if (buildTabOpen) {
+            // Same slab of screen the recipe book uses — they are mutually
+            // exclusive for exactly that reason (see input.h).
+            float bpW = 180.0f;
+            float bpH = panelH;
+            float bpX = panelX - bpW - 10.0f;
+            float bpY = panelY;
+
+            // drawRect above is scoped inside the recipeBookOpen block, so this
+            // panel needs its own.
+            auto rect = [&](float x, float y, float w, float h, glm::vec3 c) {
+                std::vector<float> rv;
+                pushQuad(rv, x, y, x + w, y + h, c);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, rv.size() * sizeof(float), rv.data());
+                setInt(shaderProgram, "textureMode", 0);
+                glDrawArrays(GL_TRIANGLES, 0, (int)rv.size() / 11);
+            };
+            auto text = [&](const char* s, float x, float y, float h, glm::vec3 c) {
+                std::vector<float> tv;
+                hudDrawString(tv, s, x, y, h, c);
+                if (tv.empty()) return;
+                glBufferSubData(GL_ARRAY_BUFFER, 0, tv.size() * sizeof(float), tv.data());
+                setInt(shaderProgram, "textureMode", 0);
+                glDrawArrays(GL_TRIANGLES, 0, (int)tv.size() / 11);
+            };
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            setFloat(shaderProgram, "alpha", 0.85f);
+            rect(bpX, bpY, bpW, bpH, glm::vec3(0.15f, 0.13f, 0.12f));
+            setFloat(shaderProgram, "alpha", 1.0f);
+            glDisable(GL_BLEND);
+
+            glm::vec3 borderCol(0.5f, 0.35f, 0.18f);
+            rect(bpX, bpY, bpW, 2.0f, borderCol);
+            rect(bpX, bpY + bpH - 2.0f, bpW, 2.0f, borderCol);
+            rect(bpX, bpY, 2.0f, bpH, borderCol);
+            rect(bpX + bpW - 2.0f, bpY, 2.0f, bpH, borderCol);
+
+            text("BUILD", bpX + 10.0f, bpY + bpH - 22.0f, 12.0f, glm::vec3(1.0f, 0.8f, 0.4f));
+            text("places 3m ahead", bpX + 10.0f, bpY + bpH - 36.0f, 8.0f, glm::vec3(0.55f, 0.5f, 0.45f));
+
+            const float rowH = 58.0f;
+            float rowTop = bpY + bpH - 48.0f;
+            for (int i = 0; i < NUM_BUILD_RECIPES; i++) {
+                const BuildRecipe& br = buildRecipes[i];
+                int have1 = countInInventory(br.t1);
+                int have2 = countInInventory(br.t2);
+                bool afford = (have1 >= br.c1 && have2 >= br.c2);
+
+                float ry = rowTop - (i + 1) * rowH;
+                // Green when the player can afford it, red when they cannot —
+                // the same read the crafting output slot gives.
+                rect(bpX + 8.0f, ry, bpW - 16.0f, rowH - 6.0f,
+                     afford ? glm::vec3(0.16f, 0.26f, 0.16f) : glm::vec3(0.26f, 0.15f, 0.14f));
+
+                text(br.name, bpX + 14.0f, ry + rowH - 22.0f, 11.0f,
+                     afford ? glm::vec3(0.85f, 1.0f, 0.85f) : glm::vec3(0.85f, 0.6f, 0.6f));
+
+                // Ingredient lines: swatch, then "3/5 stone" so the shortfall is
+                // visible without opening the recipe book.
+                int   ct[2] = { br.c1, br.c2 };
+                int   tt[2] = { br.t1, br.t2 };
+                int   hv[2] = { have1, have2 };
+                for (int k = 0; k < 2; k++) {
+                    float ly = ry + rowH - 36.0f - k * 12.0f;
+                    rect(bpX + 14.0f, ly, 8.0f, 8.0f, getBlockColor(tt[k]));
+                    char line[64];
+                    snprintf(line, sizeof(line), "%d/%d %s", hv[k], ct[k], getBlockName(tt[k]));
+                    bool ok = (hv[k] >= ct[k]);
+                    text(line, bpX + 26.0f, ly, 8.0f,
+                         ok ? glm::vec3(0.8f, 0.9f, 0.8f) : glm::vec3(0.95f, 0.5f, 0.45f));
+                }
             }
         }
 

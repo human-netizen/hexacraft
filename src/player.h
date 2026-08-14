@@ -7,14 +7,30 @@
 const float PS = 0.55f; // player scale factor
 
 void drawPlayer(glm::vec3 pos, float time, float yaw = 0.0f, bool walking = false, float walkT = 0.0f) {
-    float walkCycle = walking ? sinf(walkT * 3.0f) : 0.0f;
+    // playerWalkTime ticks at 6.0/s, so this converts it into the shared
+    // GAIT_RATE cadence every walking figure in the game uses. `walking` is
+    // false the instant the keys are released, which zeroes the gait and lets
+    // the model settle rather than freezing mid-stride.
+    Gait g = walking ? makeGait(walkT * (GAIT_RATE / 6.0f), PS)
+                     : makeGait(0.0f, PS);
 
-    // Base transform: translate to pos, rotate to face yaw
+    // Base transform: translate to pos, rotate to face yaw. The bob is folded
+    // in here so every part inherits it — head, limbs and held item alike.
     auto baseM = [&]() -> glm::mat4 {
-        glm::mat4 m = glm::translate(glm::mat4(1.0f), pos);
+        glm::mat4 m = glm::translate(glm::mat4(1.0f), pos + glm::vec3(0.0f, g.bob, 0.0f));
         m = myRotate(m, PI/2.0f - yaw, glm::vec3(0, 1, 0));
+        // Roll about the forward axis. This model is built +Z forward (the face
+        // and eyes sit at +Z), so forward is Z here — the mobs are +X forward
+        // and roll about X instead.
+        m = myRotate(m, g.sway, glm::vec3(0, 0, 1));
         return m;
     };
+
+    // The player's limbs swing about X, and for a +Z-forward model a positive
+    // rotation about +X carries a hanging limb BACKWARD. drawLimb's contract is
+    // that positive swing means forward, so the axis is passed negated — see
+    // the note on frames in geometry.h.
+    const glm::vec3 SWING_AXIS(-1, 0, 0);
 
     auto makePartModel = [&](glm::vec3 offset, glm::vec3 scale) -> glm::mat4 {
         glm::mat4 m = baseM();
@@ -74,44 +90,32 @@ void drawPlayer(glm::vec3 pos, float time, float yaw = 0.0f, bool walking = fals
     drawHexModel(makePartModel(glm::vec3(0.06f, 0.93f, 0.23f), glm::vec3(0.04f, 0.02f, 0.02f)), mouthColor);
     drawHexModel(makePartModel(glm::vec3(0, 0.91f, 0.23f), glm::vec3(0.08f, 0.02f, 0.02f)), mouthColor);
 
-    // ---- LEFT ARM (short stubby, swings with walk) ----
-    float armSwing = walkCycle * 0.4f;
-    {
-        glm::mat4 m = baseM();
-        m = glm::translate(m, glm::vec3(-0.44f * PS, 0.85f * PS, 0));  // shoulder pivot
-        m = myRotate(m, armSwing, glm::vec3(1, 0, 0));
-
-        // Upper arm (shirt color) — short and fat
-        glm::mat4 upper = m;
-        upper = glm::translate(upper, glm::vec3(0, -0.14f * PS, 0));
-        upper = glm::scale(upper, glm::vec3(0.22f, 0.28f, 0.22f) * PS);
-        drawHexModel(upper, shirtColor);
-
-        // Lower arm (skin) — stubby
-        glm::mat4 lower = m;
-        lower = glm::translate(lower, glm::vec3(0, -0.36f * PS, 0));
-        lower = glm::scale(lower, glm::vec3(0.20f, 0.22f, 0.20f) * PS);
-        drawHexModel(lower, skinColor);
-    }
+    // ---- ARMS (short stubby, swings with walk) ----
+    // The elbow is a real joint now: the forearm chains off the upper arm's
+    // matrix rather than off the shoulder, so it pivots at the elbow. A small
+    // negative bend folds it forward, the way a human forearm hangs.
+    //
+    // The shoulder moved in from 0.44 to 0.33. The torso is 0.48 wide, so its
+    // edge is at 0.24, and an arm 0.22 thick hung at 0.44 spans 0.33..0.55 —
+    // it never touched the body. That gap predates this change (the old code
+    // used the same 0.44 and the same thickness), but it is very visible from
+    // behind in third person, which is the view this model is mostly seen in.
+    // At 0.33 the arm's inner face lands at 0.22, just inside the torso.
+    const float SHOULDER_X = 0.33f;
+    drawLimb(baseM(), glm::vec3(-SHOULDER_X, 0.85f, 0) * PS, SWING_AXIS,
+             g.armL, -0.18f,
+             0.28f * PS, 0.24f * PS, 0.22f * PS, shirtColor, skinColor, true);
 
     // ---- RIGHT ARM + HELD ITEM ----
     {
-        glm::mat4 m = baseM();
-        m = glm::translate(m, glm::vec3(0.44f * PS, 0.85f * PS, 0)); // shoulder pivot
-        m = myRotate(m, -armSwing, glm::vec3(1, 0, 0));
-        glm::mat4 shoulderPivot = m; // save for held item
-
-        // Upper arm (shirt color) — short and fat
-        glm::mat4 upper = m;
-        upper = glm::translate(upper, glm::vec3(0, -0.14f * PS, 0));
-        upper = glm::scale(upper, glm::vec3(0.22f, 0.28f, 0.22f) * PS);
-        drawHexModel(upper, shirtColor);
-
-        // Lower arm (skin) — stubby
-        glm::mat4 lower = m;
-        lower = glm::translate(lower, glm::vec3(0, -0.36f * PS, 0));
-        lower = glm::scale(lower, glm::vec3(0.20f, 0.22f, 0.20f) * PS);
-        drawHexModel(lower, skinColor);
+        // The wrist frame comes back out so the held item hangs off the hand
+        // and inherits the elbow. Previously the item was chained to the
+        // shoulder pivot, so a swinging arm slid out from under whatever it was
+        // supposed to be holding.
+        glm::mat4 wrist = drawLimb(baseM(), glm::vec3(SHOULDER_X, 0.85f, 0) * PS, SWING_AXIS,
+                                   g.armR, -0.18f,
+                                   0.28f * PS, 0.24f * PS, 0.22f * PS,
+                                   shirtColor, skinColor, true);
 
         // Draw held item in right hand
         int heldType = playerInventory[hotbarSlot].type;
@@ -119,9 +123,10 @@ void drawPlayer(glm::vec3 pos, float time, float yaw = 0.0f, bool walking = fals
             glm::vec3 itemColor = getBlockColor(heldType);
             BlockProperties heldProps = getBlockProps(heldType);
 
-            // Hand position: bottom of right arm (stubby chibi arm)
-            glm::mat4 im = shoulderPivot;
-            im = glm::translate(im, glm::vec3(0, -0.52f * PS, 0)); // bottom of arm
+            // Hand position: the wrist frame drawLimb handed back, which is
+            // already 0.52 * PS below the shoulder — the same place the old
+            // fixed translate put it, but now carrying the elbow's rotation too.
+            glm::mat4 im = wrist;
 
             if (isSword(heldType)) {
                 im = myRotate(im, -0.85f, glm::vec3(1, 0, 0));
@@ -176,41 +181,25 @@ void drawPlayer(glm::vec3 pos, float time, float yaw = 0.0f, bool walking = fals
         }
     }
 
-    // ---- LEFT LEG (short stubby) ----
-    float legSwing = walkCycle * 0.35f;
-    {
-        glm::mat4 m = baseM();
-        m = glm::translate(m, glm::vec3(-0.14f * PS, 0.42f * PS, 0)); // hip pivot
-        m = myRotate(m, legSwing, glm::vec3(1, 0, 0));
+    // ---- LEGS (short stubby, with knees) ----
+    // Note these take g.legL / g.legR, which run half a cycle out of phase with
+    // g.armL / g.armR above. The old code drove arms and legs from the same
+    // walkCycle, so the left arm and left leg went forward together — that is a
+    // march, not a walk. The knee bends only on the forward half of the stride.
+    // Thigh 0.24 + shin 0.18 = 0.42, which is where the hip sits, so the shoes
+    // still meet the ground when the knee is straight.
+    for (int side = 0; side < 2; side++) {
+        float hipX  = (side == 0) ? -0.14f : 0.14f;
+        float swing = (side == 0) ? g.legL : g.legR;
+        float knee  = (side == 0) ? g.kneeL : g.kneeR;
 
-        // Upper leg (jeans) — short and wide
-        glm::mat4 upper = m;
-        upper = glm::translate(upper, glm::vec3(0, -0.14f * PS, 0));
-        upper = glm::scale(upper, glm::vec3(0.22f, 0.28f, 0.22f) * PS);
-        drawHexModel(upper, pantsColor);
-
-        // Shoe — chunky
-        glm::mat4 shoe = m;
-        shoe = glm::translate(shoe, glm::vec3(0, -0.38f * PS, 0.03f * PS));
-        shoe = glm::scale(shoe, glm::vec3(0.22f, 0.10f, 0.26f) * PS);
-        drawHexModel(shoe, shoeColor);
-    }
-
-    // ---- RIGHT LEG (short stubby) ----
-    {
-        glm::mat4 m = baseM();
-        m = glm::translate(m, glm::vec3(0.14f * PS, 0.42f * PS, 0)); // hip pivot
-        m = myRotate(m, -legSwing, glm::vec3(1, 0, 0));
-
-        // Upper leg (jeans) — short and wide
-        glm::mat4 upper = m;
-        upper = glm::translate(upper, glm::vec3(0, -0.14f * PS, 0));
-        upper = glm::scale(upper, glm::vec3(0.22f, 0.28f, 0.22f) * PS);
-        drawHexModel(upper, pantsColor);
-
-        // Shoe — chunky
-        glm::mat4 shoe = m;
-        shoe = glm::translate(shoe, glm::vec3(0, -0.38f * PS, 0.03f * PS));
+        glm::mat4 ankle = drawLimb(baseM(), glm::vec3(hipX, 0.42f, 0) * PS, SWING_AXIS,
+                                   swing, knee,
+                                   0.24f * PS, 0.18f * PS, 0.22f * PS,
+                                   pantsColor, pantsColor, true);
+        // Shoe — chunky. Hung off the ankle, so it tilts with the shin instead
+        // of staying flat while the leg above it swings.
+        glm::mat4 shoe = glm::translate(ankle, glm::vec3(0, -0.02f, 0.03f) * PS);
         shoe = glm::scale(shoe, glm::vec3(0.22f, 0.10f, 0.26f) * PS);
         drawHexModel(shoe, shoeColor);
     }

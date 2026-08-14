@@ -114,6 +114,11 @@ enum BlockType {
     // Ranged
     ITEM_BOW,
 
+    // Terrain sculpt tools (plan_2 Step 3). Not craftable and not consumed —
+    // these edit the world in bulk rather than a block at a time, so they are
+    // given, never earned. See sculptHill/sculptPond in input.h.
+    ITEM_TOOL_HILL, ITEM_TOOL_POND,
+
     ITEM_COUNT
 };
 
@@ -228,6 +233,7 @@ BlockProperties getBlockProps(int type) {
         case ITEM_SWORD_IRON:  case ITEM_AXE_IRON:  case ITEM_PICKAXE_IRON:  case ITEM_SHOVEL_IRON:
         case ITEM_SWORD_DIAMOND: case ITEM_AXE_DIAMOND: case ITEM_PICKAXE_DIAMOND: case ITEM_SHOVEL_DIAMOND:
         case ITEM_BOW:
+        case ITEM_TOOL_HILL: case ITEM_TOOL_POND:
             return {SHAPE_FULL_HEX,  false, false, false, false, false, true};
 
         // Default: solid full hex
@@ -641,6 +647,8 @@ const char* getBlockName(int type) {
         case ITEM_PICKAXE_DIAMOND:   return "diamond pickaxe";
         case ITEM_SHOVEL_DIAMOND:    return "diamond shovel";
         case ITEM_BOW:               return "bow";
+        case ITEM_TOOL_HILL:         return "hill tool";
+        case ITEM_TOOL_POND:         return "pond tool";
         default:                     return "unknown";
     }
 }
@@ -747,6 +755,45 @@ bool addToInventory(int type, int count) {
         }
     }
     return false; // inventory full
+}
+
+// =====================================================
+// Whole-inventory tally / spend (plan_2 Step 4)
+// =====================================================
+// The Build tab spends straight out of the inventory instead of arranging a
+// pattern in the crafting grid, so it needs these. Slots 0-35 covers the hotbar
+// as well as storage, which is deliberate: a stack held in hand is still the
+// player's, and requiring them to shuffle it into storage first would be a
+// pointless step.
+//
+// autoCraftIngredient() below has a local lambda of the same name that predates
+// this; it shadows this one inside that function, which is harmless — both do
+// the same thing.
+int countInInventory(int type) {
+    int n = 0;
+    for (int i = 0; i < 36; i++)
+        if (playerInventory[i].type == type) n += playerInventory[i].count;
+    return n;
+}
+
+// Removes up to `count` and returns how many were actually taken. There is no
+// rollback on a partial spend, so callers must check countInInventory() first —
+// which is why craftStructure() tests affordability for *both* ingredients
+// before removing either.
+int removeFromInventory(int type, int count) {
+    int taken = 0;
+    for (int i = 0; i < 36 && taken < count; i++) {
+        if (playerInventory[i].type != type) continue;
+        int want = count - taken;
+        int take = (playerInventory[i].count < want) ? playerInventory[i].count : want;
+        playerInventory[i].count -= take;
+        taken += take;
+        if (playerInventory[i].count <= 0) {
+            playerInventory[i].type  = BLOCK_AIR;
+            playerInventory[i].count = 0;
+        }
+    }
+    return taken;
 }
 
 // Auto-craft an intermediate ingredient directly into inventory (no grid).
@@ -858,6 +905,17 @@ const int HOTBAR_SIZE = 9;
 bool hasTarget = false;
 int targetCol, targetRow, targetHeight;
 int placeCol, placeRow, placeHeight; // adjacent cell for placement
+
+// Grab / carry (src/input.h) — K lifts the targeted block clean out of the grid
+// and carries it in front of the camera. Deliberately NOT the inventory path:
+// breaking a block launders it through a hotbar slot, so a mossy cobblestone
+// comes back as generic cobblestone and a door forgets which way it faced.
+// Carrying preserves both, because the type and the state bits travel with it.
+// The origin cell is kept so the block can go back where it came from if the
+// player dies still holding it — otherwise dying would delete it outright.
+int      heldBlockType  = BLOCK_AIR;   // BLOCK_AIR means carrying nothing
+uint16_t heldBlockState = 0;   // facing / open bits, restored on set-down
+int      heldOriginCol = 0, heldOriginRow = 0, heldOriginH = 0;
 
 // Block breaking state (hold-to-break)
 bool isBreaking = false;
@@ -976,6 +1034,10 @@ float thirdPersonHeight = 0.8f; // height offset above eye level
 // Timing
 float deltaTime = 0.0f, lastFrame = 0.0f;
 
+// Weather (src/weather.h) — declared here because input.h owns the N key and is
+// included before weather.h.
+bool rainOn = false;          // N toggle
+
 // View modes
 bool fourViewport = false;    // V toggle
 bool birdsEye = false;        // B toggle
@@ -1020,6 +1082,18 @@ glm::vec3 carPos(-4.0f, 0.0f, 5.0f); // parked near castle entrance
 float carYaw = 0.0f;        // heading in radians
 float carSpeed = 0.0f;
 float wheelSpin = 0.0f;
+// Front-wheel angle, radians, + = left. Steering is STATE, not an instantaneous
+// input: it winds toward full lock while a key is held and self-centres when
+// released. That is what lets the front wheels be drawn turned, and it is the
+// input to the bicycle model in processInput.
+float carSteer = 0.0f;
+// Distance between the axles, taken from drawCar's own wheel positions
+// (wx = +/-0.6 along the car's forward axis). Derived rather than copied from
+// gfx_b3's 1.4: the steering geometry has to match the model actually drawn, or
+// the wheels point somewhere the car does not go.
+const float CAR_WHEELBASE  = 1.2f;
+const float CAR_MAX_STEER  = 0.61f;   // 35 degrees, as theirs
+const float CAR_STEER_RATE = 1.57f;   // 90 deg/s to full lock
 
 // Flying birds
 struct Bird {
@@ -1070,6 +1144,58 @@ GLuint texObsidian = 0, texSandstoneGold = 0, texCutSandstone = 0, texQuartzTop 
 GLuint texAndesite = 0, texDiorite = 0, texGranite = 0;
 GLuint texPolAndesite = 0, texPolDiorite = 0, texPolGranite = 0;
 GLuint texOakTrapdoor = 0, texOakDoorBot = 0, texWaterStill = 0;
+
+// Textures — imported from the gfx_b3 project (see docs/plan_2.md Step 0).
+// These are photographs, not 16x16 pixel art, so they load with GL_LINEAR
+// magnification. Only the six that a planned step consumes are loaded;
+// sun.jpg and moon.jpg are staged in assets/srcs/ but not wired to anything
+// yet — the celestial bodies are still the procedural discs in skybox.h.
+GLuint texCarBody = 0, texCarWindow = 0;  // step 2 — car paint and tinted glass
+GLuint texRoad = 0, texRoof = 0;          // step 4 — crafted house roof, roads
+GLuint texWorldMap = 0;                   // step 7 — desk globe
+GLuint texHillIcon = 0;                   // step 3 — HILL tool hotbar icon
+
+// =====================================================
+// Craft-and-place structures (plan_2 Step 4)
+// =====================================================
+// gfx_b3's craft table produces a *structure standing in the world*, not an item
+// in a slot — that is the one thing its crafting does that hexacraft's does not.
+// These vectors are the whole persistence model, matching gfx_b3: session-only,
+// redrawn from scratch every frame.
+//
+// Declared here rather than in input.h (where they are drawn) because
+// gatherTorchLights() in world.h has to see the lit ones, and world.h is
+// included first.
+struct PlacedStructure {
+    glm::vec3 pos;   // ground contact point, already snapped to terrain
+    float yaw;       // radians; the structure's front faces the player who built it
+};
+std::vector<PlacedStructure> craftedHouses;
+std::vector<glm::vec3>       craftedTrees;       // radially symmetric — no yaw
+std::vector<glm::vec3>       craftedLights;      // ditto
+std::vector<PlacedStructure> craftedFireplaces;
+
+// Build tab on the crafting screen. Mutually exclusive with the recipe book:
+// both panels want the same strip of screen left of the inventory.
+bool buildTabOpen = false;
+
+// Cost is always exactly two ingredients, so this is a flat struct rather than
+// the 3x3 pattern the block recipes use — a build recipe has no shape.
+struct BuildRecipe {
+    const char* name;
+    int t1, c1;      // first ingredient  (block type, count)
+    int t2, c2;      // second ingredient
+};
+// gfx_b3's costs, mapped onto hexacraft's real block types: its MUD is
+// BLOCK_DIRT, and its WOOD is BLOCK_WOOD (the enum has no BLOCK_OAK_LOG, which
+// is what plan_2 wrote).
+const BuildRecipe buildRecipes[] = {
+    { "HOUSE",     BLOCK_DIRT,  5, BLOCK_STONE, 3 },
+    { "TREE",      BLOCK_WOOD,  2, BLOCK_GRASS, 1 },
+    { "TORCH",     BLOCK_WOOD,  1, BLOCK_STONE, 1 },
+    { "FIREPLACE", BLOCK_STONE, 2, BLOCK_WOOD,  1 },
+};
+const int NUM_BUILD_RECIPES = 4;
 
 // Hex mesh
 GLuint hexVAO, hexVBO;

@@ -66,6 +66,60 @@ glm::vec3 collideCamera(glm::vec3 pivot, glm::vec3 desiredOffset) {
     return desiredOffset;
 }
 
+// =====================================================
+// Car as a solid body
+// =====================================================
+// Half-extents of the car in its own frame, read off drawCar (objects.h): the
+// front bumper reaches x = 1.125 and the wheels reach z = 0.65.
+const float CAR_HALF_LEN = 1.05f;
+const float CAR_HALF_WID = 0.60f;
+// Tallest curb the car will ride up. One block plus epsilon — the same allowance
+// tryMoveWithStep gives the player, and for the same reason: terrain here is
+// built from whole blocks, and a car that stopped dead at every one-block rise
+// could not get out of the courtyard.
+const float CAR_STEP_MAX = 1.1f;
+
+// True when (wx, wz) at feet height feetY is inside the parked car.
+//
+// This is the one idea worth taking from their Collider.h — that a vehicle is a
+// body other things collide with. Not the data structure: theirs is a list of
+// hand-registered AABBs, and nobody is going to register 1.28 M of those for the
+// voxel grid this world is actually made of.
+//
+// Skipped entirely while driving. The B key hands control to the car without
+// moving the player, so the two are normally far apart, but if the car is driven
+// back over the player the block would otherwise trap them — see the push-out in
+// processInput, which is what actually resolves that case.
+// World -> car-local. Forward is (cos, sin) — taken from the motion integrator
+// in processInput rather than from drawCar's matrix, because where the car
+// actually goes is what has to be blocked. The footprint is symmetric across its
+// long axis, so the sign convention for "right" does not matter to the test;
+// the push-out does care, and reads `outLz` back.
+bool carOverlaps(float wx, float wz, float feetY, float pad,
+                 float* outLx = nullptr, float* outLz = nullptr) {
+    // Vertical band: the body sits roughly 1.4 units above its base. Outside
+    // that the mover is under it or on a ledge above it, neither of which the
+    // flat XZ test can speak to.
+    if (feetY > carPos.y + 1.4f || feetY < carPos.y - 1.4f) return false;
+
+    float c = cosf(carYaw), s = sinf(carYaw);
+    float dx = wx - carPos.x, dz = wz - carPos.z;
+    float lx =  dx * c + dz * s;
+    float lz = -dx * s + dz * c;
+    if (outLx) *outLx = lx;
+    if (outLz) *outLz = lz;
+    return fabsf(lx) < CAR_HALF_LEN + pad && fabsf(lz) < CAR_HALF_WID + pad;
+}
+
+// The movement gate. Skipped entirely while driving: the B key hands control to
+// the car without moving the player, so blocking would trap whoever is standing
+// in it. Running the player over is handled by the push-out in processInput,
+// which calls carOverlaps directly and therefore still fires while driving.
+bool carBlocks(float wx, float wz, float feetY, float pad) {
+    if (controlCar) return false;
+    return carOverlaps(wx, wz, feetY, pad);
+}
+
 // Check if player can stand at world position (wx, wz) at current height.
 // Samples 9 points around the player's horizontal radius so blocks that
 // are adjacent (but not exactly under the center) are also tested.
@@ -95,6 +149,12 @@ bool canMoveTo(float wx, float wz, float currentY) {
         if (isSolid(col, row, feetH)) return false;
         if (isSolid(col, row, headH)) return false;
     }
+
+    // The parked car is solid too. This runs for mobs as well as the player,
+    // since they share this function — which is right: a pig should walk around
+    // the car, not through it.
+    if (carBlocks(wx, wz, currentY, PR)) return false;
+
     return true;
 }
 
@@ -118,11 +178,42 @@ bool tryMoveWithStep(float& px, float& py, float& pz, float nx, float nz) {
     return false;
 }
 
+// True when the car's whole footprint at (wx, wz) heading `yaw` clears the terrain.
+//
+// Six probes: the four corners, plus the middle of the front and rear bumpers so
+// a lone pillar cannot slip between the corners of a 2.1 x 1.2 body.
+//
+// The test is a HEIGHT comparison, not the isSolid() test canMoveTo uses. That
+// matters: carPos.y trails the ground it is driving onto (the terrain-follow
+// below eases toward it), so at the moment the car meets a one-block rise the
+// block ahead genuinely is solid at the car's current level. An isSolid() test
+// would refuse every hill. Comparing ground heights instead asks the question
+// that was actually meant — is this a curb or a wall.
+//
+// Limitation, inherited rather than introduced: getGroundYWorld reports the top
+// of the highest block in the column, so driving under an overhang reads as
+// blocked. The pre-existing terrain-follow has the same blind spot — it would
+// lift the car onto the bridge deck — so this is no worse than before.
+// (definition below — it needs getGroundYWorld)
+
 // Legacy: get ground Y at a world XZ (uses highest block — for objects, not player)
 float getGroundYWorld(float wx, float wz) {
     int col, row;
     worldToColRow(wx, wz, col, row);
     return getGroundY(col, row);
+}
+
+bool carCanBeAt(float wx, float wz, float yaw, float carY) {
+    static const float LX[6] = { 1.0f,  1.0f, -1.0f, -1.0f,  1.0f, -1.0f };
+    static const float LZ[6] = { 1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f };
+    float c = cosf(yaw), s = sinf(yaw);
+    for (int i = 0; i < 6; i++) {
+        float lx = LX[i] * CAR_HALF_LEN, lz = LZ[i] * CAR_HALF_WID;
+        float px = wx + lx * c - lz * s;
+        float pz = wz + lx * s + lz * c;
+        if (getGroundYWorld(px, pz) > carY + CAR_STEP_MAX) return false;
+    }
+    return true;
 }
 
 // =====================================================
@@ -205,6 +296,146 @@ void placeBlock() {
 }
 
 // =====================================================
+// Grab / carry — K
+// =====================================================
+// Adapted from ../Tasfia-007-OpenGL-3.3--Medieval-European-Countryside-/Project1/
+// main.cpp:2966-2977 and :3438-3441, where G near a barrel sets g_heldObjIdx and
+// the barrel is then drawn at cam.pos + cam.front * 2.5 for as long as it is held.
+//
+// Theirs picks from a fixed list of scenery props. hexacraft has no such list —
+// everything in the world is a grid cell — so the port lifts a BLOCK out of the
+// grid instead. The mechanic survives intact and the state stays just as small:
+// what was one index is one block type plus the cell it came from.
+//
+// The point of having this next to breakBlock() is that it moves a block WITHOUT
+// laundering it through the inventory. Break a mossy cobblestone and getBlockDrop
+// hands back plain cobblestone; break a door and its facing is gone. Carry it and
+// both survive, because the type and the state word travel with the block.
+
+// How far in front of the eye the block floats, and how big it is drawn. Full
+// size at 2.2 units fills most of the screen, which hides whatever the player is
+// trying to aim at — and aiming is how the block gets set down again.
+const float CARRY_DIST  = 2.2f;
+const float CARRY_SCALE = 0.45f;
+// Lateral / vertical offset from the aiming ray, in world units at CARRY_DIST.
+const float CARRY_OFF_X = 0.62f;
+const float CARRY_OFF_Y = -0.42f;
+
+// The block hangs on the aiming ray, not in front of the camera. These differ in
+// third person, where camPos sits 3.5 units behind the player: camPos + front*2.2
+// would put the block *behind* the player's head, between them and the camera.
+// Same expression updateBlockTarget() casts from (objects.h:195), so the carried
+// block always sits on the line the crosshair is testing.
+static glm::vec3 carryOrigin() {
+    return (cameraMode == 2) ? camPos
+                             : playerWorldPos + glm::vec3(0.0f, 1.62f, 0.0f);
+}
+
+// Put the carried block back in the cell it was lifted from.
+static void returnCarriedToOrigin() {
+    if (heldBlockType == BLOCK_AIR) return;
+    if (gridInBounds(heldOriginCol, heldOriginRow, heldOriginH)
+        && getBlock(heldOriginCol, heldOriginRow, heldOriginH) == BLOCK_AIR) {
+        setBlock(heldOriginCol, heldOriginRow, heldOriginH, heldBlockType);
+        setBlockState(heldOriginCol, heldOriginRow, heldOriginH, heldBlockState);
+    } else {
+        // The hole got filled in while the block was being carried. Dropping it
+        // as an item is the only outcome that neither destroys the block nor
+        // overwrites whatever is standing there now.
+        spawnItemDrop(heldOriginCol, heldOriginRow, heldOriginH, (BlockType)heldBlockType);
+    }
+    heldBlockType = BLOCK_AIR;
+}
+
+// K: lift the targeted block, or set the carried one down at the placement cell.
+void toggleCarry() {
+    if (playerDead) return;
+
+    if (heldBlockType != BLOCK_AIR) {
+        // --- set down ---
+        if (!hasTarget || !gridInBounds(placeCol, placeRow, placeHeight)
+            || getBlock(placeCol, placeRow, placeHeight) != BLOCK_AIR) {
+            // Deliberately NOT "send it back to its origin", which is what the
+            // plan called for. By the time a player is looking at open sky they
+            // have usually walked some distance, and teleporting the block back
+            // across the map is a stranger outcome than simply not letting go.
+            // Origin restore is kept for death, where there is no other choice.
+            printf("[Carry] Nowhere to set the %s down — aim at a block face\n",
+                   getBlockName(heldBlockType));
+            return;
+        }
+        setBlock(placeCol, placeRow, placeHeight, heldBlockType);
+        setBlockState(placeCol, placeRow, placeHeight, heldBlockState);
+        printf("[Carry] Set %s down at (%d, %d, %d)\n",
+               getBlockName(heldBlockType), placeCol, placeRow, placeHeight);
+        heldBlockType = BLOCK_AIR;
+        return;
+    }
+
+    // --- pick up ---
+    if (!hasTarget) return;
+    int bt = getBlock(targetCol, targetRow, targetHeight);
+    if (bt == BLOCK_AIR) return;
+    // Same rule the break path enforces: bedrock is the floor of the world and
+    // carrying it away would open a hole straight out the bottom.
+    if (bt == BLOCK_BEDROCK) {
+        printf("[Carry] Bedrock will not budge\n");
+        return;
+    }
+    heldBlockType  = bt;
+    heldBlockState = getBlockState(targetCol, targetRow, targetHeight);
+    heldOriginCol  = targetCol;
+    heldOriginRow  = targetRow;
+    heldOriginH    = targetHeight;
+    setBlock(targetCol, targetRow, targetHeight, BLOCK_AIR);
+    printf("[Carry] Picked up %s from (%d, %d, %d)\n",
+           getBlockName(bt), targetCol, targetRow, targetHeight);
+}
+
+// Once per frame, before the draw passes. Only job is death: a block held at the
+// moment of death would otherwise sit in a global that nothing ever clears, and
+// respawning would leave the player holding a block that no longer exists
+// anywhere in the world.
+void updateCarry() {
+    if (heldBlockType == BLOCK_AIR || !playerDead) return;
+    printf("[Carry] Died holding %s — returned it to (%d, %d, %d)\n",
+           getBlockName(heldBlockType), heldOriginCol, heldOriginRow, heldOriginH);
+    returnCarriedToOrigin();
+}
+
+// Draw pass. Called per viewport, so it must not touch any state.
+void drawCarriedBlock(float time) {
+    if (heldBlockType == BLOCK_AIR) return;
+
+    // Offset down and to the right rather than dead ahead. Centred, the block
+    // sits exactly behind the crosshair and hides it — and the crosshair is what
+    // picks the cell the block gets set down in, so a centred carry makes the
+    // block impossible to put back down accurately.
+    glm::vec3 right = glm::normalize(glm::cross(camFront, camUp));
+    glm::vec3 pos = carryOrigin() + camFront * CARRY_DIST
+                  + right * CARRY_OFF_X + camUp * CARRY_OFF_Y;
+    // A slow bob and spin. Without them the block is welded to the view and
+    // reads as a HUD element painted on the screen rather than as an object
+    // being carried through the world.
+    pos.y += sinf(time * 1.6f) * 0.04f;
+
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
+    model = myRotate(model, time * 0.8f, glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(CARRY_SCALE));
+
+    bindBlockTexture(heldBlockType);
+    drawHexModel(model, getBlockColor(heldBlockType));
+
+    // bindBlockTexture() leaves textureMode, the sway amplitude and the specular
+    // response set for THIS block type. Everything drawn afterwards in the pass
+    // shares the shader, so leaving them set would tint the next object — and a
+    // leaf block would have handed it a wind sway as well.
+    setInt(shaderProgram, "textureMode", 0);
+    setSway(0.0f);
+    resetBlockSpecular();
+}
+
+// =====================================================
 // Mob system — Phase 15: Mobs & Combat
 // =====================================================
 
@@ -248,6 +479,187 @@ void getHexNeighbors(int col, int row, int out[][2], int& count) {
         out[count][1] = row + dirs[i][1];
         count++;
     }
+}
+
+// =====================================================
+// Terrain sculpt tools — HILL / POND (plan_2 Step 3)
+// =====================================================
+// Ported from gfx_b3 main.cpp:1827-1890, which reshapes an area of terrain in
+// one click instead of a block at a time. hexacraft has had single-block
+// break/place only.
+//
+// gfx_b3 works in axial (q,r) coordinates and tests ring membership with
+// axialHexDist. hexacraft stores offset (col,row), and its hexDistance() above
+// is plain Euclidean on those offsets — correct enough as an A* heuristic, but
+// wrong as a ring test: in offset coordinates two cells the same number of hops
+// apart have different Euclidean distances depending on row parity, so a disc
+// cut that way comes out lopsided. Flood-filling with getHexNeighbors() gives
+// exact hop distance and needs no coordinate conversion.
+//
+// Nothing here has to invalidate a mesh: hexacraft rebuilds terrain geometry
+// from blockGrid every frame, and setBlock() already maintains columnMaxH — so
+// findGroundH, mob pathing, rain landing and ground scatter all pick the new
+// heights up on their own.
+
+// Largest disc used below is radius 3 = 1 + 6 + 12 + 18 = 37 columns.
+const int SCULPT_MAX_CELLS = 37;
+
+// Columns of a hex disc, centre first, each tagged with its ring index.
+// Returns the count written.
+int hexDisc(int cCol, int cRow, int radius,
+            int outCol[], int outRow[], int outRing[], int maxOut) {
+    if (maxOut <= 0) return 0;
+    outCol[0] = cCol; outRow[0] = cRow; outRing[0] = 0;
+    int n = 1;
+    int ringStart = 0, ringEnd = 1;   // [start,end) = the ring just completed
+    for (int r = 1; r <= radius; r++) {
+        int nextStart = n;
+        for (int i = ringStart; i < ringEnd; i++) {
+            int nb[6][2], nc = 0;
+            getHexNeighbors(outCol[i], outRow[i], nb, nc);
+            for (int k = 0; k < nc; k++) {
+                bool seen = false;
+                for (int j = 0; j < n; j++) {
+                    if (outCol[j] == nb[k][0] && outRow[j] == nb[k][1]) { seen = true; break; }
+                }
+                if (seen) continue;
+                if (n >= maxOut) return n;
+                outCol[n] = nb[k][0]; outRow[n] = nb[k][1]; outRing[n] = r;
+                n++;
+            }
+        }
+        ringStart = nextStart; ringEnd = n;
+    }
+    return n;
+}
+
+// Highest naturally-occurring ground block in a column.
+//
+// findGroundH() is the wrong probe here. It uses blocksSight(), and wood blocks
+// sight — so on a column with a tree it returns the top of the trunk, and a hill
+// raised there would start in the canopy. This skips anything built or grown and
+// finds the actual land surface.
+bool isTerrainMaterial(int t) {
+    switch (t) {
+        case BLOCK_GRASS: case BLOCK_DIRT:   case BLOCK_SAND:
+        case BLOCK_STONE: case BLOCK_STONE_LIGHT:
+        case BLOCK_GRAVEL: case BLOCK_CLAY:  case BLOCK_SNOW:
+        case BLOCK_SANDSTONE: case BLOCK_BEDROCK: case BLOCK_COBBLESTONE:
+        case BLOCK_COAL_ORE: case BLOCK_ORE_GOLD: case BLOCK_ORE_DIAMOND:
+            return true;
+        default:
+            return false;
+    }
+}
+
+int findTerrainH(int col, int row) {
+    int gi = col + GRID_OFF_X, gj = row + GRID_OFF_Z;
+    if (gi < 0 || gi >= GRID_W || gj < 0 || gj >= GRID_D) return -1;
+    for (int h = columnMaxH[gi][gj]; h >= 0; h--) {
+        if (isTerrainMaterial(getBlock(col, row, h))) return h;
+    }
+    return -1;
+}
+
+// HILL — raise a radius-2 disc: centre +5, ring 1 +3, ring 2 +1.
+const int HILL_RAISE[3] = { 5, 3, 1 };
+
+void sculptHill(int col, int row) {
+    int dc[SCULPT_MAX_CELLS], dr[SCULPT_MAX_CELLS], dring[SCULPT_MAX_CELLS];
+    int n = hexDisc(col, row, 2, dc, dr, dring, SCULPT_MAX_CELLS);
+    int raised = 0;
+
+    for (int i = 0; i < n; i++) {
+        if (!gridInBounds(dc[i], dr[i], 0)) continue;
+        int base = findTerrainH(dc[i], dr[i]);
+        if (base < 0) continue;
+
+        int top = base + HILL_RAISE[dring[i]];
+        if (top > GRID_H - 1) top = GRID_H - 1;   // a hill on a mountain must not
+        if (top <= base) continue;                // write past the grid ceiling
+
+        // Stone core, one dirt layer, grass cap. The layering is the whole
+        // reason this reads as terrain rather than a stack of one material.
+        for (int h = base + 1; h <= top; h++) {
+            int mat = BLOCK_STONE;
+            if (h == top)          mat = BLOCK_GRASS;
+            else if (h == top - 1) mat = BLOCK_DIRT;
+            setBlock(dc[i], dr[i], h, mat);
+        }
+        // The old surface is now interior. Leaving grass buried in the hill
+        // shows up the moment anyone mines into it.
+        if (getBlock(dc[i], dr[i], base) == BLOCK_GRASS)
+            setBlock(dc[i], dr[i], base, BLOCK_DIRT);
+        raised++;
+    }
+    printf("[Sculpt] Hill at (%d,%d) — %d columns raised\n", col, row, raised);
+}
+
+// POND — dig 3 layers down over a radius-1..3 disc and fill with water to one
+// below the rim, so the bank always reads above the surface.
+void sculptPond(int col, int row) {
+    int radius = 1 + (int)(gridSeed(col, row) % 3);   // 1..3, stable per column
+    int dc[SCULPT_MAX_CELLS], dr[SCULPT_MAX_CELLS], dring[SCULPT_MAX_CELLS];
+    int n = hexDisc(col, row, radius, dc, dr, dring, SCULPT_MAX_CELLS);
+
+    // The rim is the terrain height at the centre. Using each column's own
+    // height instead would step the water surface, and standing water is level.
+    int rim = findTerrainH(col, row);
+    if (rim < 0) { printf("[Sculpt] Pond at (%d,%d) — no ground\n", col, row); return; }
+
+    const int DIG = 3;
+    // Layer 0 is bedrock and the world floor; never cut into it.
+    int floorH = rim - DIG;
+    if (floorH < 1) floorH = 1;
+    int waterTop = rim - 1;
+    if (waterTop < floorH) waterTop = floorH;
+
+    // Is this column part of the basin? Used to tell an inside wall (which gets
+    // dug) from an outside one (which has to hold water in).
+    auto inDisc = [&](int cc, int rr) {
+        for (int i = 0; i < n; i++) if (dc[i] == cc && dr[i] == rr) return true;
+        return false;
+    };
+
+    int dug = 0, sealed = 0;
+    for (int i = 0; i < n; i++) {
+        if (!gridInBounds(dc[i], dr[i], 0)) continue;
+        int top = findTerrainH(dc[i], dr[i]);
+        if (top < 0) continue;
+
+        // Clear everything above the floor — including any bank that stood
+        // higher than the centre, or the pond gets a wall through its middle.
+        int clearTo = (top > rim) ? top : rim;
+        for (int h = floorH; h <= clearTo; h++) setBlock(dc[i], dr[i], h, BLOCK_AIR);
+
+        // Seal the basin before filling it.
+        //
+        // gfx_b3 skips this because its world is solid below the surface. This
+        // one is not: the terrain is riddled with caves, and a pond dug over
+        // one ends up as water hanging above an open void. So line the bottom
+        // and any outward-facing wall that isn't already rock.
+        if (getBlock(dc[i], dr[i], floorH - 1) == BLOCK_AIR) {
+            setBlock(dc[i], dr[i], floorH - 1, BLOCK_STONE);
+            sealed++;
+        }
+        int nb[6][2], nc = 0;
+        getHexNeighbors(dc[i], dr[i], nb, nc);
+        for (int k = 0; k < nc; k++) {
+            if (inDisc(nb[k][0], nb[k][1])) continue;      // dug too — no wall needed
+            if (!gridInBounds(nb[k][0], nb[k][1], 0)) continue;
+            for (int h = floorH; h <= waterTop; h++) {
+                if (getBlock(nb[k][0], nb[k][1], h) == BLOCK_AIR) {
+                    setBlock(nb[k][0], nb[k][1], h, BLOCK_STONE);
+                    sealed++;
+                }
+            }
+        }
+
+        for (int h = floorH; h <= waterTop; h++) setBlock(dc[i], dr[i], h, BLOCK_WATER);
+        dug++;
+    }
+    printf("[Sculpt] Pond at (%d,%d) r=%d rim=%d — %d columns dug, %d cells sealed\n",
+           col, row, radius, rim, dug, sealed);
 }
 
 // A* pathfinding: returns world-space waypoints from start to goal
@@ -535,10 +947,11 @@ void drawMob(const Mob& m, float time) {
         // Wings, tucked against the sides
         drawPart(base, {0.0f, 0.34f + bob,  0.15f}, feather, {0.24f, 0.18f, 0.05f});
         drawPart(base, {0.0f, 0.34f + bob, -0.15f}, feather, {0.24f, 0.18f, 0.05f});
-        // Legs — swing along the forward axis so it walks instead of sliding
-        float legSwing = sinf(m.walkTime * 6.0f) * 0.06f;
-        drawPart(base, { legSwing, 0.10f,  0.07f}, beak, {0.05f, 0.20f, 0.05f});
-        drawPart(base, {-legSwing, 0.10f, -0.07f}, beak, {0.05f, 0.20f, 0.05f});
+        // Legs — hip rotation, the two half a cycle apart. A chicken is a biped,
+        // so unlike the pig and sheep there is no diagonal pairing to preserve.
+        Gait g = makeGait(m.walkTime * (GAIT_RATE / 3.0f));
+        drawLimb(base, {0.0f, 0.20f,  0.07f}, {0, 0, 1}, g.legL, g.kneeL, 0.11f, 0.09f, 0.05f, beak, beak);
+        drawLimb(base, {0.0f, 0.20f, -0.07f}, {0, 0, 1}, g.legR, g.kneeR, 0.11f, 0.09f, 0.05f, beak, beak);
     } else if (m.type == MOB_PIG) {
         float bob = sinf(m.walkTime * 3.0f) * 0.03f;
         glm::vec3 pink(0.9f, 0.6f, 0.6f);
@@ -554,12 +967,20 @@ void drawMob(const Mob& m, float time) {
         drawPart(base, {0.40f, 0.60f + bob, -0.11f}, darkPink, {0.09f, 0.08f, 0.06f});
         // Curly tail
         drawPart(base, {-0.37f, 0.50f + bob, 0.0f}, darkPink, {0.07f, 0.07f, 0.07f});
-        // Legs — diagonal pairs move together, as a quadruped's gait does
-        float legSwing = sinf(m.walkTime * 4.0f) * 0.07f;
-        drawPart(base, { 0.22f + legSwing, 0.13f,  0.15f}, darkPink, {0.11f, 0.26f, 0.11f});
-        drawPart(base, { 0.22f - legSwing, 0.13f, -0.15f}, darkPink, {0.11f, 0.26f, 0.11f});
-        drawPart(base, {-0.22f - legSwing, 0.13f,  0.15f}, darkPink, {0.11f, 0.26f, 0.11f});
-        drawPart(base, {-0.22f + legSwing, 0.13f, -0.15f}, darkPink, {0.11f, 0.26f, 0.11f});
+        // Legs — diagonal pairs move together, as a quadruped's gait does.
+        // Rotating at the hip rather than sliding the whole leg sideways: the
+        // foot now scribes an arc and stays under the body, instead of the leg
+        // shuttling back and forth as a rigid post.
+        // Passive mobs tick walkTime at 3.0/s, hence the different divisor to
+        // the humanoids above.
+        Gait g = makeGait(m.walkTime * (GAIT_RATE / 3.0f));
+        // One diagonal pair takes g.legL, the other g.legR — they are already
+        // half a cycle apart, which is exactly the pairing the old code built
+        // by hand out of +legSwing and -legSwing.
+        drawLimb(base, { 0.22f, 0.26f,  0.15f}, {0, 0, 1}, g.legL, g.kneeL, 0.14f, 0.12f, 0.11f, darkPink, darkPink);
+        drawLimb(base, { 0.22f, 0.26f, -0.15f}, {0, 0, 1}, g.legR, g.kneeR, 0.14f, 0.12f, 0.11f, darkPink, darkPink);
+        drawLimb(base, {-0.22f, 0.26f,  0.15f}, {0, 0, 1}, g.legR, g.kneeR, 0.14f, 0.12f, 0.11f, darkPink, darkPink);
+        drawLimb(base, {-0.22f, 0.26f, -0.15f}, {0, 0, 1}, g.legL, g.kneeL, 0.14f, 0.12f, 0.11f, darkPink, darkPink);
     } else if (m.type == MOB_SHEEP) {
         // White woolly body, dark face and legs
         float bob = sinf(m.walkTime * 3.0f) * 0.03f;
@@ -576,55 +997,103 @@ void drawMob(const Mob& m, float time) {
         // Ears
         drawPart(base, {0.52f, 0.68f + bob,  0.13f}, face, {0.07f, 0.05f, 0.09f});
         drawPart(base, {0.52f, 0.68f + bob, -0.13f}, face, {0.07f, 0.05f, 0.09f});
-        // Legs (dark) — swing along the forward axis, diagonal pairs together
-        float legSwing = sinf(m.walkTime * 3.5f) * 0.07f;
-        drawPart(base, { 0.22f + legSwing, 0.17f,  0.16f}, face, {0.10f, 0.34f, 0.10f});
-        drawPart(base, { 0.22f - legSwing, 0.17f, -0.16f}, face, {0.10f, 0.34f, 0.10f});
-        drawPart(base, {-0.22f - legSwing, 0.17f,  0.16f}, face, {0.10f, 0.34f, 0.10f});
-        drawPart(base, {-0.22f + legSwing, 0.17f, -0.16f}, face, {0.10f, 0.34f, 0.10f});
+        // Legs (dark) — hip rotation, diagonal pairs together. See the pig.
+        Gait g = makeGait(m.walkTime * (GAIT_RATE / 3.0f));
+        drawLimb(base, { 0.22f, 0.34f,  0.16f}, {0, 0, 1}, g.legL, g.kneeL, 0.18f, 0.16f, 0.10f, face, face);
+        drawLimb(base, { 0.22f, 0.34f, -0.16f}, {0, 0, 1}, g.legR, g.kneeR, 0.18f, 0.16f, 0.10f, face, face);
+        drawLimb(base, {-0.22f, 0.34f,  0.16f}, {0, 0, 1}, g.legR, g.kneeR, 0.18f, 0.16f, 0.10f, face, face);
+        drawLimb(base, {-0.22f, 0.34f, -0.16f}, {0, 0, 1}, g.legL, g.kneeL, 0.18f, 0.16f, 0.10f, face, face);
     } else if (m.type == MOB_ZOMBIE) {
-        float bob = sinf(m.walkTime * 3.5f) * 0.04f;
+        // walkTime ticks at 4.0/s for a hostile mob (see moveMobTowards above),
+        // so this is the conversion into the shared GAIT_RATE cadence.
+        Gait g = makeGait(m.walkTime * (GAIT_RATE / 4.0f));
+        // Bob and sway ride on a copy of the frame, so the limbs below inherit
+        // them. Roll is about the forward axis (+X in the mob frame), which
+        // rocks the torso over whichever leg is carrying the weight.
+        glm::mat4 body = glm::translate(base, glm::vec3(0.0f, g.bob, 0.0f));
+        body = myRotate(body, g.sway, glm::vec3(1, 0, 0));
+
         glm::vec3 zGreen(0.3f, 0.5f, 0.2f);
         glm::vec3 zDark(0.2f, 0.35f, 0.15f);
         glm::vec3 zShirt(0.25f, 0.4f, 0.3f);
-        // Torso — shoulders run across Z now that +X is forward
-        drawPart(base, {0.0f, 0.975f + bob, 0.0f}, zShirt, {0.28f, 0.65f, 0.50f});
+        // Torso, split into shoulders / chest / belt instead of one slab. The
+        // step out across the shoulders is what gives a blocky humanoid a
+        // readable silhouette; the single box read as a fridge.
+        drawPart(body, {0.0f, 1.19f, 0.0f}, zShirt, {0.28f, 0.16f, 0.54f});
+        drawPart(body, {0.0f, 0.94f, 0.0f}, zShirt, {0.26f, 0.36f, 0.46f});
+        drawPart(body, {0.0f, 0.70f, 0.0f}, zDark,  {0.26f, 0.14f, 0.44f});
+        // Neck, so the head is not balanced flat on the shoulders
+        drawPart(body, {0.0f, 1.31f, 0.0f}, zDark, {0.16f, 0.10f, 0.18f});
         // Head
-        drawPart(base, {0.0f, 1.52f + bob, 0.0f}, zDark, {0.42f, 0.45f, 0.42f});
+        drawPart(body, {0.0f, 1.52f, 0.0f}, zDark, {0.42f, 0.45f, 0.42f});
         // Eyes on the front face, so its facing reads at a glance
-        drawPart(base, {0.21f, 1.57f + bob,  0.11f}, glm::vec3(0.55f, 0.1f, 0.1f), {0.03f, 0.07f, 0.09f});
-        drawPart(base, {0.21f, 1.57f + bob, -0.11f}, glm::vec3(0.55f, 0.1f, 0.1f), {0.03f, 0.07f, 0.09f});
-        // Arms held out in front (the zombie pose), swinging forward/back
-        float armSwing = sinf(m.walkTime * 3.5f) * 0.12f;
-        drawPart(base, {0.28f + armSwing, 0.98f + bob,  0.34f}, zGreen, {0.55f, 0.16f, 0.16f});
-        drawPart(base, {0.28f - armSwing, 0.98f + bob, -0.34f}, zGreen, {0.55f, 0.16f, 0.16f});
-        // Legs
-        float legSwing = sinf(m.walkTime * 3.5f) * 0.14f;
-        drawPart(base, { legSwing, 0.325f,  0.11f}, zDark, {0.16f, 0.65f, 0.16f});
-        drawPart(base, {-legSwing, 0.325f, -0.11f}, zDark, {0.16f, 0.65f, 0.16f});
+        drawPart(body, {0.21f, 1.57f,  0.11f}, glm::vec3(0.55f, 0.1f, 0.1f), {0.03f, 0.07f, 0.09f});
+        drawPart(body, {0.21f, 1.57f, -0.11f}, glm::vec3(0.55f, 0.1f, 0.1f), {0.03f, 0.07f, 0.09f});
+
+        // Arms. The zombie pose is both arms held out front, which in a real
+        // hierarchy is just a large constant forward rotation at the shoulder:
+        // +1.45 rad lifts a limb that hangs straight down to near horizontal.
+        // The walk swing rides on top at a third amplitude — at the full 0.40
+        // the outstretched arms flap rather than sway.
+        const float ZOMBIE_REACH = 1.45f;
+        // Positive bend folds the forearm backward, which from a horizontal arm
+        // means downward, so the hands droop instead of the arm being one bar.
+        drawLimb(body, {0.0f, 1.19f,  0.32f}, {0, 0, 1},
+                 ZOMBIE_REACH + g.armL * 0.35f, 0.15f,
+                 0.30f, 0.26f, 0.16f, zShirt, zGreen);
+        drawLimb(body, {0.0f, 1.19f, -0.32f}, {0, 0, 1},
+                 ZOMBIE_REACH + g.armR * 0.35f, 0.15f,
+                 0.30f, 0.26f, 0.16f, zShirt, zGreen);
+
+        // Legs. Hip sits at the bottom of the belt, and thigh + shin together
+        // span the same 0.65 the old single leg box did, so the feet still meet
+        // the ground at y = 0 when the knee is straight.
+        drawLimb(body, {0.0f, 0.65f,  0.11f}, {0, 0, 1}, g.legL, g.kneeL,
+                 0.34f, 0.31f, 0.16f, zDark, zDark);
+        drawLimb(body, {0.0f, 0.65f, -0.11f}, {0, 0, 1}, g.legR, g.kneeR,
+                 0.34f, 0.31f, 0.16f, zDark, zDark);
     } else if (m.type == MOB_SKELETON) {
         // Gray/white bony humanoid with bow
-        float bob = sinf(m.walkTime * 3.5f) * 0.04f;
+        Gait g = makeGait(m.walkTime * (GAIT_RATE / 4.0f));
+        glm::mat4 body = glm::translate(base, glm::vec3(0.0f, g.bob, 0.0f));
+        body = myRotate(body, g.sway, glm::vec3(1, 0, 0));
         glm::vec3 bone(0.85f, 0.85f, 0.8f);
         glm::vec3 dark(0.15f, 0.15f, 0.15f); // eye sockets
         glm::vec3 bowCol(0.5f, 0.3f, 0.15f);
         // Body (ribcage — thinner than zombie)
-        drawPart(base, {0.0f, 0.975f + bob, 0.0f}, bone, {0.24f, 0.62f, 0.40f});
+        drawPart(body, {0.0f, 0.975f, 0.0f}, bone, {0.24f, 0.62f, 0.40f});
+        // Neck vertebra
+        drawPart(body, {0.0f, 1.28f, 0.0f}, bone, {0.12f, 0.10f, 0.14f});
         // Head (skull)
-        drawPart(base, {0.0f, 1.50f + bob, 0.0f}, bone, {0.40f, 0.42f, 0.40f});
+        drawPart(body, {0.0f, 1.50f, 0.0f}, bone, {0.40f, 0.42f, 0.40f});
         // Eye sockets, sunk into the front of the skull
-        drawPart(base, {0.19f, 1.54f + bob,  0.10f}, dark, {0.04f, 0.09f, 0.10f});
-        drawPart(base, {0.19f, 1.54f + bob, -0.10f}, dark, {0.04f, 0.09f, 0.10f});
-        // Arms, held forward
-        float armSwing = sinf(m.walkTime * 3.5f) * 0.10f;
-        drawPart(base, {0.22f + armSwing, 0.98f + bob,  0.26f}, bone, {0.46f, 0.12f, 0.12f});
-        drawPart(base, {0.22f - armSwing, 0.98f + bob, -0.26f}, bone, {0.46f, 0.12f, 0.12f});
-        // Bow, held upright at the end of the right arm
-        drawPart(base, {0.46f, 0.98f + bob, -0.26f}, bowCol, {0.05f, 0.50f, 0.05f});
-        // Legs (thin)
-        float legSwing = sinf(m.walkTime * 3.5f) * 0.14f;
-        drawPart(base, { legSwing, 0.34f,  0.09f}, bone, {0.13f, 0.68f, 0.13f});
-        drawPart(base, {-legSwing, 0.34f, -0.09f}, bone, {0.13f, 0.68f, 0.13f});
+        drawPart(body, {0.19f, 1.54f,  0.10f}, dark, {0.04f, 0.09f, 0.10f});
+        drawPart(body, {0.19f, 1.54f, -0.10f}, dark, {0.04f, 0.09f, 0.10f});
+
+        // Arms held forward at the ready, less raised than the zombie's — a
+        // skeleton is aiming a bow, not lunging.
+        const float SKELE_REACH = 1.30f;
+        drawLimb(body, {0.0f, 1.22f,  0.24f}, {0, 0, 1},
+                 SKELE_REACH + g.armL * 0.35f, 0.12f,
+                 0.25f, 0.21f, 0.12f, bone, bone);
+        // The right arm's wrist frame comes back out, so the bow inherits both
+        // the shoulder and the elbow and stays in the hand while the arm moves.
+        // Hanging it off `base` at a fixed offset — which is what the old code
+        // did — left it floating beside the arm as soon as the arm swung.
+        glm::mat4 wrist = drawLimb(body, {0.0f, 1.22f, -0.24f}, {0, 0, 1},
+                                   SKELE_REACH + g.armR * 0.35f, 0.12f,
+                                   0.25f, 0.21f, 0.12f, bone, bone);
+        // Bow, stood upright in the hand. Rotated back out of the arm's frame:
+        // the arm points forward, so the limb's local down is world forward, and
+        // without this the bow would lie flat along the direction of aim.
+        glm::mat4 mBow = myRotate(wrist, -SKELE_REACH, glm::vec3(0, 0, 1));
+        drawBoxModel(glm::scale(mBow, glm::vec3(0.05f, 0.50f, 0.05f)), bowCol);
+
+        // Legs (thin). Thigh + shin span the 0.68 the old leg box did.
+        drawLimb(body, {0.0f, 0.68f,  0.09f}, {0, 0, 1}, g.legL, g.kneeL,
+                 0.36f, 0.32f, 0.13f, bone, bone);
+        drawLimb(body, {0.0f, 0.68f, -0.09f}, {0, 0, 1}, g.legR, g.kneeR,
+                 0.36f, 0.32f, 0.13f, bone, bone);
     }
 
     // Health bar above head if damaged (all mobs). Drawn in world axes, not
@@ -728,7 +1197,7 @@ void updateMobs(float dt, float time) {
             // Torch safe zone check
             bool nearTorch = false;
             for (auto& tp : torchPositions) {
-                if (glm::length(tp - spawnPos) < 5.0f) { nearTorch = true; break; }
+                if (glm::length(tp.pos - spawnPos) < 5.0f) { nearTorch = true; break; }
             }
             if (!nearTorch && glm::length(spawnPos - playerWorldPos) > 8.0f) {
                 // Alternate zombie and skeleton
@@ -1188,12 +1657,36 @@ void drawFractalBranch(glm::vec3 pos, glm::vec3 dir, float length, float thickne
         glm::vec3(0.35f, 0.22f, 0.1f) : // wood
         glm::vec3(0.1f + (float)(depth % 3) * 0.1f, 0.5f + (float)(depth % 2) * 0.2f, 0.15f); // leaf green
 
-    drawHex(midPos, color, glm::vec3(thickness, length * 0.5f, thickness));
+    // Two things were wrong with this one draw call, both masked by the NaN bug
+    // below that stopped any child branch from ever rendering:
+    //
+    //   1. scale.y multiplies HEX_HEIGHT, which is 1.0, so scale.y IS the segment
+    //      length. It passed length * 0.5f — half length, leaving a gap between
+    //      each segment and the children that attach at pos + dir * length.
+    //   2. drawHex applies translate * scale only. A branch running diagonally was
+    //      still drawn as an upright prism, so a tree came out as a cloud of
+    //      floating vertical sticks.
+    //
+    // Align the prism's +Y with the branch direction and give it its full length.
+    glm::mat4 seg = glm::translate(glm::mat4(1.0f), midPos);
+    {
+        float d = glm::dot(glm::vec3(0, 1, 0), dir);
+        d = (d < -1.0f) ? -1.0f : (d > 1.0f ? 1.0f : d);
+        glm::vec3 axis = glm::cross(glm::vec3(0, 1, 0), dir);
+        // Parallel: nothing to rotate. Antiparallel: cross is zero but the segment
+        // does need flipping, and any perpendicular axis will do.
+        if (glm::length(axis) > 1e-5f)  seg = myRotate(seg, acosf(d), axis);
+        else if (d < 0.0f)              seg = myRotate(seg, 3.14159265f, glm::vec3(1, 0, 0));
+    }
+    seg = glm::scale(seg, glm::vec3(thickness, length, thickness));
+    drawHexModel(seg, color);
 
     // At leaf nodes, draw a cluster of leaf hexes
     if (depth >= maxDepth - 1) {
         glm::vec3 leafGreen(0.2f, 0.55f, 0.15f);
-        drawHex(endPos, leafGreen, glm::vec3(thickness * 3.0f, thickness * 1.5f, thickness * 3.0f));
+        // Was 3.0 / 1.5. With the branches finally visible (see the two fixes
+        // above) those read as buds on bare twigs rather than as foliage.
+        drawHex(endPos, leafGreen, glm::vec3(thickness * 4.5f, thickness * 3.0f, thickness * 4.5f));
         return;
     }
 
@@ -1204,8 +1697,15 @@ void drawFractalBranch(glm::vec3 pos, glm::vec3 dir, float length, float thickne
 
     // Main continuation (slightly deviated)
     glm::vec3 up(0, 1, 0);
-    glm::vec3 right = glm::normalize(glm::cross(dir, up));
-    if (glm::length(right) < 0.01f) right = glm::vec3(1, 0, 0);
+    // The degenerate case has to be caught BEFORE normalising, not after. This
+    // used to normalise first and then test `right` — but normalising a zero
+    // vector yields NaN, and `NaN < 0.01f` is false, so the fallback never fired.
+    // drawFractalTree starts every trunk at dir = (0,1,0), which is exactly the
+    // case cross(dir, up) degenerates on, so *every* fractal tree in the world
+    // propagated NaN into all of its child directions and drew a bare trunk with
+    // no branches at all. Surfaced by the Tree build recipe (plan_2 Step 4).
+    glm::vec3 cr = glm::cross(dir, up);
+    glm::vec3 right = (glm::length(cr) < 0.01f) ? glm::vec3(1, 0, 0) : glm::normalize(cr);
     glm::vec3 nup = glm::normalize(glm::cross(right, dir));
 
     // Use myRotate to rotate direction vectors for branches
@@ -1225,8 +1725,231 @@ void drawFractalBranch(glm::vec3 pos, glm::vec3 dir, float length, float thickne
     }
 }
 
-void drawFractalTree(glm::vec3 base) {
-    drawFractalBranch(base, glm::vec3(0, 1, 0), 1.5f, 0.15f, 0, 3);
+// Defaults reproduce the three scenery trees exactly. The Tree build recipe
+// passes a taller trunk and one more level of recursion — plan_2 asks for depth
+// 4, and reusing this function with arguments is what it means by "re-use
+// drawFractalTree; do not port FractalTree.h".
+void drawFractalTree(glm::vec3 base, float trunkLen = 1.5f, int maxDepth = 3) {
+    drawFractalBranch(base, glm::vec3(0, 1, 0), trunkLen, trunkLen * 0.1f, 0, maxDepth);
+}
+
+// =====================================================
+// Craft-and-place structures — drawing (plan_2 Step 4)
+// =====================================================
+// Ported from gfx_b3 main.cpp:2043-2145 (drawMinimalHouse / drawCraftedLight /
+// drawCraftedFireplace). gfx_b3 draws each of these at a fixed world position on
+// a flat plate; here the player chooses the spot, so every one of them carries a
+// yaw and a snapped ground height.
+//
+// Local space convention, shared by the house and the fireplace: the structure's
+// *front* faces -Z, and yaw rotates that front back toward whoever built it. See
+// craftStructure() for where the yaw comes from.
+
+const float HOUSE_CS = 0.9f;                 // wall cube edge
+const int   HOUSE_W = 6, HOUSE_D = 6, HOUSE_H = 3;
+const int   HOUSE_DOOR_GX = 2;               // which front column is the doorway
+const float HOUSE_DOOR_OPEN_DIST = 3.0f;     // player range that swings the door
+
+void drawCraftedHouse(const PlacedStructure& h) {
+    const float cs = HOUSE_CS;
+    // Centre the footprint on h.pos so the stored position means "the middle of
+    // the house", which is what the placement test measures flatness around.
+    const float ox = -(HOUSE_W - 1) * cs * 0.5f;
+    const float oz = -(HOUSE_D - 1) * cs * 0.5f;
+
+    glm::mat4 base = glm::translate(glm::mat4(1.0f), h.pos);
+    base = myRotate(base, h.yaw, glm::vec3(0, 1, 0));
+
+    auto cell = [&](int gx, int gy, int gz) {
+        return glm::vec3(ox + gx * cs, (gy + 0.5f) * cs, oz + gz * cs);
+    };
+    auto wallCube = [&](glm::vec3 local) {
+        glm::mat4 m = glm::scale(glm::translate(base, local), glm::vec3(cs));
+        drawBoxModel(m, glm::vec3(0.85f, 0.80f, 0.76f));
+    };
+
+    // Brick walls. textureMode 2 is lit colour * texture, and the box mesh's
+    // per-face UVs run 0..1, so one brick image maps to one cube face.
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texBrick);
+    setInt(shaderProgram, "texture1", 0);
+    setInt(shaderProgram, "textureMode", 2);
+
+    for (int gy = 0; gy < HOUSE_H; gy++) {
+        for (int gx = 0; gx < HOUSE_W; gx++) {
+            // Doorway: two cubes tall, so the 1.62 m eye height clears it.
+            if (!(gx == HOUSE_DOOR_GX && gy < 2)) wallCube(cell(gx, gy, 0));
+            wallCube(cell(gx, gy, HOUSE_D - 1));
+        }
+        for (int gz = 1; gz < HOUSE_D - 1; gz++) {
+            wallCube(cell(0, gy, gz));
+            wallCube(cell(HOUSE_W - 1, gy, gz));
+        }
+    }
+
+    // Roof slab, one cube of overhang on every side.
+    glBindTexture(GL_TEXTURE_2D, texRoof);
+    {
+        const float rT = cs * 0.30f;
+        float ry = HOUSE_H * cs + rT * 0.5f;
+        for (int gx = -1; gx <= HOUSE_W; gx++) {
+            for (int gz = -1; gz <= HOUSE_D; gz++) {
+                glm::mat4 m = glm::translate(base, glm::vec3(ox + gx * cs, ry, oz + gz * cs));
+                m = glm::scale(m, glm::vec3(cs, rT, cs));
+                drawBoxModel(m, glm::vec3(0.72f, 0.36f, 0.28f));
+            }
+        }
+    }
+    setInt(shaderProgram, "textureMode", 0);
+
+    // Door — thin panel hinged on the left edge of the gap.
+    //
+    // gfx_b3 drives this from a key (O toggles g_doorOpen for its single
+    // hard-coded house). That does not generalise to N houses the player has
+    // scattered around, and every key in hexacraft is already spoken for, so the
+    // angle is derived from player distance instead. Stateless: nothing to store
+    // per house, and it cannot desync.
+    {
+        const float DT = 0.06f;
+        glm::vec3 hinge(ox + (HOUSE_DOOR_GX - 0.5f) * cs, cs, oz - cs * 0.5f + DT);
+        glm::vec3 doorWorld = glm::vec3(base * glm::vec4(hinge, 1.0f));
+        float d = glm::length(glm::vec2(doorWorld.x - playerWorldPos.x,
+                                        doorWorld.z - playerWorldPos.z));
+        float openT = (HOUSE_DOOR_OPEN_DIST - d) / 1.2f;
+        openT = (openT < 0.0f) ? 0.0f : (openT > 1.0f ? 1.0f : openT);
+
+        glm::mat4 dm = glm::translate(base, hinge);
+        dm = myRotate(dm, openT * 1.5707963f, glm::vec3(0, 1, 0));
+        dm = glm::translate(dm, glm::vec3(cs * 0.5f, 0, 0));   // pivot at the hinge edge
+        dm = glm::scale(dm, glm::vec3(cs, cs * 2.0f, DT));
+        drawBoxModel(dm, glm::vec3(0.45f, 0.30f, 0.16f));
+    }
+}
+
+void drawCraftedFireplace(const PlacedStructure& f, float time) {
+    const float bs = 0.34f;
+    glm::mat4 base = glm::translate(glm::mat4(1.0f), f.pos);
+    base = myRotate(base, f.yaw, glm::vec3(0, 1, 0));
+
+    auto stone = [&](glm::vec3 local, glm::vec3 scale) {
+        drawBoxModel(glm::scale(glm::translate(base, local), scale),
+                     glm::vec3(0.42f, 0.42f, 0.44f));
+    };
+
+    // Back wall, 3 wide x 2 tall — the closed side of the U.
+    for (int gx = -1; gx <= 1; gx++)
+        for (int gy = 0; gy < 2; gy++)
+            stone(glm::vec3(gx * bs, gy * bs + bs * 0.5f, bs * 0.9f),
+                  glm::vec3(bs, bs, bs * 0.25f));
+
+    // Side pillars — the two arms, leaving the -Z face open toward the player.
+    for (int gy = 0; gy < 2; gy++) {
+        stone(glm::vec3(-1.5f * bs, gy * bs + bs * 0.5f, 0.0f), glm::vec3(bs, bs, bs * 1.8f));
+        stone(glm::vec3( 1.5f * bs, gy * bs + bs * 0.5f, 0.0f), glm::vec3(bs, bs, bs * 1.8f));
+    }
+
+    // Two crossed logs in the mouth of the hearth, so the fire has something to
+    // be burning. gfx_b3 has none — its flame floats on the floor slab.
+    for (int i = 0; i < 2; i++) {
+        glm::mat4 lm = glm::translate(base, glm::vec3(0, bs * 0.18f, 0));
+        lm = myRotate(lm, (i ? 0.6f : -0.6f), glm::vec3(0, 1, 0));
+        lm = glm::scale(lm, glm::vec3(bs * 1.6f, bs * 0.22f, bs * 0.22f));
+        drawBoxModel(lm, glm::vec3(0.30f, 0.19f, 0.10f));
+    }
+
+    // Flame. The light for this is registered in gatherTorchLights(), not here —
+    // that runs before the draw pass, so the lighting is not a frame behind.
+    float fl = 0.55f + 0.45f * sinf(time * 8.2f + f.pos.z * 3.3f);
+    glm::mat4 fm = glm::translate(base, glm::vec3(0, bs * 0.62f, 0.0f));
+    fm = glm::scale(fm, glm::vec3(bs * 0.85f, bs * (1.0f + 0.45f * fl), bs * 0.6f));
+    setBool(shaderProgram, "isEmissive", true);
+    setVec3(shaderProgram, "emissiveColor", COL_FIRE_HEARTH);
+    drawBoxModel(fm, COL_FIRE_HEARTH);
+    setBool(shaderProgram, "isEmissive", false);
+}
+
+// =====================================================
+// Craft-and-place structures — placement (plan_2 Step 4)
+// =====================================================
+// Is the ground under a footprint level enough to build on? gfx_b3 needs no such
+// test: its world is a flat plate, so `player.position + forward * 3` is always
+// valid. hexacraft has mountains, and without this a house lands half-buried in a
+// slope with the far corner hanging over a drop.
+bool buildSpotOk(glm::vec3 c, float radius, float& outGroundY) {
+    float lo = 1e9f, hi = -1e9f;
+    auto sample = [&](float px, float pz) {
+        float g = getGroundYWorld(px, pz);
+        if (g < lo) lo = g;
+        if (g > hi) hi = g;
+    };
+    sample(c.x, c.z);
+    const int N = 8;
+    for (int i = 0; i < N; i++) {
+        float a = (float)i / N * 6.2831853f;
+        sample(c.x + cosf(a) * radius, c.z + sinf(a) * radius);
+    }
+    // Rest on the LOW sample. Resting on the high one leaves the opposite side of
+    // the footprint floating; sinking the uphill corner into the slope instead
+    // reads as a building cut into the hill, which is what a builder would do.
+    outGroundY = lo;
+    return (hi - lo) <= 2.0f;
+}
+
+// Spend the recipe and drop the structure ~3 m ahead of the player.
+// Returns false (and spends nothing) if the materials or the ground say no.
+bool craftStructure(int idx) {
+    if (idx < 0 || idx >= NUM_BUILD_RECIPES) return false;
+    const BuildRecipe& br = buildRecipes[idx];
+
+    // Both ingredients are checked before either is removed — removeFromInventory
+    // has no rollback, so a half-spend would silently eat the player's dirt.
+    if (countInInventory(br.t1) < br.c1 || countInInventory(br.t2) < br.c2) {
+        printf("[Build] %s — need %dx %s + %dx %s\n", br.name,
+               br.c1, getBlockName(br.t1), br.c2, getBlockName(br.t2));
+        return false;
+    }
+
+    glm::vec3 fwd(camFront.x, 0.0f, camFront.z);
+    // Looking straight up or down leaves no horizontal facing to build along.
+    if (glm::length(fwd) < 1e-4f) fwd = glm::vec3(0.0f, 0.0f, -1.0f);
+    fwd = glm::normalize(fwd);
+
+    // The structure's local -Z must end up pointing back at the player. myRotate
+    // about +Y sends (0,0,-1) to (-sin a, 0, -cos a), and we want that to equal
+    // -fwd, so a = atan2(fwd.x, fwd.z).
+    float yaw = atan2f(fwd.x, fwd.z);
+
+    // Footprint radius per recipe, so the *near face* lands about 3 m out (gfx_b3's
+    // distance) rather than the centre — otherwise a 5.4 m house starts inside the
+    // player.
+    const float FOOTPRINT[NUM_BUILD_RECIPES] = {
+        HOUSE_D * HOUSE_CS * 0.5f,   // house
+        1.2f,                         // tree canopy
+        0.3f,                         // torch
+        0.7f,                         // fireplace
+    };
+    float r = FOOTPRINT[idx];
+    glm::vec3 c = playerWorldPos + fwd * (3.0f + r);
+
+    float groundY;
+    if (!buildSpotOk(c, r, groundY)) {
+        printf("[Build] %s — ground too uneven here\n", br.name);
+        return false;
+    }
+    c.y = groundY;
+
+    removeFromInventory(br.t1, br.c1);
+    removeFromInventory(br.t2, br.c2);
+
+    switch (idx) {
+        case 0: craftedHouses.push_back({ c, yaw }); break;
+        case 1: craftedTrees.push_back(c);           break;
+        case 2: craftedLights.push_back(c);          break;
+        case 3: craftedFireplaces.push_back({ c, yaw }); break;
+    }
+    printf("[Build] %s placed at %.1f, %.1f, %.1f (yaw %.0f deg)\n",
+           br.name, c.x, c.y, c.z, yaw * 57.2957795f);
+    return true;
 }
 
 // =====================================================
@@ -1236,6 +1959,27 @@ void drawFractalTree(glm::vec3 base) {
 bool nearCamera(glm::vec3 objPos, float range = 45.0f) {
     glm::vec3 d = objPos - camPos;
     return (d.x*d.x + d.z*d.z) < range * range;
+}
+
+// Everything the player has built this session (plan_2 Step 4). Lives here
+// rather than beside the draw helpers above because it needs nearCamera().
+void renderCraftedStructures(float time) {
+    for (const PlacedStructure& h : craftedHouses)
+        if (nearCamera(h.pos, 60.0f)) drawCraftedHouse(h);
+
+    // drawFractalTree is recursive and uncached, so it is the expensive one —
+    // culled at the same 35 m as the three scenery trees below.
+    for (const glm::vec3& t : craftedTrees)
+        if (nearCamera(t, 35.0f)) drawFractalTree(t, 2.6f, 4);
+
+    // Geometry only: gatherTorchLights() already pushed the point light, so an
+    // off-screen torch keeps lighting what is on screen. drawTorch() would
+    // double-register it.
+    for (const glm::vec3& p : craftedLights)
+        if (nearCamera(p, 45.0f)) drawTorchMesh(p);
+
+    for (const PlacedStructure& f : craftedFireplaces)
+        if (nearCamera(f.pos, 45.0f)) drawCraftedFireplace(f, time);
 }
 
 void renderObjects(float time) {
@@ -1283,7 +2027,7 @@ void renderObjects(float time) {
     drawClock(clockPos, time);
 
     // MineCar — draws at tracked position (carPos.y follows terrain smoothly)
-    drawCar(glm::vec3(carPos.x, carPos.y, carPos.z), carYaw, wheelSpin);
+    drawCar(glm::vec3(carPos.x, carPos.y, carPos.z), carYaw, wheelSpin, carSteer);
 
     // --- Curvy Objects Exhibition Area (all 6 grouped together) ---
     // All placed near col=-8, row=5 area so they're visible from one spot.
@@ -1296,7 +2040,11 @@ void renderObjects(float time) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texGrass);
         setInt(shaderProgram, "texture1", 0);
-        setInt(shaderProgram, "textureMode", 2);
+        // Triplanar rather than the sphere's own UVs. A UV sphere's texture
+        // coordinates converge at the poles, so a square texture arrives pinched
+        // to a point at the top and bottom and stretched around the equator.
+        // Projecting from three axes and blending by the normal has no poles.
+        setInt(shaderProgram, "textureMode", 3);
         drawSphere(sphBase + glm::vec3(0, 1.8f, 0), 0.6f, glm::vec3(0.3f, 0.8f, 1.0f));
         setInt(shaderProgram, "textureMode", 0);
     }
@@ -1306,7 +2054,8 @@ void renderObjects(float time) {
     coneBase.y = getGroundY(-49, -36);
     if (nearCamera(coneBase)) {
         glBindTexture(GL_TEXTURE_2D, texWood);
-        setInt(shaderProgram, "textureMode", 1);
+        // Same problem as the sphere: a cone's UVs all meet at the apex.
+        setInt(shaderProgram, "textureMode", 3);
         drawCone(coneBase + glm::vec3(0, 0.1f, 0), 1.5f, glm::vec3(0.85f, 0.55f, 0.25f));
         setInt(shaderProgram, "textureMode", 0);
     }
@@ -1491,6 +2240,9 @@ void renderObjects(float time) {
         if (nearCamera(ftBase3, 35.0f)) drawFractalTree(ftBase3);
     }
 
+    // Player-built houses, trees, torches and fireplaces (plan_2 Step 4)
+    renderCraftedStructures(time);
+
     // --- Flying Birds ---
     for (auto& b : birds) {
         if (nearCamera(b.pos)) drawBird(b, time);
@@ -1590,6 +2342,12 @@ void renderObjects(float time) {
         drawHexRotated(bp.pos, col, bp.spin, glm::vec3(0.577f, 0.577f, 0.577f),
                        glm::vec3(sz, sz * 0.5f, sz));
     }
+
+    // --- Carried block (K) ---
+    // Last object drawn: it is the nearest thing to the eye, so leaving it until
+    // the end means every earlier depth test is against terrain rather than
+    // against a block hanging two units from the camera.
+    drawCarriedBlock(time);
 }
 
 // =====================================================
@@ -1818,7 +2576,32 @@ void processInput(GLFWwindow* window) {
         // Update camera to follow player (Minecraft-style)
         // Eye height: 1.62 blocks from feet (Minecraft standard)
         float eyeHeight = 1.62f;
-            if (cameraMode == 0) {
+            if (controlCar && cameraMode != 2) {
+                // Drive cameras, ported from gfx_b3 Car.h:305-320. Before this
+                // the camera stayed on the player while the car drove off on its
+                // own, which is why the car was hard to steer at all.
+                //
+                // C still cycles: 0 = chase, 1 = driver's seat, 2 = free fly
+                // (left alone, so the debug flycam still works while driving).
+                glm::vec3 fwd(cosf(carYaw), 0.0f, sinf(carYaw));
+                if (cameraMode == 0) {
+                    glm::vec3 pivot = carPos + glm::vec3(0, 1.1f, 0);
+                    glm::vec3 want  = -fwd * 6.0f + glm::vec3(0, 2.6f, 0);
+                    // Through collideCamera, which theirs has no equivalent of —
+                    // its world is flat, so a fixed 6-unit boom never hits
+                    // anything. Here it would sit inside the hillside the car is
+                    // parked against.
+                    camPos = pivot + collideCamera(pivot, want);
+                } else {
+                    camPos = carPos + fwd * 0.35f + glm::vec3(0, 1.15f, 0);
+                }
+                // Point the view down the car's heading. camYaw is in degrees and
+                // measured the same way carYaw is, so this is a direct handover;
+                // updateCameraVectors() rebuilds camFront from it.
+                camYaw = glm::degrees(carYaw);
+                camPitch = (cameraMode == 0) ? -12.0f : 0.0f;
+                updateCameraVectors();
+            } else if (cameraMode == 0) {
                 // Third-person: camera behind and above player's head
                 float camYawRad = glm::radians(camYaw);
                 float camPitchRad = glm::radians(camPitch);
@@ -1868,22 +2651,105 @@ void processInput(GLFWwindow* window) {
             if (fabsf(carSpeed) < 0.05f) carSpeed = 0.0f;
         }
 
-        // Steering — speed-dependent: can't turn sharply at high speed
-        float speedFrac = fabsf(carSpeed) / maxCarSpeed;
-        float baseTurnRate = 2.5f;  // radians per second at low speed
-        float turnRate = baseTurnRate * (1.0f - speedFrac * 0.6f); // reduce turning at speed
-        // Only turn if the car is actually moving
-        if (fabsf(carSpeed) > 0.1f) {
-            float turnDir = (carSpeed > 0.0f) ? 1.0f : -1.0f; // reverse steering when reversing
-            if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-                carYaw += turnRate * deltaTime * turnDir;
-            if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-                carYaw -= turnRate * deltaTime * turnDir;
+        // Steering — bicycle model, ported from gfx_b3 Car.h:139-181.
+        //
+        // This replaces a constant yaw rate (carYaw += turnRate * dt), which let
+        // the car pirouette on the spot at walking pace. Here the steering wheel
+        // has a POSITION, and the yaw rate falls out of geometry:
+        //
+        //     turnRadius = wheelbase / tan(steer)
+        //     yawRate    = speed / turnRadius
+        //
+        // so yaw rate is proportional to speed. At a standstill the car cannot
+        // turn at all, and the circle tightens as it slows. That is the whole
+        // difference between an arcade blob and something that drives.
+        bool steerLeft  = (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS);
+        bool steerRight = (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS);
+        if (steerLeft) {
+            carSteer = fminf(carSteer + CAR_STEER_RATE * deltaTime,  CAR_MAX_STEER);
+        } else if (steerRight) {
+            carSteer = fmaxf(carSteer - CAR_STEER_RATE * deltaTime, -CAR_MAX_STEER);
+        } else {
+            // Self-centre at 1.5x the input rate, without overshooting zero.
+            float back = CAR_STEER_RATE * 1.5f * deltaTime;
+            if (carSteer > 0.0f)      carSteer = fmaxf(0.0f, carSteer - back);
+            else if (carSteer < 0.0f) carSteer = fminf(0.0f, carSteer + back);
         }
 
-        // Move car — cosf(yaw) for X, sinf(yaw) for Z to match model forward (+X local)
-        carPos.x += cosf(carYaw) * carSpeed * deltaTime;
-        carPos.z += sinf(carYaw) * carSpeed * deltaTime;
+        // Grip limit. This is BEYOND gfx_b3 and it is not optional: the bare
+        // bicycle model puts lateral acceleration at v^2*tan(steer)/L, so at this
+        // car's top speed of 12 and full 35-degree lock that is a yaw rate of
+        // 7 rad/s — 400 degrees per second. Unusable. (Theirs is equally unusable
+        // on paper at 229 deg/s; their world is small enough that top speed and
+        // full lock never coincide.)
+        //
+        // Capping lateral acceleration is the physical statement of what a tire
+        // can actually do, and it produces the right feel for free: full lock
+        // available at parking speed, barely 9 degrees at top speed. Note this
+        // limits the STEERING ANGLE, not the yaw rate — so the wheels are drawn
+        // at the angle the car is really turning at, and the geometry stays
+        // honest. The old code scaled the yaw rate directly, which is what broke
+        // the relationship between the wheels and the path in the first place.
+        const float CAR_MAX_LAT_ACCEL = 18.0f;
+        float vSq = carSpeed * carSpeed;
+        if (vSq > 0.01f) {
+            float tanLimit = CAR_MAX_LAT_ACCEL * CAR_WHEELBASE / vSq;
+            float steerLimit = atanf(tanLimit);
+            if (steerLimit < CAR_MAX_STEER)
+                carSteer = fmaxf(-steerLimit, fminf(steerLimit, carSteer));
+        }
+
+        if (fabsf(carSpeed) > 0.01f) {
+            // The epsilon keeps the radius finite at dead-ahead. Sign is carried
+            // by carSteer and by carSpeed independently, which is what makes
+            // reversing steer backwards for free — no special case needed, unlike
+            // the turnDir hack this replaces.
+            float turnRadius = CAR_WHEELBASE / tanf(fabsf(carSteer) + 0.001f);
+            float yawRate = carSpeed / turnRadius;
+            if (carSteer < 0.0f) yawRate = -yawRate;
+            carYaw += yawRate * deltaTime;
+        }
+
+        // Move car — cosf(yaw) for X, sinf(yaw) for Z to match model forward (+X local).
+        // Gated on carCanBeAt: before this the car integrated position with no
+        // collision test at all and drove straight through castle walls, only
+        // sampling ground height afterwards to set carPos.y.
+        {
+            float nx = carPos.x + cosf(carYaw) * carSpeed * deltaTime;
+            float nz = carPos.z + sinf(carYaw) * carSpeed * deltaTime;
+            if (carCanBeAt(nx, nz, carYaw, carPos.y)) {
+                carPos.x = nx;
+                carPos.z = nz;
+            } else {
+                // Stop dead rather than slide along the obstruction. The player
+                // slides because being snagged on scenery while walking is
+                // maddening; a car that keeps its speed while grinding down a
+                // wall just feels broken.
+                carSpeed = 0.0f;
+            }
+        }
+
+        // If the car ends up on top of the player, shove them clear instead of
+        // trapping them — canMoveTo treats the parked car as solid, so a player
+        // left standing inside its footprint could not walk out. Push along the
+        // car's short axis, which is always the shorter way out.
+        //
+        // carOverlaps, not carBlocks: the gate in carBlocks is off while driving,
+        // and driving is precisely when the car runs someone over.
+        float pLx, pLz;
+        if (!playerDead &&
+            carOverlaps(playerWorldPos.x, playerWorldPos.z, playerWorldPos.y, 0.28f, &pLx, &pLz)) {
+            float outLz = (pLz >= 0.0f ? 1.0f : -1.0f) * (CAR_HALF_WID + 0.32f);
+            float c = cosf(carYaw), s = sinf(carYaw);
+            // car-local -> world, keeping the player's position along the car's
+            // length so they are nudged sideways rather than flung to the bumper.
+            float px = carPos.x + pLx * c - outLz * s;
+            float pz = carPos.z + pLx * s + outLz * c;
+            if (canMoveTo(px, pz, playerWorldPos.y)) {
+                playerWorldPos.x = px;
+                playerWorldPos.z = pz;
+            }
+        }
 
         // Terrain-following Y (smooth interpolation)
         int carCol, carRow;
@@ -1894,6 +2760,7 @@ void processInput(GLFWwindow* window) {
 
         // Wheel spin based on speed (realistic: proportional to distance traveled)
         wheelSpin += carSpeed * deltaTime * 3.0f;
+
     }
 
     // Pitch (X), Yaw (Y), Roll (Z) — always available
@@ -2063,6 +2930,11 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     updateCameraVectors();
 }
 
+// Defined below, next to the key handler that normally calls it. The Build tab
+// closes the inventory on a successful build, and it has to go through the same
+// path as pressing E — that is what returns items left in the crafting grid.
+void closeInventory(GLFWwindow* window);
+
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     // Handle right/left-button RELEASE first (before any early returns) so isBreaking always clears
     if ((button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_RELEASE) {
@@ -2170,8 +3042,46 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
                 recipeBookOpen = !recipeBookOpen;
                 recipeSearchText = "";
                 recipePage = 0;
+                // Both panels occupy the strip left of the inventory, so opening
+                // one closes the other rather than drawing them on top of each
+                // other and hit-testing both.
+                if (recipeBookOpen) buildTabOpen = false;
                 printf("[RecipeBook] Toggled: %d\n", recipeBookOpen);
                 return;
+            }
+
+            // Build tab toggle (plan_2 Step 4) — mirrors hud.h's layout exactly
+            float buildBtnX = craftOffX - 40.0f;
+            float buildBtnY = craftY + slotStep - 30.0f;
+            if (mx >= buildBtnX && mx <= buildBtnX + 24.0f && my >= buildBtnY && my <= buildBtnY + 24.0f) {
+                buildTabOpen = !buildTabOpen;
+                if (buildTabOpen) recipeBookOpen = false;
+                printf("[Build] Tab toggled: %d\n", buildTabOpen);
+                return;
+            }
+
+            // Build recipe rows. Left click builds; the row is clickable even when
+            // unaffordable so craftStructure() can say *why* it refused.
+            if (buildTabOpen && isLeft) {
+                float bpW = 180.0f;
+                float bpX = panelX - bpW - 10.0f;
+                float bpY = panelY;
+                const float rowH = 58.0f;
+                float rowTop = bpY + panelH - 48.0f;
+                for (int i = 0; i < NUM_BUILD_RECIPES; i++) {
+                    float ry = rowTop - (i + 1) * rowH;
+                    if (mx >= bpX + 8.0f && mx <= bpX + bpW - 8.0f &&
+                        my >= ry && my <= ry + rowH - 6.0f) {
+                        // Close the inventory on success: the structure lands in
+                        // front of the player, and there is no point showing it to
+                        // someone staring at a menu.
+                        if (craftStructure(i)) {
+                            closeInventory(window);
+                            firstMouse = true;   // or the view snaps on the next mouse move
+                        }
+                        return;
+                    }
+                }
             }
 
             // Recipe Book interactions
@@ -2397,6 +3307,18 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         if (action == GLFW_PRESS) {
             // Melee attack is still instant
             attackMob(camPos, camFront);
+            // Sculpt tools take over left-click entirely: they act on the
+            // targeted column, not on the empty cell in front of it, and they
+            // are never consumed. placeBlock() would reject them anyway
+            // (isItem), so this is a redirect rather than an override.
+            int held = playerInventory[hotbarSlot].type;
+            if (held == ITEM_TOOL_HILL || held == ITEM_TOOL_POND) {
+                if (hasTarget) {
+                    if (held == ITEM_TOOL_HILL) sculptHill(targetCol, targetRow);
+                    else                        sculptPond(targetCol, targetRow);
+                }
+                return;
+            }
             // Place block
             placeBlock();
         }
@@ -2491,6 +3413,7 @@ void charCallback(GLFWwindow* window, unsigned int codepoint) {
 void closeInventory(GLFWwindow* window) {
     inventoryOpen = false;
     recipeBookOpen = false;
+    buildTabOpen = false;
     recipeSearchText = "";
     useCraftingTable = false;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -2578,6 +3501,12 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
                 printf("[Control] Back to player.\n");
             }
             break;
+        // Rain. R is taken by fly-down.
+        case GLFW_KEY_N:
+            rainOn = !rainOn;
+            printf("[Weather] Rain: %s\n", rainOn ? "ON" : "OFF");
+            break;
+
         case GLFW_KEY_V:
             fourViewport = !fourViewport;
             printf("[Camera] 4-Viewport: %s\n", fourViewport ? "ON" : "OFF");
@@ -2656,6 +3585,12 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         case GLFW_KEY_F7:
             useBakedTrees = !useBakedTrees;
             printf("[Trees] Baked meshes %s\n", useBakedTrees ? "ON" : "OFF (live fractal)");
+            break;
+
+        // Grab / carry the targeted block. K because G is the fan and the
+        // building keys (click, click, scroll) are all mouse.
+        case GLFW_KEY_K:
+            toggleCarry();
             break;
 
         // Interactive objects

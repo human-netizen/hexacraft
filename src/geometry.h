@@ -209,6 +209,112 @@ void drawHexModel(glm::mat4 model, glm::vec3 color) {
 }
 
 // =====================================================
+// Articulated limbs — a two-segment chain with a real joint
+// =====================================================
+// Adapted from ../Tasfia-007-OpenGL-3.3--Medieval-European-Countryside-/Project1/
+// main.cpp:846-898 (the arm and leg loops inside drawHuman).
+//
+// The single idea worth taking is that the lower segment's matrix is built FROM
+// the upper segment's — `mFore = translate(mUpper, ...)` — rather than from the
+// shoulder. That is the whole difference between a joint and a hinge painted on:
+// the forearm inherits the upper arm's rotation and then adds its own, so
+// bending the elbow pivots the forearm about the ELBOW. Build it from the
+// shoulder instead and the forearm swings about the shoulder and detaches.
+//
+// Three things had to change on the way in:
+//
+//  * Their primitives are unit HALF-extent. hexacraft's box spans [-0.5, 0.5]
+//    (see `const float h = 0.5f` in generateBox above), so their scale numbers
+//    are half-lengths and mine are full lengths. Copying their figures verbatim
+//    would have built every limb at half size.
+//
+//  * Their humanoid faces +Z and swings about (1,0,0). hexacraft has two frames:
+//    mobs are built +X forward (drawMob, input.h) and the player +Z forward
+//    (drawPlayer, player.h). Rather than bake an axis in, the caller passes one,
+//    and passes it SIGNED so that positive swing means forward in its own frame
+//    — mobs pass (0,0,1), the player passes (-1,0,0). Without that convention
+//    the knee bend quietly inverts between the two models and one of them ends
+//    up with backwards-hinging legs.
+//
+//  * They draw cylinders and spheres. hexacraft has boxes and hex prisms, so
+//    `useHex` picks the primitive: mobs are box stacks, the player is hex prisms
+//    like the rest of the world.
+//
+// Returns the UNSCALED frame at the far end of the limb — the wrist or the
+// ankle — so a hand, a boot or a held item can be hung off it and inherit both
+// joints. That is why the scale is applied to throwaway copies inside: letting
+// it into the chain would stretch everything downstream by the limb's own
+// thickness.
+glm::mat4 drawLimb(const glm::mat4& base, glm::vec3 socket, glm::vec3 swingAxis,
+                   float swing, float bend,
+                   float upperLen, float lowerLen, float thick,
+                   glm::vec3 upperCol, glm::vec3 lowerCol, bool useHex = false) {
+    void (*draw)(glm::mat4, glm::vec3) = useHex ? drawHexModel : drawBoxModel;
+
+    // Upper segment: hangs down from the socket, rotated by the shoulder/hip.
+    glm::mat4 mUpper = glm::translate(base, socket);
+    mUpper = myRotate(mUpper, swing, swingAxis);
+    draw(glm::scale(glm::translate(mUpper, glm::vec3(0.0f, -upperLen * 0.5f, 0.0f)),
+                    glm::vec3(thick, upperLen, thick)), upperCol);
+
+    // The joint, at the far end of the upper segment. Positive `bend` folds the
+    // lower segment BACKWARD — opposite to positive swing — because that is the
+    // way a knee goes. Arms pass a negative bend to fold the forearm forward.
+    glm::mat4 mLower = glm::translate(mUpper, glm::vec3(0.0f, -upperLen, 0.0f));
+    mLower = myRotate(mLower, -bend, swingAxis);
+    // Taper: the shin is thinner than the thigh, the forearm than the upper arm.
+    // Uniform segments read as a stack of identical blocks rather than a limb.
+    float lowerThick = thick * 0.88f;
+    draw(glm::scale(glm::translate(mLower, glm::vec3(0.0f, -lowerLen * 0.5f, 0.0f)),
+                    glm::vec3(lowerThick, lowerLen, lowerThick)), lowerCol);
+
+    return glm::translate(mLower, glm::vec3(0.0f, -lowerLen, 0.0f));
+}
+
+// Every number a walking figure needs, all derived from ONE phase so the parts
+// cannot drift out of sync with each other.
+struct Gait {
+    float bob;             // vertical rise, world units
+    float sway;            // torso roll, radians
+    float armL,  armR;     // shoulder swing, radians
+    float legL,  legR;     // hip swing, radians
+    float kneeL, kneeR;    // knee bend for the leg of the same name
+};
+
+// `phase` is in radians; `amp` scales the translation-valued parts for models
+// that are not human-sized. Angles are deliberately NOT scaled by amp — a small
+// figure swings its legs through the same angle, just over a shorter arc.
+inline Gait makeGait(float phase, float amp = 1.0f) {
+    float s = sinf(phase), sOpp = -s;   // sin(phase + PI)
+
+    Gait g;
+    // fabsf gives TWO bounces per stride, one per footfall. A plain sin bobs
+    // once per stride, which reads as a limp rather than a walk.
+    g.bob  = fabsf(s) * 0.06f * amp;
+    g.sway = s * 0.025f;
+
+    g.armR = s * 0.40f;      g.armL = sOpp * 0.40f;
+    // Each leg runs opposite the arm on the same side. That is what makes it a
+    // contralateral gait — same-side arm and leg swinging together is marching.
+    g.legR = sOpp * 0.35f;   g.legL = s * 0.35f;
+    // max(0, ...) bends the knee only on the forward half of the stride and
+    // leaves it straight through the stance half. Bending on both halves is the
+    // scissoring look that reads as skating rather than walking.
+    g.kneeR = fmaxf(0.0f, sOpp) * 0.30f;
+    g.kneeL = fmaxf(0.0f, s)    * 0.30f;
+    return g;
+}
+
+// Walk phase in radians. The reference walks at 4.2 rad/s (their main.cpp:807).
+// Each caller accumulates its own walk timer at its own rate, so each converts
+// into this one cadence instead of every model inventing a tempo:
+//   mob   walkTime += dt * 4.0 (hostile) / 3.0 (passive)   — input.h, moveMob
+//   player walkTime += dt * 6.0                            — input.h, movement
+// The timers only advance while the figure is actually moving, so a standing
+// mob holds phase and its limbs come to rest instead of marching on the spot.
+const float GAIT_RATE = 4.2f;
+
+// =====================================================
 // Curvy Objects: Sphere, Cone, Bezier, Spline, Ruled Surface, Wine Glass
 // =====================================================
 GLuint sphereVAO, sphereVBO;
@@ -295,6 +401,89 @@ void drawCone(glm::vec3 pos, float scale, glm::vec3 color) {
     model = glm::scale(model, glm::vec3(scale));
     setMat4(shaderProgram, "model", model); setVec3(shaderProgram, "objectColor", color);
     glBindVertexArray(coneVAO); glDrawArrays(GL_TRIANGLES, 0, coneVertCount);
+}
+
+// =====================================================
+// Cylinder
+// =====================================================
+// Adapted from ../../Downloads/gfx_b3/Cylinder.h. Added because the car's wheels
+// were hex prisms laid on their side (objects.h drawWheel), which reads as a
+// hexagonal wheel from anywhere close.
+//
+// TWO DELIBERATE DIFFERENCES FROM THEIRS.
+//
+// Axis is +Y, not +Z. Theirs is Z-aligned and its car compensates with an extra
+// rotation at every wheel; it gets away with that because nothing else ever uses
+// the primitive. Everything in this file is built Y-up — drawLimb hangs segments
+// down -Y, drawCone stands on its base — so a Z-aligned cylinder would need a
+// fixup rotation buried in every future call site.
+//
+// Unit size is the BOX convention, not the cone's: centred on the origin,
+// spanning [-0.5, 0.5] on every axis, so glm::scale takes the FULL extent
+// (diameter, length, diameter). drawCone is the odd one out here — it takes a
+// radius and stands on y=0 — and matching the box instead means a cylinder and a
+// box given the same scale vector occupy the same volume.
+GLuint cylVAO = 0, cylVBO = 0;
+int cylVertCount = 0;
+
+std::vector<Vertex> generateCylinder(int slices) {
+    std::vector<Vertex> verts;
+    const float r = 0.5f, h = 0.5f;   // diameter 1, length 1
+    const glm::vec3 w(1.0f);
+    const glm::vec3 up(0, 1, 0), dn(0, -1, 0);
+
+    for (int j = 0; j < slices; j++) {
+        float t1 = 2.0f * PI * j / slices;
+        float t2 = 2.0f * PI * (j + 1) / slices;
+        float c1 = cosf(t1), s1 = sinf(t1);
+        float c2 = cosf(t2), s2 = sinf(t2);
+
+        // Side normals are radial and per-vertex, so the seam between slices is
+        // smooth-shaded. The caps below use a flat axial normal instead, which
+        // keeps the rim a hard edge — a wheel with a rounded-off rim looks
+        // deflated.
+        glm::vec3 n1(c1, 0, s1), n2(c2, 0, s2);
+        glm::vec3 b1(r * c1, -h, r * s1), b2(r * c2, -h, r * s2);
+        glm::vec3 u1(r * c1,  h, r * s1), u2(r * c2,  h, r * s2);
+        float v1 = (float)j / slices, v2 = (float)(j + 1) / slices;
+
+        // Side quad, wound CCW seen from outside.
+        verts.push_back({b1, n1, w, {v1, 0.0f}});
+        verts.push_back({u1, n1, w, {v1, 1.0f}});
+        verts.push_back({u2, n2, w, {v2, 1.0f}});
+        verts.push_back({b1, n1, w, {v1, 0.0f}});
+        verts.push_back({u2, n2, w, {v2, 1.0f}});
+        verts.push_back({b2, n2, w, {v2, 0.0f}});
+
+        // Top cap — reversed winding relative to the bottom, since increasing
+        // theta runs clockwise when viewed from +Y.
+        verts.push_back({glm::vec3(0, h, 0), up, w, {0.5f, 0.5f}});
+        verts.push_back({u2, up, w, {0.5f + 0.5f * c2, 0.5f + 0.5f * s2}});
+        verts.push_back({u1, up, w, {0.5f + 0.5f * c1, 0.5f + 0.5f * s1}});
+
+        // Bottom cap
+        verts.push_back({glm::vec3(0, -h, 0), dn, w, {0.5f, 0.5f}});
+        verts.push_back({b1, dn, w, {0.5f + 0.5f * c1, 0.5f + 0.5f * s1}});
+        verts.push_back({b2, dn, w, {0.5f + 0.5f * c2, 0.5f + 0.5f * s2}});
+    }
+    return verts;
+}
+
+void initCylinder(int slices = 16) {
+    std::vector<Vertex> verts = generateCylinder(slices);
+    cylVertCount = (int)verts.size();
+    glGenVertexArrays(1, &cylVAO); glGenBuffers(1, &cylVBO);
+    glBindVertexArray(cylVAO); glBindBuffer(GL_ARRAY_BUFFER, cylVBO);
+    glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(Vertex), verts.data(), GL_STATIC_DRAW);
+    setupVertexAttribs();
+}
+
+// Matches drawBoxModel/drawHexModel: the caller owns the full transform.
+void drawCylModel(glm::mat4 model, glm::vec3 color) {
+    setMat4(shaderProgram, "model", model);
+    setVec3(shaderProgram, "objectColor", color);
+    glBindVertexArray(cylVAO);
+    glDrawArrays(GL_TRIANGLES, 0, cylVertCount);
 }
 
 glm::vec3 bezierPoint(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float t) {

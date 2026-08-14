@@ -96,9 +96,53 @@ int getBlock(int col, int row, int h) {
     if (!gridInBounds(col, row, h)) return BLOCK_AIR;
     return blockGrid[col + GRID_OFF_X][row + GRID_OFF_Z][h];
 }
+// =====================================================
+// Light-emitting blocks
+// =====================================================
+// Glowstone, lanterns and torch blocks were drawn with isEmissive — they glowed
+// on their own faces but contributed nothing to the point-light array, so a room
+// walled in glowstone lit *nothing*, including itself, and read as flat.
+//
+// Kept as a map rather than a vector because setBlock has to be able to remove
+// one in O(1) when the player mines it. Keyed exactly like blockState, so the
+// same (col,row,h) packing is reused.
+// Same type the per-frame light list uses, so a registry entry can be pushed
+// into it directly.
+struct PointLightSrc { glm::vec3 pos; glm::vec3 color; };
+std::unordered_map<uint32_t, PointLightSrc> lightBlocks;
+
+// Colour already scaled by how strongly the block emits, so consumers do not
+// need a separate intensity term. Returns false for everything that is not a
+// light source, which is nearly every block.
+inline bool blockLightColor(int type, glm::vec3& outColor) {
+    switch (type) {
+        case BLOCK_GLOWSTONE:   outColor = glm::vec3(1.00f, 0.88f, 0.55f) * 1.15f; return true;
+        case BLOCK_LANTERN:     outColor = glm::vec3(0.75f, 0.90f, 1.00f) * 0.90f; return true;
+        case BLOCK_TORCH_BLOCK: outColor = glm::vec3(1.00f, 0.60f, 0.20f) * 1.00f; return true;
+        default: return false;
+    }
+}
+
 void setBlock(int col, int row, int h, int type) {
     if (!gridInBounds(col, row, h)) return;
     int gi = col + GRID_OFF_X, gj = row + GRID_OFF_Z;
+
+    // Keep the light registry in step with the grid. Read the old type first —
+    // replacing a glowstone with stone has to remove the light, not just fail to
+    // add one.
+    int oldType = blockGrid[gi][gj][h];
+    if (oldType != type) {
+        glm::vec3 lc;
+        uint32_t lkey = blockStateKey(col, row, h);
+        if (blockLightColor(oldType, lc)) lightBlocks.erase(lkey);
+        if (blockLightColor(type, lc)) {
+            glm::vec3 p = hexGridPos(col, row, 0.0f);
+            // Matches the draw loop's `pos + vec3(0, h * HEX_HEIGHT, 0)`, so the
+            // light sits inside the block that is emitting it.
+            lightBlocks[lkey] = { glm::vec3(p.x, h * HEX_HEIGHT, p.z), lc };
+        }
+    }
+
     blockGrid[gi][gj][h] = type;
     // Update columnMaxH cache
     if (type != BLOCK_AIR) {
@@ -242,6 +286,10 @@ glm::vec3 getBlockColor(int type) {
         case ITEM_PICKAXE_DIAMOND: case ITEM_SHOVEL_DIAMOND:
             return glm::vec3(0.3f, 0.85f, 0.9f);
         case ITEM_BOW:             return glm::vec3(0.55f, 0.38f, 0.15f);
+        // Sculpt tools are drawn as their own imported icons, so these tints
+        // stay white — the icon texture is multiplied by this colour.
+        case ITEM_TOOL_HILL:       return glm::vec3(1.0f, 1.0f, 1.0f);
+        case ITEM_TOOL_POND:       return glm::vec3(0.45f, 0.65f, 0.95f);
 
         default: return glm::vec3(1, 0, 1); // magenta = error
     }
@@ -452,8 +500,12 @@ float getToolSpeedMultiplier(int toolType, int blockType) {
     }
 
     // --- Any tool (wrong type) gives 1.5× — always noticeable vs bare hand ---
+    // The sculpt tools are excluded alongside the stick and bow: they are not
+    // mining implements, and letting them speed up breaking would make them a
+    // strictly-better pickaxe that never wears out.
     bool anyTool = (toolType >= ITEM_STICK && toolType < ITEM_COUNT);
-    if (anyTool && toolType != ITEM_STICK && toolType != ITEM_BOW) return 1.5f;
+    if (anyTool && toolType != ITEM_STICK && toolType != ITEM_BOW
+        && toolType != ITEM_TOOL_HILL && toolType != ITEM_TOOL_POND) return 1.5f;
 
     return 1.0f; // bare hand / stick
 }
@@ -1264,8 +1316,13 @@ void drawHexEmissive(glm::vec3 pos, glm::vec3 emitColor, glm::vec3 scale = glm::
 // =====================================================
 // Torch positions (collected during terrain build)
 // =====================================================
-std::vector<glm::vec3> torchPositions;
+// PointLightSrc carries a colour, not just a position. Every point light used to
+// be uploaded as the same hardcoded orange in main.cpp, so a blue-white lantern
+// and an orange torch lit the room identically.
+std::vector<PointLightSrc> torchPositions;
 const glm::vec3 COL_TORCH_FLAME(1.0f, 0.6f, 0.1f);
+// A hearth burns redder than a torch — more ember, less flame.
+const glm::vec3 COL_FIRE_HEARTH(1.0f, 0.42f, 0.10f);
 
 // Geometry only — does NOT register the point light. Use when the caller has
 // already pushed the light position (so off-screen torches keep lighting the scene).
@@ -1276,7 +1333,7 @@ void drawTorchMesh(glm::vec3 base) {
 
 void drawTorch(glm::vec3 base) {
     drawTorchMesh(base);
-    torchPositions.push_back(base + glm::vec3(0, 0.8f, 0));
+    torchPositions.push_back({ base + glm::vec3(0, 0.8f, 0), COL_TORCH_FLAME });
 }
 
 // =====================================================
@@ -2570,6 +2627,10 @@ GLuint getBlockTexture(int type) {
         case ITEM_PICKAXE_DIAMOND: return texItemPickaxeDiamond;
         case ITEM_SHOVEL_DIAMOND:  return texItemShovelDiamond;
         case ITEM_BOW:             return texItemBow;
+        // POND reuses the existing still-water texture rather than importing a
+        // second icon — it is exactly the material the tool produces.
+        case ITEM_TOOL_HILL:       return texHillIcon;
+        case ITEM_TOOL_POND:       return texWaterStill;
 
         default: return 0;
     }
@@ -2578,7 +2639,84 @@ GLuint getBlockTexture(int type) {
 // Bind a texture for block rendering; returns textureMode to set
 // mode 1 = texture only (stone, cobble — self-colored)
 // mode 2 = texture*color (planks, wool blended)
+// How glossy each block family is.
+//
+// The shader used to apply pow(spec, 32.0) at a fixed strength to every surface
+// alike, so a grass field carried the same tight specular highlight as a polished
+// metal block — a bright spot that slid across the terrain as the camera turned,
+// which is the single most artificial-looking thing about a wide daylight view.
+// Exponent controls how tight the highlight is, strength how bright.
+// Last values uploaded, so a terrain pass over thousands of blocks does not issue
+// two redundant glUniform1f calls per block. Long runs of one block type are the
+// common case, so this collapses to almost nothing.
+static float g_lastSpecPower = -1.0f, g_lastSpecStrength = -1.0f;
+
+static void uploadSpecular(float power, float strength) {
+    if (power == g_lastSpecPower && strength == g_lastSpecStrength) return;
+    g_lastSpecPower = power;
+    g_lastSpecStrength = strength;
+    setFloat(shaderProgram, "specPower", power);
+    setFloat(shaderProgram, "specStrength", strength);
+}
+
+// Put the shader back to the neutral response main.cpp uploads each frame. Must
+// be called when leaving a run of block draws, or the next thing drawn (trees,
+// mobs, props) inherits whatever the last block happened to be.
+void resetBlockSpecular() { uploadSpecular(32.0f, 1.0f); }
+
+// Wind sway amplitude for the next draw, in world units. Same
+// skip-redundant-uploads treatment as the specular pair, for the same reason:
+// this is set per block in the terrain pass.
+static float g_lastSway = -1.0f;
+void setSway(float amount) {
+    if (amount == g_lastSway) return;
+    g_lastSway = amount;
+    setFloat(shaderProgram, "swayAmount", amount);
+}
+
+void setBlockSpecular(int type) {
+    float power = 32.0f, strength = 1.0f;
+    switch (type) {
+        // Wet and glassy — a tight, bright highlight is the whole point
+        case BLOCK_WATER: case BLOCK_ICE:
+            power = 96.0f; strength = 2.0f; break;
+        // Metal and gem: polished, so tight but not mirror-like
+        case BLOCK_IRON_BLOCK: case BLOCK_GOLD_BLOCK: case BLOCK_DIAMOND_BLOCK:
+        case BLOCK_ORE_DIAMOND: case BLOCK_ORE_GOLD: case BLOCK_IRON_BARS:
+        case BLOCK_OBSIDIAN: case BLOCK_QUARTZ_BLOCK: case BLOCK_GLASS:
+        case BLOCK_GLASS_PANE:
+            power = 64.0f; strength = 1.2f; break;
+        // Dressed stone: some sheen
+        case BLOCK_POLISHED_DIORITE: case BLOCK_POLISHED_GRANITE:
+        case BLOCK_POLISHED_ANDESITE: case BLOCK_SMOOTH_STONE:
+            power = 48.0f; strength = 0.6f; break;
+        // Matte organics and cloth: essentially no highlight. This is the case
+        // that matters most, because it covers almost all visible terrain.
+        case BLOCK_GRASS: case BLOCK_DIRT: case BLOCK_SAND: case BLOCK_GRAVEL:
+        case BLOCK_CLAY: case BLOCK_LEAF: case BLOCK_SNOW:
+        case BLOCK_WOOL_WHITE: case BLOCK_WOOL_RED: case BLOCK_WOOL_BLUE:
+        case BLOCK_WOOL_GREEN: case BLOCK_WOOL_YELLOW: case BLOCK_WOOL_BLACK:
+        case BLOCK_WOOL_ORANGE: case BLOCK_WOOL_PINK: case BLOCK_WOOL_PURPLE:
+        case BLOCK_WOOL_CYAN: case BLOCK_WOOL_BROWN: case BLOCK_WOOL_GRAY:
+        case BLOCK_WOOL_LIGHT_GRAY: case BLOCK_WOOL_MAGENTA: case BLOCK_WOOL_LIME:
+        case BLOCK_CARPET_WHITE: case BLOCK_CARPET_RED: case BLOCK_CARPET_BLUE:
+            power = 16.0f; strength = 0.08f; break;
+        default:
+            // Rough stone and bare wood: broad, dim highlight.
+            if (isStoneType(type))     { power = 40.0f; strength = 0.35f; }
+            else if (isWoodType(type)) { power = 32.0f; strength = 0.30f; }
+            else if (isDirtType(type)) { power = 16.0f; strength = 0.08f; }
+            break;
+    }
+    uploadSpecular(power, strength);
+}
+
 int bindBlockTexture(int type) {
+    setBlockSpecular(type);
+    // Leaf blocks are foliage too — a hedge or a player-built canopy should move
+    // with the same wind as the trees. Smaller amplitude than a tree canopy,
+    // since a leaf block is anchored on all sides rather than hanging off a limb.
+    setSway(type == BLOCK_LEAF ? 0.05f : 0.0f);
     GLuint tex = getBlockTexture(type);
     if (!tex) {
         setInt(shaderProgram, "textureMode", 0);
@@ -2630,22 +2768,317 @@ void gatherTorchLights() {
 
         // Same cached ground height the draw loop uses, so the light sits exactly
         // where the torch mesh is instead of tracking a rescanned column top.
-        torchPositions.push_back(pos + glm::vec3(0, (t.height + 1) * HEX_HEIGHT + 0.8f, 0));
+        torchPositions.push_back({ pos + glm::vec3(0, (t.height + 1) * HEX_HEIGHT + 0.8f, 0),
+                                   COL_TORCH_FLAME });
     }
+    // Emissive blocks in the grid — glowstone, lanterns, torch blocks. These are
+    // player-placeable, so unlike torchLocations the set changes at runtime; the
+    // registry is maintained by setBlock rather than rebuilt by scanning, because
+    // scanning 40,000 columns for them every frame is not affordable.
+    for (auto& kv : lightBlocks) {
+        float ldx = kv.second.pos.x - camPos.x;
+        float ldz = kv.second.pos.z - camPos.z;
+        if (ldx * ldx + ldz * ldz > RENDER_DIST_SQ) continue;
+        torchPositions.push_back(kv.second);
+    }
+
+    // Crafted torches and fireplaces (plan_2 Step 4). These are objects, not
+    // blocks, so neither torchLocations nor lightBlocks knows about them — without
+    // this they would draw a glowing head that lights nothing around it, which is
+    // exactly the failure plan_2 warned about.
+    for (const glm::vec3& p : craftedLights) {
+        float dx = p.x - camPos.x, dz = p.z - camPos.z;
+        if (dx * dx + dz * dz > RENDER_DIST_SQ) continue;
+        torchPositions.push_back({ p + glm::vec3(0, 0.8f, 0), COL_TORCH_FLAME });
+    }
+    for (const PlacedStructure& f : craftedFireplaces) {
+        float dx = f.pos.x - camPos.x, dz = f.pos.z - camPos.z;
+        if (dx * dx + dz * dz > RENDER_DIST_SQ) continue;
+        // Sits low — the light comes from inside the surround, at ember height.
+        torchPositions.push_back({ f.pos + glm::vec3(0, 0.35f, 0), COL_FIRE_HEARTH });
+    }
+
     auto distSqToCam = [](const glm::vec3& p) {
         glm::vec3 d = p - camPos;
         return d.x * d.x + d.y * d.y + d.z * d.z;
     };
-    std::sort(torchPositions.begin(), torchPositions.end(),
-              [&](const glm::vec3& a, const glm::vec3& b) {
-                  return distSqToCam(a) < distSqToCam(b);
-              });
+    // Only the nearest MAX_POINT_LIGHTS survive the upload, so only that many need
+    // to be in order — partial_sort instead of a full sort, which matters once a
+    // lit build has hundreds of glowstone blocks in range.
+    const size_t keep = 8;
+    if (torchPositions.size() > keep) {
+        std::partial_sort(torchPositions.begin(), torchPositions.begin() + keep,
+                          torchPositions.end(),
+                          [&](const PointLightSrc& a, const PointLightSrc& b) {
+                              return distSqToCam(a.pos) < distSqToCam(b.pos);
+                          });
+    } else {
+        std::sort(torchPositions.begin(), torchPositions.end(),
+                  [&](const PointLightSrc& a, const PointLightSrc& b) {
+                      return distSqToCam(a.pos) < distSqToCam(b.pos);
+                  });
+    }
+}
+
+// =====================================================
+// Ground scatter — grass tufts, flowers, pebbles, twigs
+// =====================================================
+// Sub-block detail on top of the terrain. None of it is stored: presence,
+// position, size, orientation and tint are all derived from the column's
+// coordinates, so 40,000 columns cost zero memory, the props never flicker
+// between frames, and a block edit under a prop is picked up for free next frame
+// because everything is recomputed from (col,row) anyway.
+//
+// The radius is deliberately much shorter than RENDER_DIST. A 4cm pebble is
+// invisible at 50 units, so drawing it there is pure cost.
+const float SCATTER_DIST = 28.0f;
+const float SCATTER_DIST_SQ = SCATTER_DIST * SCATTER_DIST;
+// Tufts get their own, shorter radius. They are the densest prop by a wide margin
+// and cost three draws each, and a 3cm-wide blade is under a pixel past ~20 units
+// anyway — so the grass thins out well before the pebbles do.
+const float TUFT_DIST_SQ = 18.0f * 18.0f;
+
+// Independent [0,1) values for one column. hashNoise returns (-1,1], and the
+// multipliers keep the streams from correlating with each other or with the
+// terrain noise that already samples this same function.
+static inline float scatterHash(int col, int row, int stream) {
+    return 0.5f * (hashNoise(col * 131 + stream * 7919, row * 197 + stream * 104729) + 1.0f);
+}
+
+// One grass blade / stem: a thin box pivoted at its base so it bends instead of
+// sliding. windX/windZ are the same wind the vertex shader applies to foliage
+// (see swayAmount in vertexShader.glsl) — expressed here as a lean angle rather
+// than a displacement, because these are drawn live with their own model matrix
+// and a rotation about the base is what a blade of grass actually does.
+static void drawBlade(glm::vec3 base, float yaw, float lean, float height, float width,
+                      float windX, float windZ, glm::vec3 color) {
+    glm::mat4 m = glm::translate(glm::mat4(1.0f), base);
+    // Wind first (outermost) so every blade in the field leans the same way...
+    m = myRotate(m, windX, glm::vec3(0, 0, 1));
+    m = myRotate(m, -windZ, glm::vec3(1, 0, 0));
+    // ...then the blade's own turn about its (now tilted) axis, so a tuft fans out.
+    m = myRotate(m, yaw, glm::vec3(0, 1, 0));
+    // `lean` is what makes a tuft look like grass rather than like a row of tiny
+    // fence posts. A blade standing straight up is a thin box whose only faces
+    // point sideways, so it takes almost nothing from an overhead sun and renders
+    // as a near-black splinter. Arching it over turns its widest face upward, and
+    // it lights like the ground it is standing on.
+    //
+    // About X, not Z. The scale below is (width, height, width*0.45), so the two
+    // big faces are the ones facing +/-Z — and leaning about Z swings the blade
+    // within its own thin edge, leaving those faces exactly as vertical as before.
+    // That was the first attempt, and the blades stayed black.
+    m = myRotate(m, lean, glm::vec3(1, 0, 0));
+    m = glm::translate(m, glm::vec3(0, height * 0.5f, 0));
+    m = glm::scale(m, glm::vec3(width, height, width * 0.45f));
+    drawBoxModel(m, color);
+}
+
+static void drawPebble(glm::vec3 base, float r, float yaw, glm::vec3 color) {
+    glm::mat4 m = glm::translate(glm::mat4(1.0f), base + glm::vec3(0, r * 0.30f, 0));
+    m = myRotate(m, yaw, glm::vec3(0, 1, 0));
+    m = glm::scale(m, glm::vec3(r, r * 0.55f, r * 0.85f));
+    setMat4(shaderProgram, "model", m);
+    setVec3(shaderProgram, "objectColor", color);
+    glBindVertexArray(sphereVAO);
+    glDrawArrays(GL_TRIANGLES, 0, sphereVertCount);
+}
+
+void drawGroundScatter(float time) {
+    // Leaving whatever state the block loop was in. Scatter props are untextured
+    // solid colours, they are not terrain so they must not take the procedural
+    // tint, and their wind is applied CPU-side above — so the shader's own sway
+    // has to be off or it would be applied twice.
+    setInt(shaderProgram, "textureMode", 0);
+    setBool(shaderProgram, "proceduralTint", false);
+    setSway(0.0f);
+    // Dull and broad: none of this is polished, and a tight highlight on a pebble
+    // the size of a thumbnail just reads as a white speck.
+    uploadSpecular(24.0f, 0.15f);
+
+    const float zSp = HEX_RADIUS * 1.5f;
+    const float xSp = HEX_RADIUS * 2.0f * 0.866f;
+    int camRow = (int)roundf(camPos.z / zSp);
+    int rowLimit = (int)(SCATTER_DIST / zSp) + 2;
+    int minRow = std::max(TERRAIN_MIN, camRow - rowLimit);
+    int maxRow = std::min(TERRAIN_MAX, camRow + rowLimit);
+
+    for (int row = minRow; row <= maxRow; row++) {
+        // Same per-row circular narrowing as renderTerrain(): at this row the
+        // circle leaves only sqrt(R^2 - dz^2) of x budget.
+        float dzRow = row * zSp - camPos.z;
+        float xBudgetSq = SCATTER_DIST_SQ - dzRow * dzRow;
+        if (xBudgetSq <= 0.0f) continue;
+        float xBudget = sqrtf(xBudgetSq);
+        float rowXOff = (row % 2) * (xSp * 0.5f);
+        int minCol = std::max(TERRAIN_MIN, (int)ceilf((camPos.x - xBudget - rowXOff) / xSp) - 1);
+        int maxCol = std::min(TERRAIN_MAX, (int)floorf((camPos.x + xBudget - rowXOff) / xSp) + 1);
+
+        for (int col = minCol; col <= maxCol; col++) {
+            // Presence test first and cheapest — one hash, no grid lookup, no
+            // biome call, no distance maths. This is the loosest of the
+            // thresholds below, so it only rejects columns that no surface type
+            // would have accepted.
+            float present = scatterHash(col, row, 0);
+            if (present > 0.30f) continue;
+
+            glm::vec3 pos = hexGridPos(col, row, 0.0f);
+            float dx = pos.x - camPos.x;
+            float dz = pos.z - camPos.z;
+            float dSq = dx * dx + dz * dz;
+            if (dSq > SCATTER_DIST_SQ) continue;
+
+            // Find the surface. columnMaxH is an upper bound on the occupied
+            // range, not necessarily a solid block, so walk down to the first one.
+            int topH = columnMaxH[col + GRID_OFF_X][row + GRID_OFF_Z];
+            int surf = -1;
+            for (int h = topH; h >= 0; h--) {
+                if (getBlock(col, row, h) != BLOCK_AIR) { surf = h; break; }
+            }
+            if (surf < 0) continue;
+
+            int st = getBlock(col, row, surf);
+
+            // Per-surface density, off the hash value we already have. Meadow
+            // grass wants to look like a field, which needs far more props per
+            // square metre than a gravel flat wants pebbles — one shared 8%
+            // threshold gave a plausible pebble field and an invisible lawn.
+            float limit;
+            if (st == BLOCK_GRASS)                            limit = 0.30f;
+            else if (st == BLOCK_DIRT)                        limit = 0.16f;
+            else if (st == BLOCK_SAND)                        limit = 0.09f;
+            else if (st == BLOCK_STONE || st == BLOCK_GRAVEL) limit = 0.11f;
+            else if (st == BLOCK_SNOW)                        limit = 0.07f;
+            else continue;                                    // not a surface we decorate
+            if (present > limit) continue;
+
+            // Don't decorate anything the player built. A stone platform or a dirt
+            // pillar has the right top block but sits well off the generated
+            // height, so comparing against the generator's own answer excludes
+            // structures without needing to track them. Tolerance of 2 because
+            // world-gen blends heights across biome borders after this call.
+            int biome = getBiome(col, row);
+            if (abs(surf - getTerrainHeightBiome(col, row, biome)) > 2) continue;
+
+            // A block at index h is centred at h*HEX_HEIGHT and spans +/-0.5, so
+            // its top face — what a prop stands on — is half a block higher.
+            float surfY = surf * HEX_HEIGHT + HEX_HEIGHT * 0.5f;
+            glm::vec3 base(pos.x + (scatterHash(col, row, 1) - 0.5f) * 0.52f,
+                           surfY,
+                           pos.z + (scatterHash(col, row, 2) - 0.5f) * 0.52f);
+
+            if (!isInFrustum(base, 1.0f)) continue;
+
+            float pick = scatterHash(col, row, 3);
+            float size = scatterHash(col, row, 4);
+            float yaw  = scatterHash(col, row, 5) * 6.2831853f;
+            float tint = 0.85f + 0.30f * scatterHash(col, row, 6);
+
+            // Wind, shared with the tree canopy so the whole landscape moves as one
+            // system. Same coefficients as vertexShader.glsl's sway phase.
+            float phase = time * 1.25f + base.x * 0.45f + base.z * 0.35f;
+            float windX = sinf(phase) * 0.22f;
+            float windZ = cosf(phase * 0.8f) * 0.22f;
+
+            // What grows here is decided by what is underfoot, not by the biome
+            // index — a patch of exposed dirt in the middle of grassland should
+            // look like dirt.
+            if (st == BLOCK_GRASS || st == BLOCK_DIRT) {
+                bool grassy = (st == BLOCK_GRASS);
+                if (grassy && pick > 0.90f) {
+                    // Flower: a stem with a bloom on top. Rare on purpose — a
+                    // meadow that is 30% flowers reads as a toy.
+                    float stemH = 0.26f + size * 0.16f;
+                    drawBlade(base, yaw, 0.10f, stemH, 0.030f, windX, windZ,
+                              glm::vec3(0.30f, 0.48f, 0.20f) * tint);
+                    const glm::vec3 petals[4] = {
+                        {0.92f, 0.88f, 0.35f}, {0.88f, 0.32f, 0.34f},
+                        {0.72f, 0.55f, 0.90f}, {0.95f, 0.95f, 0.92f}
+                    };
+                    const glm::vec3& pc = petals[(int)(scatterHash(col, row, 7) * 4.0f) & 3];
+                    // The bloom rides on the bent stem, so it needs the stem's own
+                    // lean and the wind applied to its offset rather than sitting
+                    // straight above the base. Same two rotations drawBlade uses.
+                    // Leaning about X sends the local tip to (0, h*cos, h*sin);
+                    // the yaw then turns that offset into world XZ.
+                    float lz = sinf(0.10f) * stemH;
+                    glm::vec3 tip = base + glm::vec3(sinf(yaw) * lz + sinf(windX) * stemH,
+                                                     cosf(0.10f) * stemH,
+                                                     cosf(yaw) * lz + sinf(windZ) * stemH);
+                    glm::mat4 m = glm::translate(glm::mat4(1.0f), tip);
+                    m = myRotate(m, yaw, glm::vec3(0, 1, 0));
+                    m = glm::scale(m, glm::vec3(0.075f, 0.045f, 0.075f));
+                    drawBoxModel(m, pc);
+                } else if (!grassy && pick > 0.55f) {
+                    drawPebble(base, 0.055f + size * 0.045f, yaw,
+                               glm::vec3(0.42f, 0.39f, 0.35f) * tint);
+                } else if (dSq <= TUFT_DIST_SQ) {
+                    // Tuft: three blades fanned out. Two would read as a "V" from
+                    // the side; three is enough to look like a clump from any angle
+                    // and is still only three draws.
+                    //
+                    // Deliberately darker and yellower than the grass block
+                    // texture. Matching the ground colour made the tufts vanish
+                    // entirely — a blade is nearly vertical, so the shader's AO
+                    // hint already dims it relative to the block top it stands on,
+                    // and starting from the same colour left nothing to see.
+                    // Brighter than the grass block texture, not darker. A blade is
+                    // still tilted well off horizontal even after the arch, so it
+                    // takes maybe half the diffuse the flat ground beside it does;
+                    // starting from the ground's own colour lands it at half
+                    // brightness, which is what made the first two attempts read as
+                    // dead twigs on a lawn.
+                    glm::vec3 gc = glm::vec3(0.31f, 0.72f, 0.19f) * tint;
+                    if (!grassy) gc = glm::vec3(0.50f, 0.52f, 0.26f) * tint;
+                    float bh = 0.34f + size * 0.24f;
+                    // Three different leans as well as three different yaws: a fan
+                    // that all arches by the same amount still reads as one object.
+                    drawBlade(base, yaw,         0.45f, bh,         0.055f, windX, windZ, gc);
+                    drawBlade(base, yaw + 2.09f, 0.75f, bh * 0.84f, 0.048f, windX, windZ, gc * 0.86f);
+                    drawBlade(base, yaw + 4.19f, 1.00f, bh * 0.70f, 0.044f, windX, windZ, gc * 1.16f);
+                }
+            } else if (st == BLOCK_SAND) {
+                if (pick > 0.55f) {
+                    // Dead twig: two straight segments meeting at an angle, lying
+                    // almost flat. Rotating them about the base like grass would
+                    // make them stand up, which driftwood does not.
+                    glm::vec3 wc = glm::vec3(0.40f, 0.31f, 0.20f) * tint;
+                    float len = 0.20f + size * 0.16f;
+                    for (int s = 0; s < 2; s++) {
+                        glm::mat4 m = glm::translate(glm::mat4(1.0f), base + glm::vec3(0, 0.022f, 0));
+                        m = myRotate(m, yaw + s * 0.9f, glm::vec3(0, 1, 0));
+                        m = glm::translate(m, glm::vec3(len * 0.5f, 0, 0));
+                        m = glm::scale(m, glm::vec3(len, 0.035f, 0.035f));
+                        drawBoxModel(m, wc * (s ? 0.88f : 1.0f));
+                    }
+                } else {
+                    drawPebble(base, 0.05f + size * 0.04f, yaw,
+                               glm::vec3(0.66f, 0.58f, 0.42f) * tint);
+                }
+            } else {
+                // Stone, gravel, snow — pebbles only. Snow gets a paler, smaller
+                // one, as a stone half-buried in it rather than sitting on top.
+                float r = 0.06f + size * 0.05f;
+                glm::vec3 pc = (st == BLOCK_SNOW) ? glm::vec3(0.62f, 0.65f, 0.70f)
+                                                  : glm::vec3(0.46f, 0.45f, 0.43f);
+                if (st == BLOCK_SNOW) r *= 0.75f;
+                drawPebble(base, r, yaw, pc * tint);
+            }
+        }
+    }
+
+    resetBlockSpecular();
 }
 
 void renderTerrain(float time = 0.0f) {
     extractFrustum(currentVP);
     setFloat(shaderProgram, "alpha", 1.0f);
     waterDraws.clear();   // queue for the deferred transparent pass below
+    // World-space noise tint, for terrain blocks only. Switched off again before
+    // the tree and torch passes below — it is there to break up large runs of one
+    // tiled block texture, and applying it to a tree or a prop would just make
+    // that object blotchy.
+    setBool(shaderProgram, "proceduralTint", true);
 
     // RENDER_DIST / RENDER_DIST_SQ now live in globals.h so gatherTorchLights()
     // and the fog density in main.cpp can agree with this loop.
@@ -2794,10 +3227,31 @@ void renderTerrain(float time = 0.0f) {
         }
     }
 
+    // Ground scatter, straight after the blocks it sits on. Before the tree pass
+    // rather than after, so it does not have to undo the tree pass's sway setting.
+    drawGroundScatter(time);
+
     // Draw trees (non-grid decorative objects) — with distance + frustum culling
     // Radius clamped to RENDER_DIST: drawing trees further out than the terrain
     // put them above ground that does not exist.
     const float TREE_RENDER_DIST_SQ = RENDER_DIST_SQ;
+    // Leaving the block loop: drop whatever specular response the last block set,
+    // so trees are not shaded as though they were made of that block, and switch
+    // the terrain noise tint back off for the same reason.
+    resetBlockSpecular();
+    setBool(shaderProgram, "proceduralTint", false);
+    // Wind, for the tree pass. The vertex shader masks this by leafiness and by
+    // height up the trunk, so the amplitude here is what the outermost canopy
+    // vertices get, not what the whole tree moves by.
+    //
+    // Baked meshes only. The mask reads aColor.r (the wood->leaf blend) and
+    // aPos.y (height up the trunk), and both of those only mean that on a baked
+    // tree mesh — on the live fractal path every part is drawn from the same unit
+    // hex with its own model matrix, so aPos.y is a vertex offset within one
+    // block and carries no information about where it sits on the tree. Applying
+    // sway there would translate whole limbs rigidly. F7 (live fractal mode) is a
+    // performance A/B toggle, so trading the wind for it is the right way round.
+    setSway((useBakedTrees && g_treeMeshesReady) ? 0.09f : 0.0f);
     // Set colorMode/woodColor lazily, only once a tree actually survives culling.
     bool bakedTreesActive = false;
     for (auto& ti : treeLocations) {
@@ -2839,6 +3293,8 @@ void renderTerrain(float time = 0.0f) {
         }
     }
     if (bakedTreesActive) setInt(shaderProgram, "colorMode", 0);
+    // Wind off again — torches, props and mobs are not foliage.
+    setSway(0.0f);
 
     // Draw torches — with distance + frustum culling (radius clamped to RENDER_DIST)
     const float TORCH_RENDER_DIST_SQ = RENDER_DIST_SQ;

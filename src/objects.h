@@ -95,27 +95,46 @@ void drawClock(glm::vec3 pos, float time) {
 // MineCar — drivable vehicle (arrow keys)
 // Chassis + 4 wheels + roll bar + cockpit
 // =====================================================
-void drawWheel(glm::mat4 parent, float spin) {
-    // Wheel is a flat hex rotated on its side, spinning
+// `steer` turns the wheel about the car's vertical axis — front wheels only.
+//
+// Cylinder, not the hex prism this used to lay on its side — a six-sided wheel
+// is obvious from anywhere close. The cylinder is built axis-up (geometry.h),
+// so it is tipped a quarter turn about X to put the axle across the car, then
+// spun about that same axle.
+//
+// Order is load-bearing. Steer comes FIRST, while the wheel is still upright,
+// because it is a rotation about the vertical. Tip second. Spin last, about the
+// now-horizontal axle. Spinning before the tip would steer the wheel rather
+// than roll it.
+void drawWheel(glm::mat4 parent, float spin, float steer = 0.0f) {
     glm::mat4 m = parent;
-    m = myRotate(m, spin, glm::vec3(0, 0, 1));           // spin
-    m = myRotate(m, PI / 2.0f, glm::vec3(0, 0, 1));      // lay flat
-    m = glm::scale(m, glm::vec3(0.45f, 0.2f, 0.45f));
-    drawHexModel(m, glm::vec3(0.4f, 0.4f, 0.42f));
+    if (steer != 0.0f) m = myRotate(m, steer, glm::vec3(0, 1, 0));
+    glm::mat4 axle = myRotate(m, PI / 2.0f, glm::vec3(1, 0, 0));
+    axle = myRotate(axle, spin, glm::vec3(0, 1, 0));
 
-    // Hub cap
-    glm::mat4 hub = parent;
-    hub = myRotate(hub, spin, glm::vec3(0, 0, 1));
-    hub = myRotate(hub, PI / 2.0f, glm::vec3(0, 0, 1));
-    hub = glm::scale(hub, glm::vec3(0.2f, 0.25f, 0.2f));
-    drawHexModel(hub, glm::vec3(0.55f, 0.55f, 0.57f));
+    // Scale is the full extent: 0.44 diameter, 0.22 wide.
+    drawCylModel(glm::scale(axle, glm::vec3(0.44f, 0.22f, 0.44f)),
+                 glm::vec3(0.13f, 0.13f, 0.15f));   // rubber
+
+    // Hub cap — slightly wider than the tire so it reads as a rim face rather
+    // than z-fighting with it.
+    drawCylModel(glm::scale(axle, glm::vec3(0.22f, 0.24f, 0.22f)),
+                 glm::vec3(0.62f, 0.63f, 0.66f));
 }
 
-void drawCar(glm::vec3 pos, float yaw, float wSpin) {
+void drawCar(glm::vec3 pos, float yaw, float wSpin, float steer = 0.0f) {
     // Base transform: position + rotation
     glm::mat4 base = glm::translate(glm::mat4(1.0f), pos);
     base = myRotate(base, yaw, glm::vec3(0, 1, 0));
 
+    // Body paint stays FLAT COLOUR, deliberately — see docs/plan_2.md Step 2.
+    // car_body.png is a photograph of a blue car (mean RGB 13,138,224). The
+    // shader's texture path is multiplicative, so over this car's yellow chassis
+    // it produced green and over the red cockpit near-black. Neutralising the
+    // tint to let the photo through would just repaint the MineCar blue, which
+    // is an asset dictating the design rather than serving it. gfx_b3's own car
+    // was never textured either — the file it asks for does not exist.
+    //
     // Chassis — main body (yellow)
     glm::mat4 chassis = glm::translate(base, glm::vec3(0, 0.45f, 0));
     drawHexModel(glm::scale(chassis, glm::vec3(1.4f, 0.35f, 0.8f)),
@@ -148,12 +167,35 @@ void drawCar(glm::vec3 pos, float yaw, float wSpin) {
     drawHexModel(glm::scale(bumper, glm::vec3(0.15f, 0.15f, 0.85f)),
                  glm::vec3(0.3f, 0.7f, 0.85f));
 
-    // 4 wheels
+    // Windscreen — tinted glass across the front of the cockpit. Alpha-blended
+    // with depth writes left ON: it is the only transparent surface on the car
+    // and nothing on the car is drawn behind it, so there is no sorting problem
+    // to solve here.
+    // car_window.png does work here: its mean is a neutral blue-grey (96,129,147),
+    // so multiplied over a pale glass tint it reads as tinted glass rather than
+    // recolouring anything. Triplanar for the reason the crystal ball uses it —
+    // a hex prism's own UVs converge on its cap faces.
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texCarWindow);
+    setInt(shaderProgram, "texture1", 0);
+    setInt(shaderProgram, "textureMode", 3);
+    setFloat(shaderProgram, "alpha", 0.62f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glm::mat4 glass = glm::translate(base, glm::vec3(0.12f, 0.78f, 0));
+    drawHexModel(glm::scale(glass, glm::vec3(0.10f, 0.34f, 0.66f)),
+                 glm::vec3(0.62f, 0.78f, 0.88f));
+    glDisable(GL_BLEND);
+    setFloat(shaderProgram, "alpha", 1.0f);
+    setInt(shaderProgram, "textureMode", 0);
+
+    // 4 wheels. Only the front pair takes the steering angle — that asymmetry is
+    // the visible half of the bicycle model.
     float wx = 0.6f, wz = 0.55f, wy = 0.2f;
-    drawWheel(glm::translate(base, glm::vec3( wx, wy,  wz)), wSpin);  // front-right
-    drawWheel(glm::translate(base, glm::vec3( wx, wy, -wz)), wSpin);  // front-left
-    drawWheel(glm::translate(base, glm::vec3(-wx, wy,  wz)), wSpin);  // rear-right
-    drawWheel(glm::translate(base, glm::vec3(-wx, wy, -wz)), wSpin);  // rear-left
+    drawWheel(glm::translate(base, glm::vec3( wx, wy,  wz)), wSpin, steer);  // front-right
+    drawWheel(glm::translate(base, glm::vec3( wx, wy, -wz)), wSpin, steer);  // front-left
+    drawWheel(glm::translate(base, glm::vec3(-wx, wy,  wz)), wSpin);         // rear-right
+    drawWheel(glm::translate(base, glm::vec3(-wx, wy, -wz)), wSpin);         // rear-left
 }
 
 // =====================================================
