@@ -1,12 +1,12 @@
 # HexaCraft
 
-A voxel sandbox built from scratch in C++ and OpenGL 3.3 — except the voxels are
+A voxel sandbox built from scratch in C++ and OpenGL 3.3, except the voxels are
 **hexagonal prisms**, not cubes. Procedurally generated terrain, a day/night cycle,
 weather, mobs, an inventory with crafting, drivable vehicle, and a full Phong/Gouraud
 lighting playground you can toggle apart piece by piece.
 
-Everything is rendered with hand-written GLSL shaders. No engine, no scene graph —
-just GLFW for the window, GLAD for the GL loader, GLM for math, and `stb_image` for
+Everything is rendered with hand-written GLSL shaders. No engine, no scene graph, just
+GLFW for the window, GLAD for the GL loader, GLM for math, and `stb_image` for
 textures.
 
 ![A grass and sand biome boundary, with ground scatter, drifting clouds and the horizon ring behind it](docs/img/hero.png)
@@ -21,7 +21,7 @@ boundaries scallop instead of staircasing, and water pools into hex outlines:
 
 ![Overhead view of hex-tiled terrain: a hexagonal pond, contoured sand, and a castle wall](docs/img/hex-geometry.png)
 
-At eye level it reads as ordinary voxel terrain — the tiling only announces itself from
+At eye level it reads as ordinary voxel terrain. The tiling only announces itself from
 above, or along a cliff edge:
 
 ![A terraced ridge of hex prisms dropping away toward a fogged valley](docs/img/terrain.png)
@@ -32,7 +32,7 @@ above, or along a cliff edge:
 
 **World**
 - 200 × 200 × 32 hex-prism grid, generated at startup from layered value noise
-- Five biomes — sand, grass, stone, water, snow — with blended edges
+- Five biomes (sand, grass, stone, water, snow) with blended edges
 - Prebuilt structures: a medieval castle, a village, a pyramid, a watchtower, a
   dungeon, and ponds
 - Trees grown from a recursive fractal branch routine, then baked into per-variant
@@ -40,15 +40,15 @@ above, or along a cliff edge:
 - Ground scatter, wind sway on foliage, a horizon ring and drifting volumetric clouds
   past the draw distance
 
-The castle sits at the main spawn, built into the mountainside — twin gatehouse towers,
-a crenellated curtain wall, and torches burning along it:
+The castle sits at the main spawn, built into the mountainside: twin gatehouse towers,
+a crenellated curtain wall, and torches burning along it.
 
 ![The castle gatehouse seen head-on, twin towers flanking a crenellated wall, with the player standing in the gateway](docs/img/castle.png)
 
 **Rendering**
 - Phong and Gouraud shading, switchable at runtime (`H`)
-- Directional sun *and* a separate directional moon, point lights, a spot light —
-  each independently toggleable, as are the ambient / diffuse / specular terms
+- Directional sun *and* a separate directional moon, point lights, a spot light, each
+  independently toggleable, as are the ambient / diffuse / specular terms
 - Nearest-N dynamic light selection, so torches and fireplaces light their surroundings
   without blowing the uniform budget
 - Frustum + occlusion culling, uniform-location caching, 4× MSAA
@@ -71,18 +71,18 @@ Torches and fireplaces are real point lights, picked nearest-N per frame:
 - Break and place blocks; terrain sculpt tools that raise hills and dig ponds
 - 36-slot inventory with a 3×3 crafting grid, searchable recipe book, and a Build tab
   that places whole structures (house / tree / torch / fireplace) for a material cost
-- Tools and weapons — swords, axes, pickaxes, shovels, a bow — with per-material mining speed
+- Tools and weapons (swords, axes, pickaxes, shovels, a bow) with per-material mining speed
 - Mobs: chickens, pigs, sheep, zombies and skeletons, each with idle/wander/chase/attack/flee states
 - A drivable car with terrain-following suspension and steering
 - Toggleable rain, a rotating fan, doors and windows that open
 
 The inventory carries a 3×3 crafting grid, a searchable recipe book, and a Build tab
-that costs materials out of your inventory — green when you can afford it, red when
-you can't:
+that costs materials out of your inventory: green when you can afford it, red when
+you can't.
 
 ![The crafting screen open on the Build tab, showing house, tree, torch and fireplace costs](docs/img/crafting.png)
 
-Mobs — chicken, pig, sheep, zombie, skeleton — each run their own state machine:
+Mobs (chicken, pig, sheep, zombie, skeleton) each run their own state machine:
 
 ![Five mob types silhouetted on a ridge against the sky](docs/img/mobs.png)
 
@@ -112,7 +112,7 @@ else needs installing.
 ./run.sh
 ```
 
-That's the whole thing — `run.sh` compiles and launches. It is equivalent to:
+That's the whole thing: `run.sh` compiles and launches. It is equivalent to:
 
 ```bash
 g++ -O2 -o hexacraft src/main.cpp src/glad.c \
@@ -141,7 +141,7 @@ list is printed to the terminal on startup.
 | `W` `A` `S` `D` | Walk / strafe |
 | `Space` | Jump |
 | `Left Shift` | Sprint (1.5×, drains stamina) |
-| `Q` (hold) | Fly up — release to fall |
+| `Q` (hold) | Fly up, release to fall |
 | `E` / `R` | Fly up / down |
 
 **Camera**
@@ -161,12 +161,12 @@ list is printed to the terminal on startup.
 |---|---|
 | Left click | Attack mob, place block, or use the sculpt tool |
 | Right click (hold) | Break block (bedrock is unbreakable) |
-| Right click | Interact — on a crafting table this opens the 3×3 grid |
+| Right click | Interact. On a crafting table this opens the 3×3 grid |
 | Middle click | Pick the targeted block into the hotbar |
 | `I` | Open / close inventory, crafting and recipe book |
 | `K` | Grab or set down the targeted block |
 | Scroll | Cycle hotbar slot |
-| Numpad `1`–`9` | Quick-select hotbar slot |
+| Numpad `1` to `9` | Quick-select hotbar slot |
 
 **Lighting**
 
@@ -185,7 +185,7 @@ list is printed to the terminal on startup.
 | `N` | Toggle rain |
 | `G` | Toggle the rotating fan |
 | `O` | Toggle door |
-| `P` | Toggle windows — or respawn when dead |
+| `P` | Toggle windows, or respawn when dead |
 | `B` | Take control of the car / hand it back |
 | Arrow keys | Drive the car (up/down accelerate, left/right steer) |
 | `F7` | Toggle baked tree meshes (off = live fractal, slower) |
@@ -208,11 +208,11 @@ which is how the before/after evidence in `docs/` was captured:
 | `HEXA_RAIN=1` | Start with rain on |
 | `HEXA_DAY=0..3` | Start at night / dawn / noon / dusk |
 | `HEXA_BUILD_DEMO=1` | Build one of each structure recipe on level ground and frame them |
-| `HEXA_BUILD_DEMO_NIGHT=1` | Same, at night — the only way to see torch and fireplace light |
+| `HEXA_BUILD_DEMO_NIGHT=1` | Same, at night, the only way to see torch and fireplace light |
 | `HEXA_BUILD_DEMO_UI=1` | Open the crafting screen on the Build tab with a partial inventory |
 | `HEXA_BUILD_TEST=1` | Run the in-process build assertions and exit with the pass/fail status |
 
-Together they make a comparison reproducible — the Phong/Gouraud pair above is two runs
+Together they make a comparison reproducible. The Phong/Gouraud pair above is two runs
 of the same pose, one flag apart:
 
 ```bash
